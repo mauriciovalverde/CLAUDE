@@ -8,7 +8,7 @@ export const Route = createFileRoute("/apoio")({ component: () => <AppShell><Apo
 function Apoio() {
   return (
     <div className="flex flex-col gap-3">
-      <PageHeader title="Apoio" highlight="e acolhimento" subtitle="Você não precisa passar por isso sozinha. Escolha por onde começar." />
+      <PageHeader title="Apoio" highlight="e acolhimento" subtitle="Você não precisa passar por isso sem apoio. Escolha por onde começar." />
       <CardLink to="/consultas" icon={Video} tom="blue" title="Teleconsulta com psicólogo" subtitle="Agende atendimento online, por vídeo, pelo app" />
       <CardLink to="/rede" icon={MessageCircle} tom="green" title="Rede de apoio no WhatsApp" subtitle="Converse com outras mães e famílias atípicas" />
       <CardLink to="/rede" icon={CalendarHeart} tom="coral" title="Encontros e rodas de conversa" subtitle="Próximos encontros presenciais e online" />

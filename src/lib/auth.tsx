@@ -7,7 +7,7 @@ export type Familia = {
   id: string; numero: string | null; status: "pendente" | "aprovado" | "recusado"; motivo_recusa: string | null;
   mae_nome: string; cidade: string | null; uf: string | null; [k: string]: unknown;
 };
-export type Perfil = { id: string; nome_chamada: string | null; email: string | null; telefone: string | null };
+export type Perfil = { id: string; nome_chamada: string | null; email: string | null; telefone: string | null; genero?: "f" | "m" | "n" | null };
 
 type Ctx = {
   ready: boolean; session: Session | null; user: User | null; perfil: Perfil | null; papeis: Papel[];
@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!s?.user) { setPerfil(null); setPapeis([]); setFamilia(null); return; }
     const uid = s.user.id;
     const [p, r, f] = await Promise.all([
-      db.from("perfis").select("id,nome_chamada,email,telefone").eq("id", uid).maybeSingle(),
+      db.from("perfis").select("id,nome_chamada,email,telefone,genero").eq("id", uid).maybeSingle(),
       db.from("user_roles").select("role").eq("user_id", uid),
       db.from("familias").select("*").eq("user_id", uid).maybeSingle(),
     ]);
@@ -72,3 +72,16 @@ export function useAuth() {
 export function nomeExibicao(perfil: Perfil | null, user: User | null) {
   return (perfil?.nome_chamada || (user?.user_metadata?.nome_chamada as string) || user?.email?.split("@")[0] || "").split(" ")[0];
 }
+
+/** Gênero para a linguagem do app: o que a pessoa escolheu no Perfil ou, se não escolheu, um palpite pelo primeiro nome. */
+export function generoDe(perfil: Perfil | null, familia?: { mae_nome?: string } | null): "f" | "m" | "n" {
+  if (perfil?.genero === "f" || perfil?.genero === "m" || perfil?.genero === "n") return perfil.genero;
+  const nome = (perfil?.nome_chamada || familia?.mae_nome || "").trim().split(/\s+/)[0]?.toLowerCase() ?? "";
+  if (!nome) return "f";
+  if (["raquel", "isabel", "mabel", "rachel", "ester", "ruth", "lourdes", "dulce", "inês", "ines", "carmen", "miriam", "nair", "darci", "rosimeire", "jaqueline"].includes(nome)) return "f";
+  if (/a$/.test(nome) || /(ane|ene|ine|iete|ete|ide|ilde|ice|ise|one|eli|beth|lyn|ely|elly|ily|ury)$/.test(nome)) return "f";
+  if (/(o|os|or|on|son|el|il|ur|im|ir|ar|er|us|ey|é|ê|i|ui|ão|z|x|in)$/.test(nome)) return "m";
+  return "n";
+}
+/** Escolhe a palavra conforme o gênero: g(gen, "sozinha", "sozinho", "só"). */
+export const g = (gen: "f" | "m" | "n", fem: string, masc: string, neutro?: string) => (gen === "f" ? fem : gen === "m" ? masc : neutro ?? `${masc}(a)`);

@@ -229,3 +229,12 @@ $$;
 
 grant execute on function public.horarios_livres(uuid, date, date), public.agendar_consulta(uuid, timestamptz, text, uuid, text),
   public.cancelar_consulta(uuid, text), public.atualizar_consulta(uuid, text, text), public.consultas_profissional(timestamptz, timestamptz) to authenticated;
+
+-- Ajustes 2026-11-05: tipos do diário e da agenda usados pelo app, gênero no perfil
+alter table public.diario_registros drop constraint if exists diario_registros_tipo_check;
+alter table public.diario_registros add constraint diario_registros_tipo_check check (tipo in ('humor','alimentacao','sono','crise','conquista','sensorial','anotacao','nota','comportamento','medicacao','terapia','escola','saude'));
+alter table public.agenda drop constraint if exists agenda_repeticao_check;
+alter table public.agenda add constraint agenda_repeticao_check check (repeticao is null or repeticao in ('nenhuma','nao','diaria','semanal','quinzenal','mensal'));
+alter table public.agenda drop constraint if exists agenda_tipo_check;
+alter table public.agenda add constraint agenda_tipo_check check (tipo in ('consulta','terapia','escola','medicamento','medicacao','exame','beneficio','lazer','outro'));
+alter table public.perfis add column if not exists genero text check (genero in ('f','m','n'));

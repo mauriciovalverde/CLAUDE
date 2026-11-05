@@ -116,6 +116,7 @@ function NovoRegistro({ tipo, familiaId, filhoId, filhos, onFechar, onSalvo }: {
   const abc = tipo === "crise" || tipo === "comportamento";
 
   async function salvar() {
+    if (!f.filho_id) return toast.error("Cadastre a criança em Perfil → Editar cadastro antes de registrar.");
     setSalvando(true);
     let foto_path: string | null = null;
     if (foto) {

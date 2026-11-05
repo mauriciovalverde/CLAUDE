@@ -4,7 +4,7 @@ import { Bell, BriefcaseMedical, Download, FileText, LogOut, Pencil, ShieldCheck
 import { toast } from "sonner";
 import { AppShell } from "@/components/app/AppShell";
 import { Btn, Campo, Card, CardLink, Chip, PageHeader, inputCls } from "@/components/app/kit";
-import { nomeExibicao, useAuth } from "@/lib/auth";
+import { nomeExibicao, useAuth, generoDe } from "@/lib/auth";
 import { db, useFilhos } from "@/lib/dados";
 import { baixarArquivo, digits, fmtTel, idade, idadeTxt } from "@/lib/br";
 
@@ -20,10 +20,10 @@ function Perfil() {
   const { user, perfil, familia, papeis, isStaff, refresh, sair } = useAuth();
   const nav = useNavigate();
   const { data: filhos } = useFilhos(familia?.id);
-  const [p, setP] = useState({ nome_chamada: "", telefone: "" });
+  const [p, setP] = useState({ nome_chamada: "", telefone: "", genero: "" });
   const [prefs, setPrefs] = useState<Record<string, boolean>>({});
 
-  useEffect(() => { setP({ nome_chamada: perfil?.nome_chamada ?? "", telefone: fmtTel(perfil?.telefone ?? "") }); }, [perfil]);
+  useEffect(() => { setP({ nome_chamada: perfil?.nome_chamada ?? "", telefone: fmtTel(perfil?.telefone ?? ""), genero: perfil?.genero ?? generoDe(perfil, familia) }); }, [perfil]);
   useEffect(() => {
     if (!user) return;
     db.from("preferencias_notificacao").select("*").eq("user_id", user.id).maybeSingle().then(({ data }: any) => {
@@ -32,7 +32,7 @@ function Perfil() {
   }, [user]);
 
   async function salvarPerfil() {
-    const { error } = await db.from("perfis").update({ nome_chamada: p.nome_chamada.trim() || null, telefone: digits(p.telefone) || null }).eq("id", user!.id);
+    const { error } = await db.from("perfis").update({ nome_chamada: p.nome_chamada.trim() || null, telefone: digits(p.telefone) || null, genero: p.genero || null }).eq("id", user!.id);
     if (error) return toast.error(error.message);
     toast.success("Dados salvos."); refresh();
   }
@@ -82,9 +82,16 @@ function Perfil() {
       <Card className="flex flex-col gap-3">
         <h2 className="font-display text-lg font-bold">Dados de acesso</h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Campo id="pf-nome" label="Como prefere ser chamada"><input id="pf-nome" className={inputCls} value={p.nome_chamada} onChange={(e) => setP({ ...p, nome_chamada: e.target.value })} /></Campo>
+          <Campo id="pf-nome" label="Como prefere ser chamado(a)"><input id="pf-nome" className={inputCls} value={p.nome_chamada} onChange={(e) => setP({ ...p, nome_chamada: e.target.value })} /></Campo>
           <Campo id="pf-tel" label="Celular"><input id="pf-tel" className={inputCls} value={p.telefone} onChange={(e) => setP({ ...p, telefone: fmtTel(e.target.value) })} /></Campo>
         </div>
+        <Campo id="pf-gen" label="Como o app deve falar com você">
+          <div className="flex flex-wrap gap-2">
+            {([["f", "No feminino (sozinha)"], ["m", "No masculino (sozinho)"], ["n", "Neutro"]] as const).map(([k, l]) => (
+              <button key={k} type="button" onClick={() => setP({ ...p, genero: k })} className={`tap rounded-full border px-4 text-sm font-semibold ${p.genero === k ? "border-primary bg-primary-soft text-primary" : "border-border bg-card"}`}>{l}</button>
+            ))}
+          </div>
+        </Campo>
         <div className="flex flex-wrap gap-2"><Btn onClick={salvarPerfil}>Salvar</Btn><Link to="/redefinir-senha" className="tap inline-flex items-center rounded-full px-4 font-semibold text-primary">Trocar senha</Link></div>
       </Card>
 

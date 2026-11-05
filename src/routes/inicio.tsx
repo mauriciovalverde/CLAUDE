@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/components/app/AppShell";
 import { Card, Chip, btn } from "@/components/app/kit";
-import { nomeExibicao, useAuth } from "@/lib/auth";
+import { g, generoDe, nomeExibicao, useAuth } from "@/lib/auth";
 import { db, useConfig, useQuery } from "@/lib/dados";
 import { MSG_CONFIRMACAO_PADRAO, WHATSAPP_PADRAO, fDataHora, waLink } from "@/lib/br";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/inicio")({ component: () => <AppShell><Inicio /></AppShell> });
 
 const MENSAGENS = [
-  "Você não está sozinha. Cada pequeno passo conta.", "Cuidar de você também é cuidar do seu filho.",
+  "Você não está só. Cada pequeno passo conta.", "Cuidar de você também é cuidar do seu filho.",
   "Hoje não precisa ser perfeito. Precisa ser possível.", "Pedir ajuda é um ato de coragem.",
   "Você conhece seu filho como ninguém. Confie no seu olhar.", "Respire. Um dia de cada vez.",
   "O amor que você dá todos os dias faz diferença, mesmo quando ninguém vê.",
@@ -30,7 +30,7 @@ const ATALHOS: [string, string, any, string][] = [
   ["/biblioteca", "Biblioteca", BookOpen, "bg-secondary text-navy"],
   ["/rotina", "Minha rotina", CalendarDays, "bg-primary-soft text-primary"],
   ["/conteudo/atividades", "Atividades em casa", Puzzle, "bg-success-soft text-success"],
-  ["/conteudo/acolhimento", "Mãe, você também importa", Heart, "bg-coral-soft text-coral"],
+  ["/conteudo/acolhimento", "Cuide de você", Heart, "bg-coral-soft text-coral"],
   ["/documentos", "Documentos", FileText, "bg-warning-soft text-warning"],
   ["/historias", "Histórias que inspiram", Star, "bg-secondary text-navy"],
 ];
@@ -40,6 +40,7 @@ function Inicio() {
   const nav = useNavigate();
   const cfg = useConfig();
   const [q, setQ] = useState("");
+  const gen = generoDe(perfil, familia);
   const msg = MENSAGENS[new Date().getDate() % MENSAGENS.length];
 
   const { data } = useQuery(async () => {
@@ -66,10 +67,9 @@ function Inicio() {
   return (
     <div className="flex flex-col gap-7">
       <section className="relative overflow-hidden rounded-3xl bg-primary p-6 text-primary-foreground">
-        <div aria-hidden="true" className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-coral/80" />
         <p className="relative text-xs font-bold uppercase tracking-[0.18em] opacity-90">Informação · Acolhimento · Apoio</p>
         <h1 className="relative mt-2 font-display text-3xl font-extrabold text-white sm:text-4xl">Olá, {nomeExibicao(perfil, user)}!</h1>
-        <p className="relative mt-1 opacity-90">Você não está sozinha! Estamos aqui para caminhar com você.</p>
+        <p className="relative mt-1 opacity-90">Você não está {g(gen, "sozinha", "sozinho", "só")}! Estamos aqui para caminhar com você.</p>
       </section>
 
       {familia?.status === "pendente" && (
@@ -136,7 +136,7 @@ function Inicio() {
       <section className="rounded-3xl bg-coral-soft p-6">
         <p className="text-xs font-bold uppercase tracking-widest text-coral">Mensagem do dia</p>
         <p className="mt-2 font-display text-xl font-bold text-navy">{msg}</p>
-        <Link to="/conteudo/$slug" params={{ slug: "acolhimento" }} className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-primary"><HandHeart className="h-4 w-4" /> Mãe, você também importa</Link>
+        <Link to="/conteudo/$slug" params={{ slug: "acolhimento" }} className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-primary"><HandHeart className="h-4 w-4" /> {gen === "n" ? "Você" : g(gen, "Mãe, você", "Pai, você")} também importa</Link>
       </section>
 
       {(data?.notif ?? []).length > 0 && (

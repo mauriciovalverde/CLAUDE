@@ -37,7 +37,7 @@ export function DiretorioAdmin() {
           <Card key={s.id} className="flex flex-wrap items-center gap-3 p-4">
             <div className="flex-1"><b>{s.nome}</b> <Chip>{nomeCategoria(s.categoria)}</Chip><p className="text-sm text-muted-foreground">{[s.cidade && `${s.cidade}/${s.uf}`, s.telefone && fmtTel(s.telefone), fData(s.created_at)].filter(Boolean).join(" · ")}</p>{s.observacao && <p className="text-sm">{s.observacao}</p>}</div>
             <Btn v="soft" className="min-h-10" onClick={() => { setEdit({ ...VAZIO, nome: s.nome, categoria: s.categoria, cidade: s.cidade ?? "", uf: s.uf ?? "BA", telefone: fmtTel(s.telefone ?? ""), descricao: s.observacao ?? "" }); tratarSug(s, "aceita"); }}>Cadastrar</Btn>
-            <Btn v="ghost" className="min-h-10" onClick={() => tratarSug(s, "descartada")}>Descartar</Btn>
+            <Btn v="ghost" className="min-h-10" onClick={() => tratarSug(s, "recusada")}>Descartar</Btn>
           </Card>
         ))
       ) : loading ? <Carregando /> : !lista.length ? <Vazio icon={BadgeCheck} titulo="Nada por aqui" /> : lista.map((d) => (

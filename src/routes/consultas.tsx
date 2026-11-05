@@ -107,6 +107,7 @@ function Consultas() {
           </ul>
         </details>
       )}
+      <Link to="/atendimentos" className="text-center text-sm font-semibold text-primary">É psicólogo(a)? Abra sua agenda de atendimentos →</Link>
       <Aviso tom="red">Teleconsulta não é atendimento de emergência. Em crise ou risco, ligue <a href="tel:192" className="font-bold underline">192</a> (SAMU) ou <a href="tel:188" className="font-bold underline">188</a> (CVV).</Aviso>
     </div>
   );

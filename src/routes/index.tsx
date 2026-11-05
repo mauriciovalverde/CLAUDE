@@ -16,7 +16,6 @@ function Landing() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      <div aria-hidden="true" className="pointer-events-none absolute -right-40 -top-40 h-[28rem] w-[28rem] rounded-full bg-coral/85" />
       <div aria-hidden="true" className="pointer-events-none absolute -left-52 top-[34rem] h-[30rem] w-[30rem] rounded-full bg-navy/90 dark:bg-primary/30" />
       <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 right-[-6rem] h-72 w-72 rounded-full bg-primary-soft" />
       <div className="relative">
