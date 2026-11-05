@@ -1,0 +1,30 @@
+{
+  "name": "Centro de Acolhimento à Família Atípica",
+  "short_name": "Acolhimento",
+  "description": "Informação, acolhimento e apoio para mães e famílias de crianças atípicas.",
+  "lang": "pt-BR",
+  "start_url": "./inicio",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F6F7FB",
+  "theme_color": "#1F5BFF",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

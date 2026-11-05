@@ -1,0 +1,108 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", "Inter", ui-sans-serif, sans-serif;
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-navy: var(--navy);
+  --color-coral: var(--coral);
+  --color-coral-soft: var(--coral-soft);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-soft: var(--success-soft);
+  --color-emergency: var(--emergency);
+  --color-emergency-foreground: var(--emergency-foreground);
+  --color-emergency-soft: var(--emergency-soft);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning: var(--warning);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-sidebar: var(--sidebar);
+  --shadow-card: var(--shadow-card);
+  --shadow-float: var(--shadow-float);
+}
+
+:root {
+  --radius: 1rem;
+  --background: oklch(0.978 0.006 265);
+  --foreground: oklch(0.26 0.09 265);
+  --card: oklch(1 0 0);
+  --primary: oklch(0.53 0.24 265);
+  --primary-foreground: oklch(1 0 0);
+  --primary-soft: oklch(0.94 0.035 265);
+  --navy: oklch(0.26 0.09 265);
+  --coral: oklch(0.7 0.19 30);
+  --coral-soft: oklch(0.95 0.035 30);
+  --success: oklch(0.55 0.16 149);
+  --success-foreground: oklch(1 0 0);
+  --success-soft: oklch(0.95 0.05 149);
+  --emergency: oklch(0.55 0.22 27);
+  --emergency-foreground: oklch(1 0 0);
+  --emergency-soft: oklch(0.95 0.035 27);
+  --warning: oklch(0.6 0.15 70);
+  --warning-soft: oklch(0.96 0.05 85);
+  --secondary: oklch(0.95 0.015 265);
+  --muted: oklch(0.95 0.01 265);
+  --muted-foreground: oklch(0.47 0.03 265);
+  --border: oklch(0.91 0.015 265);
+  --input: oklch(0.89 0.02 265);
+  --sidebar: oklch(1 0 0);
+  --shadow-card: 0 1px 2px oklch(0.26 0.09 265 / 0.04), 0 8px 24px -12px oklch(0.26 0.09 265 / 0.14);
+  --shadow-float: 0 12px 32px -12px oklch(0.53 0.24 265 / 0.45);
+}
+
+.dark {
+  --background: oklch(0.18 0.03 265);
+  --foreground: oklch(0.96 0.01 265);
+  --card: oklch(0.23 0.035 265);
+  --primary: oklch(0.68 0.18 265);
+  --primary-foreground: oklch(0.15 0.03 265);
+  --primary-soft: oklch(0.3 0.06 265);
+  --navy: oklch(0.96 0.01 265);
+  --coral: oklch(0.72 0.17 30);
+  --coral-soft: oklch(0.3 0.06 30);
+  --success: oklch(0.7 0.16 149);
+  --success-foreground: oklch(0.15 0.03 149);
+  --success-soft: oklch(0.3 0.06 149);
+  --emergency: oklch(0.65 0.2 27);
+  --emergency-soft: oklch(0.3 0.07 27);
+  --warning: oklch(0.8 0.14 80);
+  --warning-soft: oklch(0.32 0.06 80);
+  --secondary: oklch(0.28 0.04 265);
+  --muted: oklch(0.28 0.04 265);
+  --muted-foreground: oklch(0.75 0.03 265);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 18%);
+  --sidebar: oklch(0.21 0.035 265);
+  --shadow-card: 0 8px 24px -12px oklch(0 0 0 / 0.5);
+}
+
+html[data-fontscale="1"] { font-size: 112.5%; }
+html[data-fontscale="2"] { font-size: 125%; }
+
+@layer base {
+  * { border-color: var(--color-border); }
+  body { background-color: var(--color-background); color: var(--color-foreground); font-family: var(--font-sans); }
+  h1, h2, h3 { font-family: var(--font-display); color: var(--color-navy); letter-spacing: -0.02em; }
+}
+
+@utility font-display { font-family: var(--font-display); }
+@utility card-soft { background: var(--color-card); border-radius: 1.125rem; box-shadow: var(--shadow-card); border: 1px solid var(--color-border); }
+@utility tap { min-height: 48px; }
+
+@media print { .no-print { display: none !important; } body { background: white; } }
