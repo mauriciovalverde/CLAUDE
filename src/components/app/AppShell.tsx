@@ -113,7 +113,7 @@ export function TopBar({ publico = false }: { publico?: boolean }) {
         <Link to={user ? "/inicio" : "/"} aria-label="Página inicial" className="lg:hidden"><Logo compact={!publico} /></Link>
         {publico && <span className="hidden lg:block"><Link to="/"><Logo /></Link></span>}
         <span className="flex-1" />
-        {isStaff && <Link to="/admin" className="hidden rounded-full bg-primary-soft px-3 py-1.5 text-xs font-bold text-primary sm:inline">Painel admin</Link>}
+        {isStaff && <Link to="/admin" className="tap inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 text-sm font-bold text-primary-foreground" aria-label="Painel administrativo"><LayoutDashboard className="h-5 w-5" /><span className="hidden sm:inline">Admin</span></Link>}
         <button onClick={fs.ciclo} className="tap grid min-w-12 place-items-center rounded-xl border border-border bg-card px-2 text-sm font-bold text-navy" aria-label="Aumentar tamanho do texto">
           {fs.n === 0 ? "A+" : fs.n === 1 ? "A++" : "A"}
         </button>
@@ -198,12 +198,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Link to="/privacidade" className="underline">Privacidade</Link> · <Link to="/termos" className="underline">Termos</Link>
         </footer>
       </div>
-      <nav className="no-print fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-card lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }} aria-label="Navegação principal">
+      <nav className={cn("no-print fixed inset-x-0 bottom-0 z-30 grid border-t border-border bg-card lg:hidden", isStaff ? "grid-cols-6" : "grid-cols-5")} style={{ paddingBottom: "env(safe-area-inset-bottom)" }} aria-label="Navegação principal">
         {TABS.map((t) => (
           <Link key={t.to} to={t.to as any} className={cn("flex min-h-16 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold", ativo(t.to) ? "text-primary" : "text-muted-foreground")} aria-current={ativo(t.to) ? "page" : undefined}>
             <t.icon className={cn("h-6 w-6", ativo(t.to) && "stroke-[2.4]")} /> {t.label}
           </Link>
         ))}
+        {isStaff && (
+          <Link to="/admin" className={cn("flex min-h-16 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold", ativo("/admin") ? "text-primary" : "text-muted-foreground")} aria-current={ativo("/admin") ? "page" : undefined}>
+            <LayoutDashboard className={cn("h-6 w-6", ativo("/admin") && "stroke-[2.4]")} /> Admin
+          </Link>
+        )}
       </nav>
     </div>
   );

@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   AlertTriangle, Baby, BookOpen, CalendarDays, ClipboardList, Clock, FileText, HandHeart, Heart, MapPin,
-  MessageCircle, NotebookPen, PlayCircle, Puzzle, Scale, Search, Star, Utensils, Video,
+  LayoutDashboard, MessageCircle, NotebookPen, PlayCircle, Puzzle, Scale, Search, Star, Utensils, Video,
 } from "lucide-react";
 import { AppShell } from "@/components/app/AppShell";
 import { Card, Chip, btn } from "@/components/app/kit";
@@ -36,7 +36,7 @@ const ATALHOS: [string, string, any, string][] = [
 ];
 
 function Inicio() {
-  const { perfil, user, familia } = useAuth();
+  const { perfil, user, familia, isStaff } = useAuth();
   const nav = useNavigate();
   const cfg = useConfig();
   const [q, setQ] = useState("");
@@ -71,6 +71,14 @@ function Inicio() {
         <h1 className="relative mt-2 font-display text-3xl font-extrabold text-white sm:text-4xl">Olá, {nomeExibicao(perfil, user)}!</h1>
         <p className="relative mt-1 opacity-90">Você não está {g(gen, "sozinha", "sozinho", "só")}! Estamos aqui para caminhar com você.</p>
       </section>
+
+      {isStaff && (
+        <Link to="/admin" className="card-soft flex items-center gap-4 border-primary p-4">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary text-white"><LayoutDashboard /></span>
+          <span className="flex-1"><b className="block text-navy">Painel administrativo</b><span className="text-sm text-muted-foreground">Cadastros, disparos, relatórios, teleconsultas e exportações</span></span>
+          <span className="text-sm font-semibold text-primary">Abrir</span>
+        </Link>
+      )}
 
       {familia?.status === "pendente" && (
         <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-warning-soft p-4 text-sm">
