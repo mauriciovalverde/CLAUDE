@@ -2,7 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   AlertTriangle, Bell, BookOpen, CalendarDays, ClipboardList, FileText, HandHeart, Home, LayoutDashboard,
-  LogOut, MessageCircle, NotebookPen, Search, ShieldCheck, Star, User,
+  LogOut, MessageCircle, NotebookPen, Search, ShieldCheck, Star, Stethoscope, User, Video,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -20,6 +20,7 @@ const TABS = [
   { to: "/perfil", label: "Perfil", icon: User },
 ];
 const EXTRAS = [
+  { to: "/consultas", label: "Teleconsulta", icon: Video },
   { to: "/conteudo/orientacoes", label: "Orientações", icon: BookOpen },
   { to: "/conteudo/bpc", label: "Acesso ao BPC", icon: ClipboardList },
   { to: "/conteudo/direitos", label: "Direitos", icon: ShieldCheck },
@@ -170,6 +171,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             <t.icon className="h-4 w-4" /> {t.label}
           </Link>
         ))}
+        {papeis.includes("profissional") && (
+          <Link to="/atendimentos" className={cn("tap mt-3 flex items-center gap-3 rounded-xl px-3 font-semibold", ativo("/atendimentos") ? "bg-primary-soft text-primary" : "text-navy hover:bg-muted")}>
+            <Stethoscope className="h-5 w-5" /> Meus atendimentos
+          </Link>
+        )}
         {isStaff && (
           <Link to="/admin" className={cn("tap mt-3 flex items-center gap-3 rounded-xl px-3 font-semibold", ativo("/admin") ? "bg-primary-soft text-primary" : "text-navy hover:bg-muted")}>
             <LayoutDashboard className="h-5 w-5" /> Painel administrativo

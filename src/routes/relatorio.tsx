@@ -5,7 +5,7 @@ import { AppShell } from "@/components/app/AppShell";
 import { Btn, Carregando, PageHeader, inputCls } from "@/components/app/kit";
 import { db, useFilhos, useQuery } from "@/lib/dados";
 import { tipoInfo, useFamiliaDiario, type Registro } from "@/lib/diario";
-import { fData, fDataHora, idade } from "@/lib/br";
+import { fData, fDataHora, idade, idadeTxt } from "@/lib/br";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/relatorio")({
@@ -66,7 +66,7 @@ function Relatorio() {
           <header className="border-b pb-3">
             <p className="text-xs font-bold uppercase tracking-widest text-primary">Centro de Acolhimento à Família Atípica</p>
             <h1 className="font-display text-2xl font-extrabold">Relatório do diário · {f?.nome}</h1>
-            <p className="text-sm">{f?.nascimento ? `${idade(f.nascimento)} · ` : ""}Período: {fData(new Date(Date.now() - dias * 864e5))} a {fData(new Date())}</p>
+            <p className="text-sm">{f?.nascimento ? `${idadeTxt(f.nascimento)} · ` : ""}Período: {fData(new Date(Date.now() - dias * 864e5))} a {fData(new Date())}</p>
             {diag && <p className="text-sm"><b>Diagnóstico informado pela família:</b> {diag}</p>}
             {data?.saude?.terapias && <p className="text-sm"><b>Terapias:</b> {data.saude.terapias}</p>}
             {data?.meds?.length ? <p className="text-sm"><b>Medicações em uso:</b> {data.meds.map((m) => [m.nome, m.dose, m.horarios].filter(Boolean).join(" ")).join("; ")}</p> : null}

@@ -3,7 +3,7 @@ import { CheckCircle2, Download, Eye, MessageCircle, Search, X, XCircle } from "
 import { toast } from "sonner";
 import { Btn, Card, Carregando, Chip, Vazio, btn, inputCls, textareaCls } from "@/components/app/kit";
 import { db, useQuery } from "@/lib/dados";
-import { baixarArquivo, csv, digits, fData, fDataHora, fmtCEP, fmtTel, idade, waLink } from "@/lib/br";
+import { baixarArquivo, csv, digits, fData, fDataHora, fmtCEP, fmtTel, idade, idadeTxt, waLink } from "@/lib/br";
 import { cn } from "@/lib/utils";
 
 const ST: Record<string, [string, string]> = { pendente: ["Aguardando", "amber"], aprovado: ["Confirmado", "green"], recusado: ["Recusado", "red"] };
@@ -82,7 +82,7 @@ function Ficha({ id, onFechar, onMudou }: { id: string; onFechar: () => void; on
             <Chip tom={ST[f.status][1]} className="w-fit">{ST[f.status][0]}{f.aprovado_em ? ` em ${fDataHora(f.aprovado_em)}` : ""}</Chip>
             {f.status === "recusado" && f.motivo_recusa && <p className="text-sm"><b>Motivo:</b> {f.motivo_recusa}</p>}
             <Card className="p-4"><h3 className="mb-2 font-bold">Mãe / responsável</h3><dl className="flex flex-col gap-1">
-              <Linha l="Nome" v={f.mae_nome} /><Linha l="CPF" v={cpf("mae")} /><Linha l="Nascimento" v={f.mae_nascimento && `${fData(f.mae_nascimento)} (${idade(f.mae_nascimento)})`} />
+              <Linha l="Nome" v={f.mae_nome} /><Linha l="CPF" v={cpf("mae")} /><Linha l="Nascimento" v={f.mae_nascimento && `${fData(f.mae_nascimento)} (${idadeTxt(f.mae_nascimento)})`} />
               <Linha l="Celular" v={fmtTel(f.mae_telefone ?? "")} /><Linha l="E-mail" v={f.mae_email} /><Linha l="Estado civil" v={f.estado_civil} /><Linha l="Profissão" v={f.profissao} />
               <Linha l="Endereço" v={[f.endereco, f.bairro, f.cidade && `${f.cidade}/${f.uf}`, f.cep && fmtCEP(f.cep)].filter(Boolean).join(", ")} />
               <Linha l="Quem preencheu" v={f.quem_preenche} /><Linha l="Emergência" v={f.emergencia_nome && `${f.emergencia_nome} · ${fmtTel(f.emergencia_telefone ?? "")}`} />
@@ -92,7 +92,7 @@ function Ficha({ id, onFechar, onMudou }: { id: string; onFechar: () => void; on
             </dl></Card>}
             {(f.filhos ?? []).map((k: any) => (
               <Card key={k.id} className="p-4"><h3 className="mb-2 font-bold">👶 {k.nome}</h3><dl className="flex flex-col gap-1">
-                <Linha l="Nascimento" v={k.nascimento && `${fData(k.nascimento)} (${idade(k.nascimento)})`} /><Linha l="Sexo" v={k.sexo} /><Linha l="CPF" v={cpf("filho", k.id)} />
+                <Linha l="Nascimento" v={k.nascimento && `${fData(k.nascimento)} (${idadeTxt(k.nascimento)})`} /><Linha l="Sexo" v={k.sexo} /><Linha l="CPF" v={cpf("filho", k.id)} />
                 {k.saude ? (<>
                   <Linha l="Diagnósticos" v={[...(k.saude.diagnosticos ?? []), k.saude.diagnostico_outro].filter(Boolean).join(", ")} />
                   <Linha l="Profissional" v={k.saude.profissional} /><Linha l="Terapias" v={k.saude.terapias} /><Linha l="Medicação" v={k.saude.usa_medicacao == null ? null : k.saude.usa_medicacao ? "Sim" : "Não"} />

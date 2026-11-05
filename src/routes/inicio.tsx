@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   AlertTriangle, Baby, BookOpen, CalendarDays, ClipboardList, Clock, FileText, HandHeart, Heart, MapPin,
-  MessageCircle, NotebookPen, PlayCircle, Puzzle, Scale, Search, Star, Utensils,
+  MessageCircle, NotebookPen, PlayCircle, Puzzle, Scale, Search, Star, Utensils, Video,
 } from "lucide-react";
 import { AppShell } from "@/components/app/AppShell";
 import { Card, Chip, btn } from "@/components/app/kit";
@@ -20,6 +20,7 @@ const MENSAGENS = [
   "O amor que você dá todos os dias faz diferença, mesmo quando ninguém vê.",
 ];
 const ATALHOS: [string, string, any, string][] = [
+  ["/consultas", "Teleconsulta com psicólogo", Video, "bg-primary text-white"],
   ["/conteudo/orientacoes", "Orientações", BookOpen, "bg-primary-soft text-primary"],
   ["/conteudo/bpc", "Acesso ao BPC", ClipboardList, "bg-warning-soft text-warning"],
   ["/conteudo/alimentacao", "Alimentação", Utensils, "bg-coral-soft text-coral"],
@@ -53,6 +54,11 @@ function Inicio() {
     return { com: com.data ?? [], bib: bib.data ?? [], ag: ag.data ?? [], notif: notif.data ?? [], di: di.data ?? [] };
   }, [familia?.id, user?.id]);
 
+  const { data: tele } = useQuery(async () => {
+    if (!familia) return null;
+    const { data } = await db.from("consultas").select("id,inicio,status").eq("familia_id", familia.id).in("status", ["agendada", "confirmada"]).gte("fim", new Date().toISOString()).order("inicio").limit(1);
+    return data?.[0] ?? null;
+  }, [familia?.id]);
   const videos = (data?.bib ?? []).filter((b: any) => b.tipo === "video" || b.tipo === "entrevista").slice(0, 3);
   const pub = (data?.bib ?? []).slice(0, 3);
   const prox = data?.ag?.[0];
@@ -80,6 +86,14 @@ function Inicio() {
         <Card key={c.id} className="border-primary"><Chip tom="blue">Destaque</Chip><h2 className="mt-2 font-display text-lg font-bold">{c.titulo}</h2><p className="text-sm">{c.mensagem}</p></Card>
       ))}
 
+      {tele && (
+        <Link to="/consultas" className="card-soft flex items-center gap-4 border-primary p-4">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary text-white"><Video /></span>
+          <span className="flex-1"><b className="block text-navy">Sua teleconsulta</b><span className="text-sm text-muted-foreground">{fDataHora(tele.inicio)}</span></span>
+          <span className="text-sm font-semibold text-primary">Abrir</span>
+        </Link>
+      )}
+
       <form onSubmit={(e) => { e.preventDefault(); nav({ to: "/buscar", search: { q } as any }); }} role="search" className="flex items-center gap-2 rounded-full border border-border bg-card p-1.5 pl-5 shadow-card">
         <label htmlFor="busca" className="sr-only">Buscar especialistas</label>
         <input id="busca" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar especialistas perto de você" className="min-h-12 min-w-0 flex-1 bg-transparent outline-none" />
@@ -100,13 +114,13 @@ function Inicio() {
         <Card className="flex flex-col gap-3">
           <div className="flex items-center justify-between"><h2 className="font-display text-lg font-bold">Diário de hoje</h2><Link to="/diario" className="text-sm font-semibold text-primary">Abrir</Link></div>
           {(data?.di ?? []).length ? (data!.di).map((r: any) => (
-            <p key={r.id} className="text-sm"><b className="capitalize">{r.tipo}</b> · {fDataHora(r.ocorrido_em)}{r.nota ? ` · ${r.nota}` : ""}</p>
+            <p key={r.id} className="text-sm"><b className="">{r.tipo}</b> · {fDataHora(r.ocorrido_em)}{r.nota ? ` · ${r.nota}` : ""}</p>
           )) : <p className="text-sm text-muted-foreground">Nenhum registro ainda. Anote crises, sono, alimentação e conquistas.</p>}
           <Link to="/diario" className={cn(btn.base, btn.soft, "self-start")}><NotebookPen className="h-4 w-4" /> Registrar agora</Link>
         </Card>
         <Card className="flex flex-col gap-3">
           <h2 className="font-display text-lg font-bold">Próximo compromisso</h2>
-          {prox ? <p><b>{prox.titulo}</b><br /><span className="text-sm text-muted-foreground capitalize">{prox.tipo} · {fDataHora(prox.inicio)}</span></p> : <p className="text-sm text-muted-foreground">Nada agendado.</p>}
+          {prox ? <p><b>{prox.titulo}</b><br /><span className="text-sm text-muted-foreground">{prox.tipo} · {fDataHora(prox.inicio)}</span></p> : <p className="text-sm text-muted-foreground">Nada agendado.</p>}
           <Link to="/rotina" className={cn(btn.base, btn.outline, "self-start")}><CalendarDays className="h-4 w-4" /> Minha rotina</Link>
         </Card>
       </div>

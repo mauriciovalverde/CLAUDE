@@ -49,7 +49,7 @@ export const idade = (s?: string | null) => {
 export const fData = (iso: string | Date) =>
   new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
 export const fDataLonga = (iso: string | Date) =>
-  new Date(iso).toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  ((s) => s.charAt(0).toUpperCase() + s.slice(1))(new Date(iso).toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
 export const fHora = (iso: string | Date) =>
   new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 export const fDataHora = (iso: string | Date) =>
@@ -93,3 +93,13 @@ export const nomeCategoria = (k: string) => CATEGORIAS_DIRETORIO.find((c) => c[0
 
 /** Endereço completo dentro do app (funciona no Lovable e em subpasta, ex.: GitHub Pages). */
 export const urlApp = (p: string) => window.location.origin + String(import.meta.env.BASE_URL || "/").replace(/\/$/, "") + p;
+
+/** Idade por extenso: "7 anos", "1 ano", "8 meses". */
+export const idadeTxt = (s?: string | null) => {
+  if (!s) return "";
+  const a = idade(s) ?? 0;
+  if (a >= 1) return a === 1 ? "1 ano" : `${a} anos`;
+  const b = new Date(s + "T12:00:00"), n = new Date();
+  const m = Math.max(0, (n.getFullYear() - b.getFullYear()) * 12 + n.getMonth() - b.getMonth());
+  return m === 1 ? "1 mês" : `${m} meses`;
+};

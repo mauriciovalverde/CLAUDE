@@ -12,12 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ApoioRouteImport } from './routes/apoio'
+import { Route as AtendimentosRouteImport } from './routes/atendimentos'
 import { Route as AvisosRouteImport } from './routes/avisos'
 import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as BuscarRouteImport } from './routes/buscar'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as CadastroConcluidoRouteImport } from './routes/cadastro-concluido'
 import { Route as CompletarCadastroRouteImport } from './routes/completar-cadastro'
+import { Route as ConsultasRouteImport } from './routes/consultas'
 import { Route as DiarioRouteImport } from './routes/diario'
 import { Route as DocumentosRouteImport } from './routes/documentos'
 import { Route as EntrarRouteImport } from './routes/entrar'
@@ -52,6 +54,11 @@ const ApoioRoute = ApoioRouteImport.update({
   path: '/apoio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AtendimentosRoute = AtendimentosRouteImport.update({
+  id: '/atendimentos',
+  path: '/atendimentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AvisosRoute = AvisosRouteImport.update({
   id: '/avisos',
   path: '/avisos',
@@ -80,6 +87,11 @@ const CadastroConcluidoRoute = CadastroConcluidoRouteImport.update({
 const CompletarCadastroRoute = CompletarCadastroRouteImport.update({
   id: '/completar-cadastro',
   path: '/completar-cadastro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConsultasRoute = ConsultasRouteImport.update({
+  id: '/consultas',
+  path: '/consultas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DiarioRoute = DiarioRouteImport.update({
@@ -177,12 +189,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/apoio': typeof ApoioRoute
+  '/atendimentos': typeof AtendimentosRoute
   '/avisos': typeof AvisosRoute
   '/biblioteca': typeof BibliotecaRoute
   '/buscar': typeof BuscarRoute
   '/cadastro': typeof CadastroRoute
   '/cadastro-concluido': typeof CadastroConcluidoRoute
   '/completar-cadastro': typeof CompletarCadastroRoute
+  '/consultas': typeof ConsultasRoute
   '/diario': typeof DiarioRoute
   '/documentos': typeof DocumentosRoute
   '/entrar': typeof EntrarRoute
@@ -206,12 +220,14 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/apoio': typeof ApoioRoute
+  '/atendimentos': typeof AtendimentosRoute
   '/avisos': typeof AvisosRoute
   '/biblioteca': typeof BibliotecaRoute
   '/buscar': typeof BuscarRoute
   '/cadastro': typeof CadastroRoute
   '/cadastro-concluido': typeof CadastroConcluidoRoute
   '/completar-cadastro': typeof CompletarCadastroRoute
+  '/consultas': typeof ConsultasRoute
   '/diario': typeof DiarioRoute
   '/documentos': typeof DocumentosRoute
   '/entrar': typeof EntrarRoute
@@ -236,12 +252,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/apoio': typeof ApoioRoute
+  '/atendimentos': typeof AtendimentosRoute
   '/avisos': typeof AvisosRoute
   '/biblioteca': typeof BibliotecaRoute
   '/buscar': typeof BuscarRoute
   '/cadastro': typeof CadastroRoute
   '/cadastro-concluido': typeof CadastroConcluidoRoute
   '/completar-cadastro': typeof CompletarCadastroRoute
+  '/consultas': typeof ConsultasRoute
   '/diario': typeof DiarioRoute
   '/documentos': typeof DocumentosRoute
   '/entrar': typeof EntrarRoute
@@ -267,12 +285,14 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/apoio'
+    | '/atendimentos'
     | '/avisos'
     | '/biblioteca'
     | '/buscar'
     | '/cadastro'
     | '/cadastro-concluido'
     | '/completar-cadastro'
+    | '/consultas'
     | '/diario'
     | '/documentos'
     | '/entrar'
@@ -296,12 +316,14 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/apoio'
+    | '/atendimentos'
     | '/avisos'
     | '/biblioteca'
     | '/buscar'
     | '/cadastro'
     | '/cadastro-concluido'
     | '/completar-cadastro'
+    | '/consultas'
     | '/diario'
     | '/documentos'
     | '/entrar'
@@ -325,12 +347,14 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/apoio'
+    | '/atendimentos'
     | '/avisos'
     | '/biblioteca'
     | '/buscar'
     | '/cadastro'
     | '/cadastro-concluido'
     | '/completar-cadastro'
+    | '/consultas'
     | '/diario'
     | '/documentos'
     | '/entrar'
@@ -355,12 +379,14 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   ApoioRoute: typeof ApoioRoute
+  AtendimentosRoute: typeof AtendimentosRoute
   AvisosRoute: typeof AvisosRoute
   BibliotecaRoute: typeof BibliotecaRoute
   BuscarRoute: typeof BuscarRoute
   CadastroRoute: typeof CadastroRoute
   CadastroConcluidoRoute: typeof CadastroConcluidoRoute
   CompletarCadastroRoute: typeof CompletarCadastroRoute
+  ConsultasRoute: typeof ConsultasRoute
   DiarioRoute: typeof DiarioRoute
   DocumentosRoute: typeof DocumentosRoute
   EntrarRoute: typeof EntrarRoute
@@ -404,6 +430,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApoioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/atendimentos': {
+      id: '/atendimentos'
+      path: '/atendimentos'
+      fullPath: '/atendimentos'
+      preLoaderRoute: typeof AtendimentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/avisos': {
       id: '/avisos'
       path: '/avisos'
@@ -444,6 +477,13 @@ declare module '@tanstack/react-router' {
       path: '/completar-cadastro'
       fullPath: '/completar-cadastro'
       preLoaderRoute: typeof CompletarCadastroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/consultas': {
+      id: '/consultas'
+      path: '/consultas'
+      fullPath: '/consultas'
+      preLoaderRoute: typeof ConsultasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/diario': {
@@ -579,12 +619,14 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   ApoioRoute: ApoioRoute,
+  AtendimentosRoute: AtendimentosRoute,
   AvisosRoute: AvisosRoute,
   BibliotecaRoute: BibliotecaRoute,
   BuscarRoute: BuscarRoute,
   CadastroRoute: CadastroRoute,
   CadastroConcluidoRoute: CadastroConcluidoRoute,
   CompletarCadastroRoute: CompletarCadastroRoute,
+  ConsultasRoute: ConsultasRoute,
   DiarioRoute: DiarioRoute,
   DocumentosRoute: DocumentosRoute,
   EntrarRoute: EntrarRoute,

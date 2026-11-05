@@ -6,7 +6,7 @@ import { AppShell } from "@/components/app/AppShell";
 import { Btn, Campo, Card, CardLink, Chip, PageHeader, inputCls } from "@/components/app/kit";
 import { nomeExibicao, useAuth } from "@/lib/auth";
 import { db, useFilhos } from "@/lib/dados";
-import { baixarArquivo, digits, fmtTel, idade } from "@/lib/br";
+import { baixarArquivo, digits, fmtTel, idade, idadeTxt } from "@/lib/br";
 
 export const Route = createFileRoute("/perfil")({ component: () => <AppShell><Perfil /></AppShell> });
 
@@ -92,7 +92,7 @@ function Perfil() {
         <Card className="flex flex-col gap-3">
           <div className="flex items-center justify-between"><h2 className="font-display text-lg font-bold">Minha família</h2><Link to="/completar-cadastro" className="inline-flex items-center gap-1 text-sm font-semibold text-primary"><Pencil className="h-4 w-4" /> Editar cadastro</Link></div>
           <p className="text-sm"><b>{familia.mae_nome}</b>{familia.cidade ? ` · ${familia.cidade}/${familia.uf}` : ""}</p>
-          <ul className="flex flex-col gap-1 text-sm">{(filhos ?? []).map((f) => <li key={f.id}>👶 {f.nome}{f.nascimento ? ` · ${idade(f.nascimento)}` : ""}</li>)}</ul>
+          <ul className="flex flex-col gap-1 text-sm">{(filhos ?? []).map((f) => <li key={f.id}>👶 {f.nome}{f.nascimento ? ` · ${idadeTxt(f.nascimento)}` : ""}</li>)}</ul>
         </Card>
       ) : !isStaff && <CardLink to="/completar-cadastro" icon={Pencil} title="Completar cadastro da família" subtitle="Necessário para usar o diário e a rotina" />}
 
@@ -108,6 +108,7 @@ function Perfil() {
       </Card>
 
       <div className="flex flex-col gap-2">
+        <CardLink to="/atendimentos" icon={BriefcaseMedical} tom="blue" title="Sou psicólogo(a)" subtitle="Atenda famílias por teleconsulta pelo app" />
         <CardLink to="/sou-profissional" icon={BriefcaseMedical} tom="green" title="Sou profissional" subtitle="Cadastre seu perfil no diretório de especialistas" />
         <CardLink to="/privacidade" icon={ShieldCheck} tom="navy" title="Privacidade e LGPD" subtitle="Como seus dados são usados e protegidos" />
         <CardLink to="/termos" icon={FileText} tom="navy" title="Termos de uso" />

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { BookOpen, CalendarHeart, ClipboardCheck, FileClock, LayoutDashboard, MapPin, Megaphone, Settings, Star, Users } from "lucide-react";
+import { BookOpen, CalendarHeart, Video, ClipboardCheck, FileClock, LayoutDashboard, MapPin, Megaphone, Settings, Star, Users } from "lucide-react";
 import { AppShell } from "@/components/app/AppShell";
 import { Carregando, PageHeader, Vazio } from "@/components/app/kit";
 import { useAuth } from "@/lib/auth";
@@ -13,11 +13,13 @@ import { Conteudos } from "@/components/admin/Conteudos";
 import { DiretorioAdmin } from "@/components/admin/DiretorioAdmin";
 import { HistoriasAdmin, EncontrosAdmin } from "@/components/admin/Moderacao";
 import { Usuarios, Configuracoes, Logs } from "@/components/admin/Sistema";
+import { Teleconsultas } from "@/components/admin/Teleconsultas";
 
 const ABAS = [
   { k: "painel", l: "Painel", I: LayoutDashboard, admin: false },
   { k: "cadastros", l: "Cadastros", I: ClipboardCheck, admin: false },
   { k: "comunicados", l: "Disparos", I: Megaphone, admin: false },
+  { k: "teleconsultas", l: "Teleconsultas", I: Video, admin: false },
   { k: "diretorio", l: "Diretório", I: MapPin, admin: false },
   { k: "historias", l: "Histórias", I: Star, admin: false },
   { k: "encontros", l: "Encontros", I: CalendarHeart, admin: true },
@@ -56,6 +58,7 @@ function Admin() {
       {atual === "painel" && <Painel />}
       {atual === "cadastros" && <Cadastros />}
       {atual === "comunicados" && <Comunicados />}
+      {atual === "teleconsultas" && <Teleconsultas />}
       {atual === "diretorio" && <DiretorioAdmin />}
       {atual === "historias" && <HistoriasAdmin />}
       {atual === "encontros" && <EncontrosAdmin />}
