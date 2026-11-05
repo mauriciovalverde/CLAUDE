@@ -4,7 +4,7 @@ import { BarChart3, Camera, Copy, FileText, Link2, Mail, NotebookPen, Plus, Shar
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app/AppShell";
-import { Aviso, Btn, Campo, Card, Carregando, Chip, Opcoes, PageHeader, Vazio, btn, inputCls, textareaCls } from "@/components/app/kit";
+import { Aviso, Btn, Campo, Card, Carregando, Chip, Modal, Opcoes, PageHeader, Vazio, btn, inputCls, textareaCls } from "@/components/app/kit";
 import { useAuth, nomeExibicao } from "@/lib/auth";
 import { db, useFilhos, useQuery } from "@/lib/dados";
 import { ESTRATEGIAS, GATILHOS, HUMORES, SENTIDOS, TIPOS_DIARIO, tipoInfo, urlFoto, useFamiliaDiario, type Registro } from "@/lib/diario";
@@ -144,11 +144,8 @@ function NovoRegistro({ tipo, familiaId, filhoId, filhos, onFechar, onSalvo }: {
   }
 
   return (
-    <Card className="flex flex-col gap-4 border-primary">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-xl font-bold"><span aria-hidden="true">{t.emoji}</span> {t.l}</h2>
-        <button onClick={onFechar} className="tap grid place-items-center rounded-full" aria-label="Fechar"><X /></button>
-      </div>
+    <Modal titulo={<><span aria-hidden="true">{t.emoji}</span> {t.l}</>} onFechar={onFechar}>
+    <div className="flex flex-col gap-4">
       <div className="grid gap-3 sm:grid-cols-2">
         {filhos.length > 1 && (
           <Campo id="r-filho" label="Para quem" obrigatorio>
@@ -196,7 +193,8 @@ function NovoRegistro({ tipo, familiaId, filhoId, filhos, onFechar, onSalvo }: {
         <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => setFoto(e.target.files?.[0] ?? null)} />
       </label>
       <div className="flex gap-2"><Btn onClick={salvar} disabled={salvando}>{salvando ? "Salvando…" : "Salvar registro"}</Btn><Btn v="ghost" onClick={onFechar}>Cancelar</Btn></div>
-    </Card>
+    </div>
+    </Modal>
   );
 }
 

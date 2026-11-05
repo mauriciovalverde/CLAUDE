@@ -7,7 +7,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import { Logo } from "./kit";
+import { Btn, Logo, Modal } from "./kit";
 import { ocorrencias, type Ev } from "@/lib/agenda";
 
 const db = supabase as any;
@@ -103,6 +103,31 @@ function useLembretes(familiaId?: string) {
   }, [familiaId]);
 }
 
+/** Comunicado novo da equipe aparece em janela ao abrir o app; fechar marca como lido. */
+function AvisoPopup({ uid }: { uid?: string }) {
+  const [n, setN] = useState<{ id: string; titulo: string; mensagem: string; created_at: string } | null>(null);
+  const path = useRouterState({ select: (s) => s.location.pathname });
+  const navegar = useNavigate();
+  useEffect(() => {
+    if (!uid || path === "/avisos") return;
+    db.from("notificacoes").select("id,titulo,mensagem,created_at").eq("user_id", uid).eq("lida", false).eq("categoria", "comunicados")
+      .order("created_at", { ascending: false }).limit(1).then(({ data }: any) => setN(data?.[0] ?? null));
+  }, [uid, path]);
+  if (!n) return null;
+  const fechar = async () => { const id = n.id; setN(null); await db.from("notificacoes").update({ lida: true }).eq("id", id); };
+  return (
+    <Modal titulo={<span className="flex items-center gap-2"><Bell className="h-5 w-5 text-primary" /> Aviso do Centro</span>} onFechar={fechar}>
+      <h2 className="font-display text-2xl font-extrabold">{n.titulo}</h2>
+      <p className="mt-2 whitespace-pre-line leading-relaxed">{n.mensagem}</p>
+      <p className="mt-3 text-xs text-muted-foreground">{new Date(n.created_at).toLocaleString("pt-BR", { dateStyle: "long", timeStyle: "short" })}</p>
+      <div className="mt-5 flex flex-wrap gap-2">
+        <Btn onClick={fechar}>Entendi</Btn>
+        <Btn v="ghost" onClick={async () => { await fechar(); navegar({ to: "/avisos" }); }}>Ver todos os avisos</Btn>
+      </div>
+    </Modal>
+  );
+}
+
 export function TopBar({ publico = false }: { publico?: boolean }) {
   const { user, isStaff } = useAuth();
   const fs = useFontScale();
@@ -191,6 +216,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
       <div className="min-w-0">
         <TopBar />
+        <AvisoPopup uid={user.id} />
         <main id="conteudo" className="mx-auto max-w-4xl px-4 pb-28 pt-5 lg:pb-12">{children}</main>
         <footer className="no-print mx-auto max-w-4xl px-4 pb-28 text-center text-xs text-muted-foreground lg:pb-8">
           Este aplicativo oferece informação e apoio e não substitui atendimento médico, psicológico ou de emergência.

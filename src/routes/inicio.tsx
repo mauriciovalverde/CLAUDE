@@ -1,11 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import {
-  AlertTriangle, Baby, BookOpen, CalendarDays, ClipboardList, Clock, FileText, HandHeart, Heart, MapPin,
+  AlertTriangle, Baby, Bell, BookOpen, CalendarDays, ClipboardList, Clock, FileText, HandHeart, Heart, MapPin,
   LayoutDashboard, MessageCircle, NotebookPen, PlayCircle, Puzzle, Scale, Search, Star, Utensils, Video,
 } from "lucide-react";
 import { AppShell } from "@/components/app/AppShell";
-import { Card, Chip, btn } from "@/components/app/kit";
+import { Card, Chip, Modal, btn } from "@/components/app/kit";
 import { g, generoDe, nomeExibicao, useAuth } from "@/lib/auth";
 import { db, useConfig, useQuery } from "@/lib/dados";
 import { MSG_CONFIRMACAO_PADRAO, WHATSAPP_PADRAO, fDataHora, waLink } from "@/lib/br";
@@ -40,6 +40,7 @@ function Inicio() {
   const nav = useNavigate();
   const cfg = useConfig();
   const [q, setQ] = useState("");
+  const [aberto, setAberto] = useState<any | null>(null);
   const gen = generoDe(perfil, familia);
   const msg = MENSAGENS[new Date().getDate() % MENSAGENS.length];
 
@@ -91,8 +92,19 @@ function Inicio() {
       {!familia && <Card className="flex flex-wrap items-center gap-3"><Baby className="h-6 w-6 text-primary" /><span className="flex-1">Complete o cadastro da sua família para usar o diário e a rotina.</span><Link to="/completar-cadastro" className={cn(btn.base, btn.primary)}>Completar cadastro</Link></Card>}
 
       {(data?.com ?? []).map((c: any) => (
-        <Card key={c.id} className="border-primary"><Chip tom="blue">Destaque</Chip><h2 className="mt-2 font-display text-lg font-bold">{c.titulo}</h2><p className="text-sm">{c.mensagem}</p></Card>
+        <button key={c.id} onClick={() => setAberto(c)} className="card-soft flex items-start gap-3 border-primary p-4 text-left">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary"><Bell className="h-5 w-5" /></span>
+          <span className="min-w-0 flex-1"><b className="block text-navy">{c.titulo}</b><span className="line-clamp-2 text-sm text-muted-foreground">{c.mensagem}</span></span>
+          <span className="text-sm font-semibold text-primary">Ler</span>
+        </button>
       ))}
+      {aberto && (
+        <Modal titulo="Aviso do Centro" onFechar={() => setAberto(null)}>
+          <h2 className="font-display text-2xl font-extrabold">{aberto.titulo}</h2>
+          <p className="mt-2 whitespace-pre-line leading-relaxed">{aberto.mensagem}</p>
+          <p className="mt-3 text-xs text-muted-foreground">{fDataHora(aberto.created_at)}</p>
+        </Modal>
+      )}
 
       {tele && (
         <Link to="/consultas" className="card-soft flex items-center gap-4 border-primary p-4">

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { CalendarClock, Download, Megaphone, Send, Users } from "lucide-react";
+import { CalendarClock, Download, Megaphone, Pencil, Send, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Aviso, Btn, Campo, Card, Chip, inputCls, textareaCls } from "@/components/app/kit";
+import { Aviso, Btn, Campo, Card, Chip, Modal, inputCls, textareaCls } from "@/components/app/kit";
 import { useAuth } from "@/lib/auth";
 import { db, useQuery } from "@/lib/dados";
 import { DIAGNOSTICOS, baixarArquivo, csv, digits, fDataHora, fmtTel } from "@/lib/br";
@@ -49,6 +49,24 @@ export function Comunicados() {
     recarregar();
   }
 
+  const [editando, setEditando] = useState<{ id: string; titulo: string; mensagem: string; destaque: boolean } | null>(null);
+  async function salvarEdicao() {
+    if (!editando || editando.titulo.trim().length < 3 || editando.mensagem.trim().length < 5) return toast.error("Preencha título e mensagem.");
+    const { error } = await db.rpc("editar_comunicado", { _id: editando.id, _titulo: editando.titulo.trim(), _mensagem: editando.mensagem.trim(), _destaque: editando.destaque });
+    if (error) return toast.error(error.message);
+    toast.success("Comunicado atualizado."); setEditando(null); recarregar();
+  }
+  async function alternarDestaque(c: any) {
+    const { error } = await db.rpc("editar_comunicado", { _id: c.id, _titulo: c.titulo, _mensagem: c.mensagem, _destaque: !c.destaque });
+    error ? toast.error(error.message) : recarregar();
+  }
+  async function apagar(c: any) {
+    if (!confirm(`Apagar "${c.titulo}"? Ele some do app de todas as famílias.`)) return;
+    const { error } = await db.rpc("apagar_comunicado", { _id: c.id });
+    if (error) return toast.error(error.message);
+    toast.success("Comunicado apagado."); recarregar();
+  }
+
   async function exportarContatos() {
     let q = db.from("familias").select("mae_nome,mae_telefone,cidade,uf,status");
     if (f.publico === "pendentes") q = q.eq("status", "pendente"); else q = q.eq("status", "aprovado");
@@ -86,10 +104,26 @@ export function Comunicados() {
       {(hist ?? []).map((c) => (
         <Card key={c.id} className="flex flex-col gap-1 p-4">
           <div className="flex flex-wrap items-center gap-2"><b>{c.titulo}</b>{c.enviado ? <Chip tom="green">Enviado · {c.destinatarios}</Chip> : <Chip tom="amber">Agendado · {c.agendado_para ? fDataHora(c.agendado_para) : "—"}</Chip>}{c.destaque && <Chip tom="blue">Destaque</Chip>}</div>
-          <p className="text-sm">{c.mensagem}</p>
+          <p className="whitespace-pre-line text-sm">{c.mensagem}</p>
           <p className="text-xs text-muted-foreground">{PUBLICOS.find((p) => p[0] === c.publico)?.[1]}{c.filtro ? `: ${c.filtro}` : ""} · {fDataHora(c.created_at)}</p>
+          <div className="mt-1 flex flex-wrap gap-2">
+            <Btn v="soft" className="min-h-10" onClick={() => setEditando({ id: c.id, titulo: c.titulo, mensagem: c.mensagem, destaque: !!c.destaque })}><Pencil className="h-4 w-4" /> Editar</Btn>
+            <Btn v="soft" className="min-h-10" onClick={() => alternarDestaque(c)}>{c.destaque ? "Tirar do Início" : "Fixar no Início"}</Btn>
+            <Btn v="ghost" className="min-h-10 text-emergency" onClick={() => apagar(c)}><Trash2 className="h-4 w-4" /> Apagar</Btn>
+          </div>
         </Card>
       ))}
+      {editando && (
+        <Modal titulo="Editar comunicado" onFechar={() => setEditando(null)}>
+          <div className="flex flex-col gap-3">
+            <Campo id="ed-t" label="Título" obrigatorio><input id="ed-t" className={inputCls} maxLength={90} value={editando.titulo} onChange={(e) => setEditando({ ...editando, titulo: e.target.value })} /></Campo>
+            <Campo id="ed-m" label="Mensagem" obrigatorio><textarea id="ed-m" className={textareaCls} maxLength={600} value={editando.mensagem} onChange={(e) => setEditando({ ...editando, mensagem: e.target.value })} /></Campo>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-5 w-5" checked={editando.destaque} onChange={(e) => setEditando({ ...editando, destaque: e.target.checked })} /> Mostrar como destaque no Início</label>
+            <p className="text-xs text-muted-foreground">A alteração também atualiza o aviso que já chegou para as famílias.</p>
+            <div className="flex gap-2"><Btn onClick={salvarEdicao}>Salvar</Btn><Btn v="ghost" onClick={() => setEditando(null)}>Cancelar</Btn></div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

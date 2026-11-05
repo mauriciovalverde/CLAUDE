@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, BadgeCheck, Info, type LucideIcon } from "lucide-react";
-import type { ComponentProps, ReactNode } from "react";
+import { ArrowRight, BadgeCheck, Info, X, type LucideIcon } from "lucide-react";
+import { useEffect, type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export function Logo({ compact = false }: { compact?: boolean }) {
@@ -145,6 +145,27 @@ export function Carregando() {
   return (
     <div className="flex flex-col gap-3" aria-busy="true" aria-label="Carregando">
       {[0, 1, 2].map((i) => <div key={i} className="h-20 animate-pulse rounded-2xl bg-muted" />)}
+    </div>
+  );
+}
+
+/** Janela sobreposta: folha de baixo no celular, caixa central no computador. Fecha com X, Esc ou toque fora. */
+export function Modal({ titulo, onFechar, children, largura = "max-w-xl" }: { titulo: ReactNode; onFechar: () => void; children: ReactNode; largura?: string }) {
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && onFechar();
+    window.addEventListener("keydown", esc);
+    const o = document.body.style.overflow; document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", esc); document.body.style.overflow = o; };
+  }, [onFechar]);
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4" onClick={onFechar} role="dialog" aria-modal="true">
+      <div className={cn("flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl bg-card shadow-2xl sm:rounded-3xl", largura)} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-3 border-b border-border px-5 py-3">
+          <div className="min-w-0 flex-1 font-display text-xl font-bold text-navy">{titulo}</div>
+          <button onClick={onFechar} className="tap grid min-w-12 place-items-center rounded-full bg-muted" aria-label="Fechar"><X className="h-5 w-5" /></button>
+        </div>
+        <div className="overflow-y-auto p-5" style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }}>{children}</div>
+      </div>
     </div>
   );
 }

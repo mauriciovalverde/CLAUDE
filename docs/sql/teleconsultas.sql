@@ -238,3 +238,7 @@ alter table public.agenda add constraint agenda_repeticao_check check (repeticao
 alter table public.agenda drop constraint if exists agenda_tipo_check;
 alter table public.agenda add constraint agenda_tipo_check check (tipo in ('consulta','terapia','escola','medicamento','medicacao','exame','beneficio','lazer','outro'));
 alter table public.perfis add column if not exists genero text check (genero in ('f','m','n'));
+
+-- Comunicados editáveis/apagáveis pela equipe, refletindo nos avisos já entregues
+alter table public.notificacoes add column if not exists comunicado_id uuid references public.comunicados(id) on delete cascade;
+-- funções editar_comunicado(uuid,text,text,boolean) e apagar_comunicado(uuid) aplicadas no banco (security definer, só equipe)
