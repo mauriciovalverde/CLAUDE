@@ -4,7 +4,7 @@ App e site para mães e famílias de crianças atípicas: orientações, BPC, di
 (no estilo Nello), busca de especialistas com mapa, rotina com lembretes, rede de apoio no WhatsApp
 e painel administrativo com aprovação de cadastros e disparos.
 
-- **Publicado em:** https://mauriciovalverde.github.io/claude/
+- **Publicado em:** https://mauriciovalverde.github.io/CLAUDE/
 - **Backend:** Lovable Cloud (Supabase) do projeto "Acolhe Família Atípica", com RLS em todas as tabelas.
 - **Administrador:** quem se cadastrar com `perifest@gmail.com` recebe o papel de admin automaticamente.
 
