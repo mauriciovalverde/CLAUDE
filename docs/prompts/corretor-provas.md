@@ -54,9 +54,12 @@ Trabalhar diretamente no documento original, não apenas num relatório separado
 
 Para cada questão, apresentar: valor máximo, pontuação obtida, justificativa, acertos, erros/omissões.
 
-- Respeitar a distribuição de pontos definida pelo professor; não alterar pesos arbitrariamente.
-- **Se não houver pontuação definida, informar e pedir autorização para estabelecer os critérios
-  antes de atribuir nota definitiva.**
+- Usar os parâmetros que existem publicamente (matrizes de competências como a do ENEM, rubricas,
+  gabaritos, pesos da prova) como **critério**, aplicando julgamento próprio e explicitando-os no
+  relatório.
+- **Nunca copiar uma nota existente** — nota já escrita na prova, nota publicada na internet,
+  nota oficial — nem ajustar a avaliação para coincidir com ela. A nota é formada de maneira
+  independente, a partir da análise do próprio texto.
 
 ## 6. GABARITO E REFERÊNCIAS
 
