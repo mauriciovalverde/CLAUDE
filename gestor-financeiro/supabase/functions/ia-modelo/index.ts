@@ -13,6 +13,17 @@ const OLLAMA_CLOUD = 'https://ollama.com';
 type Msg = { role: string; content?: string; tool_calls?: { id: string; name: string; arguments: any }[]; tool_call_id?: string; name?: string };
 type Ferr = { name: string; description: string; parameters: unknown };
 
+// /api/tags é público (responde até com chave falsa); quem valida a chave de verdade é POST /api/me.
+async function validarChave(chave: string) {
+  const r = await fetch(`${OLLAMA_CLOUD}/api/me`, { method: 'POST', headers: { Authorization: `Bearer ${chave}` } });
+  return { ok: r.ok, status: r.status };
+}
+async function listarModelos() {
+  const t = await fetch(`${OLLAMA_CLOUD}/api/tags`);
+  const d = await t.json().catch(() => ({}));
+  return (d.models ?? []).map((m: any) => m.name ?? m.model) as string[];
+}
+
 async function chaveOllama(userId: string) {
   const { data } = await admin().from('chaves_ia').select('chave_cifrada').eq('user_id', userId).eq('provedor', 'ollama_cloud').maybeSingle();
   return data ? decifrar(data.chave_cifrada) : null;
@@ -73,11 +84,10 @@ Deno.serve(async (req) => {
     if (b.acao === 'salvar_chave') {
       const chave = String(b.chave ?? '').trim();
       if (chave.length < 10) return json({ ok: false, mensagem: 'Essa chave parece incompleta. Copie de novo em ollama.com → Settings → Keys.' });
-      const t = await fetch(`${OLLAMA_CLOUD}/api/tags`, { headers: { Authorization: `Bearer ${chave}` } });
-      if (t.status === 401 || t.status === 403) return json({ ok: false, mensagem: 'O Ollama recusou essa chave. Confira se copiou a chave inteira.' });
+      const v = await validarChave(chave);
+      if (!v.ok) return json({ ok: false, mensagem: v.status === 401 || v.status === 403 ? 'O Ollama recusou essa chave. Confira se copiou a chave inteira.' : `Não consegui validar a chave agora (Ollama ${v.status}). Tente de novo em instantes.` });
       await admin().from('chaves_ia').upsert({ user_id: user.id, provedor: 'ollama_cloud', chave_cifrada: await cifrar(chave), atualizado_em: new Date().toISOString() });
-      const d = await t.json().catch(() => ({}));
-      return json({ ok: true, modelos: (d.models ?? []).map((m: any) => m.name ?? m.model) });
+      return json({ ok: true, modelos: await listarModelos() });
     }
     if (b.acao === 'remover_chave') {
       await admin().from('chaves_ia').delete().eq('user_id', user.id).eq('provedor', b.provedor ?? 'ollama_cloud');
@@ -87,9 +97,8 @@ Deno.serve(async (req) => {
       if (b.provedor === 'claude') return json({ ok: !!Deno.env.get('ANTHROPIC_API_KEY'), modelos: ['claude-sonnet-5-5', 'claude-haiku-5-5', 'claude-opus-5-5'], mensagem: Deno.env.get('ANTHROPIC_API_KEY') ? 'Claude disponível.' : 'Claude não ativado no servidor.' });
       const chave = await chaveOllama(user.id);
       if (!chave) return json({ ok: false, mensagem: 'Nenhuma chave do Ollama salva ainda.' });
-      const t = await fetch(`${OLLAMA_CLOUD}/api/tags`, { headers: { Authorization: `Bearer ${chave}` } });
-      const d = await t.json().catch(() => ({}));
-      return json({ ok: t.ok, modelos: (d.models ?? []).map((m: any) => m.name ?? m.model), mensagem: t.ok ? 'Conectado ao Ollama Cloud.' : `Ollama respondeu ${t.status}.` });
+      const v = await validarChave(chave);
+      return json({ ok: v.ok, modelos: v.ok ? await listarModelos() : [], mensagem: v.ok ? 'Conectado ao Ollama Cloud.' : 'A chave salva não é mais aceita pelo Ollama. Gere uma nova e salve de novo.' });
     }
     if (b.acao === 'chat') {
       if (b.provedor === 'claude') return json({ ok: true, mensagem: await chatClaude(b.modelo, b.mensagens, b.ferramentas) });
