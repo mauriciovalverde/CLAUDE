@@ -16,6 +16,13 @@ export async function abrirExterno(url: string) {
 /** Salva/compartilha um arquivo. No celular abre a tela de compartilhar (WhatsApp, Drive, e-mail...). */
 export async function salvarArquivo(nome: string, base64: string, mime: string) {
   if (!ehNativo()) {
+    // iPhone/Android pelo navegador: abre a tela de compartilhar do sistema (WhatsApp, Arquivos, e-mail...)
+    try {
+      const bin = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+      const arq = new File([bin], nome, { type: mime });
+      const nav = navigator as any;
+      if (nav.canShare?.({ files: [arq] }) && /iPhone|iPad|Android/.test(navigator.userAgent)) { await nav.share({ files: [arq], title: nome }); return; }
+    } catch (e: any) { if (e?.name === 'AbortError') return; }
     const a = document.createElement('a');
     a.href = `data:${mime};base64,${base64}`; a.download = nome; a.click();
     return;

@@ -30,7 +30,7 @@ export default function Entrada() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-teal-50 p-4 dark:from-slate-950 dark:to-slate-900">
-      <div className="w-full max-w-sm text-center">
+      <div className="w-full max-w-sm pb-40 text-center sm:pb-0">
         <img src="./icone.svg" className="mx-auto mb-3 h-16 w-16" alt="" />
         <h1 className="text-2xl font-bold">Gestor Financeiro</h1>
         <p className="mb-6 text-sm text-slate-500">Suas vendas, contas e empréstimos com ajuda de IA</p>
