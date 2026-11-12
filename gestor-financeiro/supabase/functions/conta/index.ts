@@ -38,6 +38,21 @@ Deno.serve(async (req) => {
       return json({ ok: true, codigo });
     }
 
+    if (b.acao === 'dispositivo') {
+      // Acesso automático do celular: sem cadastro. O app gera a senha e guarda junto com o e-mail interno.
+      if (String(b.senha ?? '').length < 24) return json({ ok: false, mensagem: 'senha do dispositivo inválida' });
+      const umaHora = new Date(Date.now() - 3600_000).toISOString();
+      const { count: doIp } = await db.from('cadastros_log').select('id', { count: 'exact', head: true }).eq('ip', ip).gte('criado_em', umaHora);
+      const { count: total } = await db.from('cadastros_log').select('id', { count: 'exact', head: true }).gte('criado_em', umaHora);
+      if ((doIp ?? 0) >= 10 || (total ?? 0) >= 300) return json({ ok: false, mensagem: 'Muitos acessos novos agora. Tente de novo daqui a pouco.' });
+      const id = [...crypto.getRandomValues(new Uint8Array(9))].map((x) => ALF[x % ALF.length]).join('').toLowerCase();
+      const emailDisp = `celular-${id}@gestorfinanceiro.app`;
+      const { error } = await db.auth.admin.createUser({ email: emailDisp, password: b.senha, email_confirm: true, user_metadata: { tipo: 'dispositivo' } });
+      if (error) return json({ ok: false, mensagem: 'Não foi possível preparar o app: ' + error.message });
+      await db.from('cadastros_log').insert({ ip, email: emailDisp });
+      return json({ ok: true, email: emailDisp });
+    }
+
     if (b.acao === 'recuperar') {
       const generico = { ok: false, mensagem: 'E-mail ou código de recuperação incorretos.' };
       if (String(b.nova_senha ?? '').length < 8) return json({ ok: false, mensagem: 'A nova senha precisa ter pelo menos 8 caracteres.' });

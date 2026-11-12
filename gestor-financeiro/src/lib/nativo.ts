@@ -32,3 +32,6 @@ export async function aoVoltarAoApp(fn: () => void) {
   const { App } = await import('@capacitor/app');
   App.addListener('resume', fn);
 }
+
+/** Salva/compartilha um texto (UTF-8). */
+export const salvarTexto = (nome: string, texto: string) => salvarArquivo(nome, btoa(unescape(encodeURIComponent(texto))), 'text/plain');

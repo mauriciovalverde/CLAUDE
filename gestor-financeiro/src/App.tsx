@@ -5,7 +5,7 @@ import { supabase, sincronizarAgenda } from './lib/supabase';
 import { PeriodoProvider } from './lib/periodo';
 import { Toasts } from './components/ui';
 import Layout from './components/Layout';
-import Login from './pages/Login';
+import Entrada from './pages/Entrada';
 import Onboarding from './components/Onboarding';
 import { aoVoltarAoApp } from './lib/nativo';
 import { avisarMudanca } from './components/ui';
@@ -73,7 +73,7 @@ export default function App() {
       <p className="mt-2 text-slate-600">{rota.params.get('google') === 'conectado' ? 'Pode fechar esta página e voltar para o aplicativo Gestor Financeiro.' : 'Volte ao aplicativo e tente de novo em Configurações.'}</p></div></div>
   );
   if (sessao === undefined) return <div className="flex h-screen items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-teal-700" /></div>;
-  if (!sessao) return <><Toasts /><Login /></>;
+  if (!sessao) return <><Toasts /><Entrada /></>;
 
   const Pagina = paginas[rota.pagina] ?? paginas.chat;
   return (
