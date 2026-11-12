@@ -1,0 +1,284 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+import * as THREE from 'three';
+import { Sky } from 'three/addons/objects/Sky.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+const q = new URLSearchParams(location.search);
+const VIEW = q.get('view') || 'aerial';
+const Wd = +(q.get('w') || 1600), Ht = +(q.get('h') || 1000);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(Wd, Ht);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.55;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xb9d3e8, 90, 340);
+const camera = new THREE.PerspectiveCamera(VIEW === 'aerial' ? 50 : 50, Wd / Ht, 0.1, 2000);
+
+// ---------- sky + environment ----------
+const sky = new Sky(); sky.scale.setScalar(10000);
+const su = sky.material.uniforms;
+su.turbidity.value = 2.2; su.rayleigh.value = 2.8; su.mieCoefficient.value = 0.004; su.mieDirectionalG.value = 0.8;
+const sun = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(38), THREE.MathUtils.degToRad(150));
+su.sunPosition.value.copy(sun);
+scene.add(sky);
+const pm = new THREE.PMREMGenerator(renderer);
+const envScene = new THREE.Scene(); const sky2 = sky.clone(); envScene.add(sky2);
+scene.environment = pm.fromScene(envScene).texture;
+
+const sunL = new THREE.DirectionalLight(0xfff1dd, 3.2);
+sunL.position.copy(sun).multiplyScalar(60);
+sunL.castShadow = true;
+sunL.shadow.mapSize.set(4096, 4096);
+const sc = sunL.shadow.camera; sc.left = -30; sc.right = 30; sc.top = 30; sc.bottom = -30; sc.near = 1; sc.far = 200;
+sunL.shadow.bias = -0.0004; sunL.shadow.normalBias = 0.02;
+scene.add(sunL);
+scene.add(new THREE.HemisphereLight(0xcfe6ff, 0x5b6b3a, 0.5));
+
+// ---------- procedural textures ----------
+function rnd(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+function canvasTex(w, h, draw, rep = [1, 1], srgb = true) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(...rep);
+  t.anisotropy = 8; if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const grassTex = (rep) => canvasTex(512, 512, (g, w, h) => {
+  g.fillStyle = '#4c7426'; g.fillRect(0, 0, w, h); const r = rnd(7);
+  for (let i = 0; i < 60; i++) { g.fillStyle = `rgba(${r() < .5 ? '120,130,50' : '40,80,25'},${0.04 + r() * 0.05})`; g.beginPath(); g.arc(r() * w, r() * h, 20 + r() * 70, 0, 7); g.fill(); }
+  for (let i = 0; i < 40000; i++) { const v = r(); g.fillStyle = `rgba(${55 + v * 80|0},${95 + v * 70|0},${25 + v * 30|0},0.8)`; g.fillRect(r() * w, r() * h, 1, 2.5); }
+}, rep);
+const woodTex = (rep) => canvasTex(1024, 1024, (g, w, h) => {
+  const r = rnd(3), n = 16, pw = w / n;
+  for (let i = 0; i < n; i++) {
+    const v = r(); g.fillStyle = `rgb(${150 + v * 30|0},${92 + v * 20|0},${55 + v * 12|0})`; g.fillRect(i * pw, 0, pw, h);
+    for (let k = 0; k < 40; k++) { g.strokeStyle = `rgba(80,45,20,${0.08 + r() * 0.1})`; g.beginPath(); const x = i * pw + r() * pw; g.moveTo(x, 0); g.bezierCurveTo(x + 4, h / 3, x - 4, 2 * h / 3, x, h); g.stroke(); }
+    g.fillStyle = 'rgba(40,22,10,0.8)'; g.fillRect(i * pw, 0, 3, h);
+    const cut = r() * h; g.fillRect(i * pw, cut, pw, 2);
+  }
+}, rep);
+const stoneTex = (rep, dark) => canvasTex(1024, 512, (g, w, h) => {
+  const r = rnd(dark ? 11 : 5); g.fillStyle = dark ? '#1d2224' : '#6b6152'; g.fillRect(0, 0, w, h);
+  let y = 0;
+  while (y < h) {
+    const ch = 14 + r() * 26; let x = -r() * 60;
+    while (x < w) {
+      const cw = 60 + r() * 160, v = r();
+      g.fillStyle = dark ? `rgb(${30 + v * 26|0},${34 + v * 26|0},${36 + v * 24|0})` : `rgb(${170 + v * 50|0},${150 + v * 40|0},${118 + v * 34|0})`;
+      g.fillRect(x + 2, y + 2, cw - 4, ch - 4); x += cw;
+    }
+    y += ch;
+  }
+}, rep);
+const travTex = (rep) => canvasTex(512, 512, (g, w, h) => {
+  const r = rnd(9);
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) {
+    const v = r(); g.fillStyle = `rgb(${222 + v * 18|0},${214 + v * 16|0},${196 + v * 14|0})`; g.fillRect(i * 128 + 1, j * 256 + 1, 126, 254);
+    for (let k = 0; k < 120; k++) { g.fillStyle = `rgba(160,140,110,${r() * 0.15})`; g.fillRect(i * 128 + r() * 126, j * 256 + r() * 254, 1 + r() * 8, 1); }
+  }
+}, rep);
+const tileTex = (rep) => canvasTex(512, 512, (g, w, h) => {
+  const r = rnd(4); const n = 16, s = w / n;
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const v = r(); g.fillStyle = `rgb(${70 + v * 25|0},${150 + v * 25|0},${175 + v * 20|0})`; g.fillRect(i * s, j * s, s - 1, s - 1); }
+}, rep);
+const waterNormal = canvasTex(512, 512, (g, w, h) => {
+  const img = g.createImageData(w, h); const r = rnd(21);
+  const waves = Array.from({ length: 14 }, () => [r() * 6.28, (r() - .5) * 0.18, (r() - .5) * 0.18, r() * 0.6 + 0.2]);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    let dx = 0, dy = 0;
+    for (const [p, kx, ky, a] of waves) { const c = Math.cos(x * kx * 2 * Math.PI / 6.4 * 2 + y * ky * 2 * Math.PI / 6.4 * 2 + p) * a; dx += c * kx; dy += c * ky; }
+    const i = (y * w + x) * 4; img.data[i] = 128 + dx * 220; img.data[i + 1] = 128 + dy * 220; img.data[i + 2] = 255; img.data[i + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+}, [3, 2], false);
+const curtainTex = canvasTex(1024, 256, (g, w, h) => {
+  const r = rnd(33); g.fillStyle = 'rgba(255,255,255,0)'; g.clearRect(0, 0, w, h);
+  for (let i = 0; i < 900; i++) { const x = r() * w, a = 0.05 + r() * 0.25; const grd = g.createLinearGradient(0, 0, 0, h); grd.addColorStop(0, `rgba(230,250,255,${a})`); grd.addColorStop(1, `rgba(230,250,255,${a * 0.2})`); g.fillStyle = grd; g.fillRect(x, 0, 0.6 + r() * 1.8, h); }
+}, [4, 1]);
+
+const M = {
+  grass: new THREE.MeshStandardMaterial({ map: grassTex([90, 45]), roughness: 1 }),
+  grassB: new THREE.MeshStandardMaterial({ map: grassTex([6, 2]), roughness: 1 }),
+  wood: new THREE.MeshStandardMaterial({ map: woodTex([1.5, 1.5]), roughness: 0.75 }),
+  dark: new THREE.MeshStandardMaterial({ map: stoneTex([3, 1], true), roughness: 0.35, metalness: 0.1 }),
+  ledge: new THREE.MeshStandardMaterial({ map: stoneTex([2, 1], false), roughness: 0.9 }),
+  trav: new THREE.MeshStandardMaterial({ map: travTex([4, 1]), roughness: 0.6 }),
+  tile: new THREE.MeshStandardMaterial({ map: tileTex([5, 2]), roughness: 0.4 }),
+  white: new THREE.MeshStandardMaterial({ color: 0xf2f0ea, roughness: 0.6 }),
+  frame: new THREE.MeshStandardMaterial({ color: 0x8a8f94, roughness: 0.4, metalness: 0.6 }),
+  canopy: new THREE.MeshStandardMaterial({ color: 0xe9dfc8, roughness: 0.9, side: THREE.DoubleSide }),
+  pole: new THREE.MeshStandardMaterial({ color: 0x6b4a2e, roughness: 0.6 }),
+  dirt: new THREE.MeshStandardMaterial({ color: 0x8a6a4a, roughness: 1 }),
+  roof: new THREE.MeshStandardMaterial({ color: 0xb0603a, roughness: 0.8 }),
+  wall: new THREE.MeshStandardMaterial({ color: 0xe8d9c4, roughness: 0.9 }),
+  timber: new THREE.MeshStandardMaterial({ color: 0x7a5232, roughness: 0.7 }),
+};
+const water = new THREE.MeshPhysicalMaterial({ color: 0x0d8ea3, roughness: 0.04, metalness: 0, transmission: 0, transparent: true, opacity: 0.86, normalMap: waterNormal, normalScale: new THREE.Vector2(0.35, 0.35), envMapIntensity: 1.2, clearcoat: 1, clearcoatRoughness: 0.03 });
+const curtain = new THREE.MeshPhysicalMaterial({ color: 0x9fd8e0, map: curtainTex, transparent: true, opacity: 0.55, roughness: 0.05, clearcoat: 1, envMapIntensity: 1.5, depthWrite: false });
+const pond = new THREE.MeshPhysicalMaterial({ color: 0x4f5a3a, roughness: 0.08, normalMap: waterNormal, normalScale: new THREE.Vector2(0.15, 0.15), clearcoat: 1, envMapIntensity: 0.9 });
+
+function box(w, h, d, mat, x, y, z, cast = true) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z);
+  m.castShadow = cast; m.receiveShadow = true; scene.add(m); return m;
+}
+function setUV(mesh, sx, sy) { const t = mesh.material.map; if (!t) return; }
+
+// ---------- dimensions (metres) ----------
+const LOW = -1.5;              // lower ground (beside the pond)
+const PX = 5, PZ0 = 1.8, PZ1 = 6; // pool: x in [-PX, PX], z in [PZ0, PZ1]; infinity edge at z = PZ1
+const PLX = 8.5, PLZ = 6;       // platform extent
+
+// ground: terrace (upper lawn) behind
+box(60, 0.4, 30, M.grass, 0, -0.2, -15);
+// banks either side of the platform (old slope)
+for (const s of [-1, 1]) {
+  const g = new THREE.BufferGeometry();
+  const x0 = s * (PLX + (s > 0 ? 1.8 : 0)), x1 = s * 30;
+  const v = [x0, 0, 0, x1, 0, 0, x1, LOW, 2.2, x0, LOW, 2.2];
+  g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 8, 0, 8, 1, 0, 1], 2));
+  g.setIndex(s > 0 ? [0, 2, 1, 0, 3, 2] : [0, 1, 2, 0, 2, 3]); g.computeVertexNormals();
+  const m = new THREE.Mesh(g, M.grassB); m.receiveShadow = true; scene.add(m);
+}
+// lower ground + pond
+box(80, 0.4, 14, M.grass, 0, LOW - 0.2, 9);
+box(80, 0.3, 1.2, M.dirt, 0, LOW - 0.12, 16.1, false);
+const pondM = new THREE.Mesh(new THREE.PlaneGeometry(120, 60), pond); pondM.rotation.x = -Math.PI / 2; pondM.position.set(0, LOW - 0.35, 46); pondM.receiveShadow = true; scene.add(pondM);
+box(120, 0.2, 60, M.dirt, 0, LOW - 0.9, 46, false);
+
+// ---------- platform ----------
+// deck sides + back
+const deckY = -0.06;
+box(PLX - PX - 0.3, 0.12, PLZ, M.wood, -(PX + 0.3 + (PLX - PX - 0.3) / 2), deckY, PLZ / 2);
+box(PLX - PX - 0.3, 0.12, PLZ, M.wood, (PX + 0.3 + (PLX - PX - 0.3) / 2), deckY, PLZ / 2);
+box(2 * (PX + 0.3), 0.12, PZ0 - 0.3, M.wood, 0, deckY, (PZ0 - 0.3) / 2);
+// travertine coping around pool (back + sides)
+box(2 * PX + 0.6, 0.08, 0.3, M.trav, 0, 0.0, PZ0 - 0.15);
+box(0.3, 0.08, PZ1 - PZ0 + 0.3, M.trav, -PX - 0.15, 0.0, (PZ0 + PZ1) / 2 - 0.15);
+box(0.3, 0.08, PZ1 - PZ0 + 0.3, M.trav, PX + 0.15, 0.0, (PZ0 + PZ1) / 2 - 0.15);
+// structural fill under the deck
+box(2 * PLX, -LOW - 0.12, PLZ, M.ledge, 0, (LOW - 0.12) / 2, PLZ / 2, false).visible = false;
+// front walls: dark basalt behind the curtain, ledge-stone elsewhere
+const fw = box(2 * PX, -LOW, 0.3, M.dark, 0, LOW / 2, PZ1 + 0.15);
+for (const s of [-1, 1]) box(PLX - PX, -LOW, 0.3, M.ledge, s * (PX + (PLX - PX) / 2), LOW / 2 - 0.06, PZ1 + 0.15);
+for (const s of [-1, 1]) box(0.3, -LOW, PLZ + 0.3, M.ledge, s * (PLX + 0.15), LOW / 2 - 0.06, PLZ / 2);
+// travertine cap on top of the ledge walls
+for (const s of [-1, 1]) box(PLX - PX + 0.3, 0.08, 0.4, M.trav, s * (PX + (PLX - PX) / 2 + 0.15), 0.0, PZ1 + 0.15);
+for (const s of [-1, 1]) box(0.4, 0.08, PLZ + 0.4, M.trav, s * (PLX + 0.15), 0.0, PLZ / 2 + 0.05);
+// pool basin
+box(2 * PX, 0.1, PZ1 - PZ0, M.tile, 0, -1.4, (PZ0 + PZ1) / 2, false);
+box(2 * PX, 1.4, 0.05, M.tile, 0, -0.7, PZ0 + 0.02, false);
+for (const s of [-1, 1]) box(0.05, 1.4, PZ1 - PZ0, M.tile, s * (PX - 0.02), -0.7, (PZ0 + PZ1) / 2, false);
+// sun shelf ("prainha") at the right end + steps
+const shelfX0 = 2.2;
+box(PX - shelfX0, 1.1, PZ1 - PZ0, M.tile, (PX + shelfX0) / 2, -0.95, (PZ0 + PZ1) / 2, false);
+for (let i = 0; i < 3; i++) box(0.45, 0.3, PZ1 - PZ0, M.tile, shelfX0 - 0.225 - i * 0.45, -0.55 - i * 0.3 - 0.15, (PZ0 + PZ1) / 2, false);
+// water
+const wGeo = new THREE.PlaneGeometry(2 * PX, PZ1 - PZ0);
+const wM = new THREE.Mesh(wGeo, water); wM.rotation.x = -Math.PI / 2; wM.position.set(0, -0.04, (PZ0 + PZ1) / 2); wM.receiveShadow = true; scene.add(wM);
+// infinity curtain + catch trough
+const cur = new THREE.Mesh(new THREE.PlaneGeometry(2 * PX, -LOW - 0.25), curtain); cur.position.set(0, LOW / 2 + 0.1, PZ1 + 0.31); scene.add(cur);
+box(2 * PX + 0.6, 0.06, 0.06, new THREE.MeshPhysicalMaterial({ color: 0xbfeef5, roughness: 0.05, clearcoat: 1, transparent: true, opacity: 0.7 }), 0, -0.03, PZ1 + 0.32, false);
+box(2 * PX + 0.6, 0.35, 0.12, M.trav, 0, LOW + 0.05, PZ1 + 1.0);           // trough front lip
+for (const s of [-1, 1]) box(0.12, 0.35, 0.7, M.trav, s * (PX + 0.3), LOW + 0.05, PZ1 + 0.65);
+const tw = new THREE.Mesh(new THREE.PlaneGeometry(2 * PX + 0.5, 0.6), water); tw.rotation.x = -Math.PI / 2; tw.position.set(0, LOW + 0.12, PZ1 + 0.63); scene.add(tw);
+box(2 * PX + 0.5, 0.05, 0.6, M.dark, 0, LOW - 0.1, PZ1 + 0.63, false);
+
+// stairs down the right side to the lower lawn
+const SX = PLX + 0.3, SW = 1.4, steps = 8, run = 0.42;
+for (let i = 0; i < steps; i++) {
+  const y = -(i + 1) * (-LOW / steps);
+  box(SW, -LOW / steps * 0.9 + 0.02, run, M.trav, SX + SW / 2, y + (-LOW / steps) / 2, 0.6 + i * run);
+  box(SW, (y - LOW), run, M.ledge, SX + SW / 2, LOW + (y - LOW) / 2, 0.6 + i * run, false);
+}
+// glass/steel handrail
+const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, Math.hypot(steps * run, -LOW), 8), M.frame);
+rail.position.set(SX + SW + 0.02, LOW / 2 + 0.95, 0.6 + steps * run / 2); rail.rotation.x = Math.atan2(steps * run, LOW) ; rail.castShadow = true; scene.add(rail);
+
+// ---------- furniture ----------
+function lounger(x, z, rotY = 0, y = 0) {
+  const g = new THREE.Group();
+  const base = new THREE.Mesh(new RoundedBoxGeometry(0.7, 0.08, 1.35, 3, 0.03), M.white); base.position.set(0, 0.3, 0.25);
+  const back = new THREE.Mesh(new RoundedBoxGeometry(0.7, 0.08, 0.75, 3, 0.03), M.white); back.position.set(0, 0.52, -0.62); back.rotation.x = -0.75;
+  const fr = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.22, 0.04), M.frame);
+  [[0, 0.15, 0.85], [0, 0.15, -0.35]].forEach(p => { const f = fr.clone(); f.position.set(...p); g.add(f); });
+  g.add(base, back); g.traverse(o => { o.castShadow = o.receiveShadow = true; });
+  g.position.set(x, y, z); g.rotation.y = rotY; scene.add(g);
+}
+function umbrella(x, z, y = 0) {
+  const g = new THREE.Group();
+  const p = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 2.5, 10), M.pole); p.position.y = 1.25;
+  const c = new THREE.Mesh(new THREE.ConeGeometry(1.45, 0.45, 8, 1, true), M.canopy); c.position.y = 2.35;
+  const b = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 0.08, 16), M.frame); b.position.y = 0.04;
+  g.add(p, c, b); g.traverse(o => { o.castShadow = true; o.receiveShadow = true; });
+  g.position.set(x, y, z); scene.add(g);
+}
+for (const s of [-1, 1]) {
+  const cx = s * (PX + 0.3 + (PLX - PX - 0.3) / 2);
+  lounger(cx - 0.55, 3.6, 0); lounger(cx + 0.55, 3.6, 0);
+  umbrella(cx, 2.6);
+}
+// in-water loungers on the sun shelf
+lounger(3.2, 4.1, 0, -0.42); lounger(4.25, 4.1, 0, -0.42);
+
+// planters with palms on the back corners
+function palm(x, z) {
+  const pl = box(0.9, 0.5, 0.9, M.timber, x, 0.25, z);
+  const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.1, 1.8, 8), M.timber); tr.position.set(x, 1.4, z); tr.castShadow = true; scene.add(tr);
+  const lm = new THREE.MeshStandardMaterial({ color: 0x8fbf3a, roughness: 0.8, side: THREE.DoubleSide });
+  for (let i = 0; i < 9; i++) {
+    const l = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 1.4), lm);
+    l.position.set(x, 2.3, z); l.rotation.set(-1.0, i * 0.7, 0, 'YXZ'); l.translateY(0.6); l.castShadow = true; scene.add(l);
+  }
+}
+palm(-PLX + 0.6, 0.6); palm(PLX - 0.6, 0.6);
+
+// ---------- house (simplified from the photo) ----------
+const H = new THREE.Group();
+const hz = -9;
+box(13, 0.25, 7, M.trav, 0, 0.12, hz);
+box(7, 2.6, 4, M.wall, -1, 1.55, hz - 1);
+for (let i = 0; i < 7; i++) for (const z of [hz + 3.2, hz - 3.2]) box(0.18, 2.6, 0.18, M.timber, -6 + i * 2, 1.55, z);
+for (const z of [hz + 3.2]) box(12.4, 0.1, 0.08, M.timber, 0, 1.0, z);
+const roof = new THREE.Mesh(new THREE.ConeGeometry(9.8, 1.8, 4, 1), M.roof); roof.rotation.y = Math.PI / 4; roof.scale.set(1, 1, 0.58); roof.position.set(0, 3.75, hz); roof.castShadow = true; scene.add(roof);
+const roof2 = new THREE.Mesh(new THREE.ConeGeometry(5, 1.3, 4, 1), M.roof); roof2.rotation.y = Math.PI / 4; roof2.scale.set(1, 1, 0.7); roof2.position.set(-1, 5.4, hz - 1); roof2.castShadow = true; scene.add(roof2);
+box(5.6, 1.5, 3.4, M.wall, -1, 4.3, hz - 1);
+
+// ---------- vegetation + hills ----------
+const leafM = [0x3f6b2a, 0x4d7a30, 0x5a8a35, 0x36602a].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 1, flatShading: true }));
+function tree(x, z, s = 1, y = 0) {
+  const t = new THREE.Mesh(new THREE.CylinderGeometry(0.12 * s, 0.2 * s, 2.4 * s, 7), M.timber); t.position.set(x, y + 1.2 * s, z); t.castShadow = true; scene.add(t);
+  const r = rnd(Math.abs(x * 100 + z) | 0 + 1);
+  for (let i = 0; i < 6; i++) { const b = new THREE.Mesh(new THREE.IcosahedronGeometry((0.9 + r() * 0.7) * s, 1), leafM[i % 4]); b.position.set(x + (r() - .5) * 2 * s, y + (2.6 + r() * 1.4) * s, z + (r() - .5) * 2 * s); b.castShadow = true; b.receiveShadow = true; scene.add(b); }
+}
+tree(-14, -6, 1.6); tree(12, -4, 1.3); tree(-20, -14, 2); tree(18, -16, 2.2); tree(9, -1.5, 1.0); tree(-11, 2, 0.9, LOW);
+const hg = new THREE.PlaneGeometry(400, 200, 160, 80); const hp = hg.attributes.position;
+for (let i = 0; i < hp.count; i++) {
+  const x = hp.getX(i), y = hp.getY(i); const d = Math.max(0, y + 40);
+  hp.setZ(i, d * 0.22 + 14 * Math.sin(x * 0.03) * Math.sin(y * 0.04 + 1) + 6 * Math.sin(x * 0.11 + y * 0.07) + (d > 0 ? 0 : -50));
+}
+hg.computeVertexNormals();
+const hills = new THREE.Mesh(hg, new THREE.MeshStandardMaterial({ color: 0x4f6e33, roughness: 1, flatShading: true }));
+hills.rotation.x = -Math.PI / 2; hills.position.set(0, -2, -75); hills.receiveShadow = true; scene.add(hills);
+const r2 = rnd(99);
+for (let i = 0; i < 70; i++) { const x = (r2() - .5) * 120, z = -35 - r2() * 50; tree(x, z, 1.5 + r2() * 1.5, (Math.max(0, -z - 35)) * 0.22 + 3 * Math.sin(x * .03)); }
+
+// ---------- camera ----------
+if (VIEW === 'aerial') { camera.position.set(15, 6.5, 21); camera.lookAt(0, -0.2, -1); }
+else if (VIEW === 'front') { camera.position.set(3, 1.3, 19.5); camera.lookAt(0, 0.0, 0); }
+else { camera.position.set(-3.5, 1.65, -1.2); camera.lookAt(2, -0.4, 12); }
+renderer.render(scene, camera);
+window.DONE = true;
+</script></body></html>
