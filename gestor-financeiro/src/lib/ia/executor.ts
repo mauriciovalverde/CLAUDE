@@ -2,6 +2,7 @@
 // Mesmas RPCs usadas pelas telas: uma única porta de escrita.
 import { funcao, supabase } from '../supabase';
 import { brl, dataBR } from '../fmt';
+import { linkEmail, linkGoogleAgenda, linkWhatsApp, textoCobranca } from '../compartilhar';
 
 export function emailCobranca(o: any, nomeNegocio: string, extra?: string) {
   const nome = o.cliente_nome ?? 'cliente';
@@ -114,8 +115,13 @@ export async function executarFerramenta(nome: string, e: any, chave: string): P
       let email = e.email;
       if (email && o.cliente_id) await supabase.from('clientes').update({ email }).eq('id', o.cliente_id);
       if (!email && o.cliente_id) email = (await supabase.from('clientes').select('email').eq('id', o.cliente_id).single()).data?.email;
-      if (!email) return { ok: false, codigo: 'SEM_EMAIL', mensagem: 'O cliente não tem e-mail cadastrado. Pergunte o e-mail ao usuário.' };
+      if (!email) return { ok: false, codigo: 'SEM_EMAIL', mensagem: 'O cliente não tem e-mail cadastrado. Pergunte o e-mail ao usuário ou ofereça o WhatsApp.', link_whatsapp: o.cliente_telefone ? linkWhatsApp(o.cliente_telefone, textoCobranca(o)) : null };
       const { data: cfg } = await supabase.from('configuracoes').select('nome_negocio').maybeSingle();
+      const { data: integ } = await supabase.from('v_integracoes').select('status').maybeSingle();
+      if (integ?.status !== 'conectado') {
+        const t = textoCobranca(o, cfg?.nome_negocio ?? '');
+        return { ok: false, codigo: 'GMAIL_NAO_CONECTADO', mensagem: 'O Gmail não está conectado. Ofereça os links abaixo para o usuário cobrar com um toque.', link_whatsapp: o.cliente_telefone ? linkWhatsApp(o.cliente_telefone, t) : null, link_email: linkEmail(email, `Lembrete de pagamento - ${o.descricao}`, t) };
+      }
       const m = emailCobranca(o, cfg?.nome_negocio ?? '', e.mensagem_extra);
       const r = await funcao('gmail-enviar', { para: email, assunto: m.assunto, html: m.html, tipo: 'cobranca', cliente_id: o.cliente_id, obrigacao_id: o.id });
       return r.ok ? { ok: true, enviado_para: email, de: r.de } : { ok: false, mensagem: r.mensagem ?? r.erro };
@@ -124,7 +130,12 @@ export async function executarFerramenta(nome: string, e: any, chave: string): P
       const r = await funcao('agenda-sync', { obrigacao_ids: e.obrigacao_ids, forcar: true }).catch((err) => ({ ok: false, erro: String(err) }));
       const { data: evs } = await supabase.from('agenda_eventos').select('obrigacao_id,status,google_event_id,html_link,ultimo_erro').in('obrigacao_id', e.obrigacao_ids ?? []);
       const { data: integ } = await supabase.from('v_integracoes').select('status,conta_email').maybeSingle();
-      return { ok: true, google: integ?.status ?? 'desconectado', conta: integ?.conta_email ?? null, eventos: evs, sync: r?.detalhes ?? r };
+      let links: any[] = [];
+      if (integ?.status !== 'conectado') {
+        const { data: obs } = await supabase.from('v_obrigacoes').select('*').in('id', e.obrigacao_ids ?? []);
+        links = (obs ?? []).filter((o: any) => o.saldo > 0).map((o: any) => ({ obrigacao_id: o.id, adicionar_ao_google_agenda: linkGoogleAgenda(o) }));
+      }
+      return { ok: true, google: integ?.status ?? 'desconectado', conta: integ?.conta_email ?? null, eventos: evs, sync: r?.detalhes ?? r, links_agenda_manual: links };
     }
     default: return { ok: false, mensagem: 'ferramenta desconhecida: ' + nome };
   }

@@ -5,7 +5,7 @@ import { supabase, rpc } from '../lib/supabase';
 import { carregar, somar } from '../lib/dados';
 import { brl, cod, dataBR, tel } from '../lib/fmt';
 import { Abas, avisarMudanca, Badge, Btn, Cabecalho, Campo, Card, Input, Modal, q, Stat, Tabela, Textarea, toast, useDados } from '../components/ui';
-import { AgendaIcone, CobrancaEmailModal, PagarModal } from '../components/Acoes';
+import { AcoesLembrete, AgendaIcone, CobrancaEmailModal, PagarModal } from '../components/Acoes';
 import { pdfCliente } from '../lib/pdf';
 
 function NovoCliente({ aberto, fechar }: { aberto: boolean; fechar: () => void }) {
@@ -94,7 +94,7 @@ function Ficha({ id }: { id: string }) {
           { k: 'descricao', t: 'Descrição' }, { k: 'vencimento', t: 'Vencimento', r: (o) => dataBR(o.vencimento) },
           { k: 'saldo', t: 'Saldo', num: true, r: (o) => brl(o.saldo) }, { k: 'situacao', t: 'Situação', r: (o) => <Badge s={o.situacao} /> },
           { k: 'ag', t: 'Agenda', r: (o) => <AgendaIcone o={o} /> },
-          { k: 'a', t: '', r: (o) => <div className="flex gap-1"><Btn variante="secundario" className="!px-2 !py-1 text-xs" onClick={() => setPagar(o)}>Receber</Btn><Btn variante="fantasma" className="!px-2 !py-1 text-xs" onClick={() => setCobrar({ ...o, cliente_nome: c.nome })}>✉️ Cobrar</Btn></div> },
+          { k: 'a', t: '', r: (o) => <div className="flex gap-1"><Btn variante="secundario" className="!px-2 !py-1 text-xs" onClick={() => setPagar(o)}>Receber</Btn><AcoesLembrete o={{ ...o, cliente_nome: c.nome, cliente_telefone: c.telefone }} aoEmailGmail={setCobrar} /></div> },
         ]} />}
         {aba === 'vendas' && <Tabela linhas={vendas} colunas={[
           { k: 'numero', t: 'Venda', r: (v) => cod('V', v.numero) }, { k: 'data', t: 'Data', r: (v) => dataBR(v.data) },
