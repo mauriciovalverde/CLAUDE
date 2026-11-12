@@ -33,6 +33,10 @@ jobs:
       - run: npm ci && npm run build
         working-directory: gestor-financeiro
       - run: cp -r gestor-financeiro/dist dist/gestor
+      # Planejador Financeiro (app separado, publicado em /<repo>/planejador/)
+      - run: npm ci && npm run build
+        working-directory: planejador
+      - run: cp -r planejador/dist dist/planejador
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
