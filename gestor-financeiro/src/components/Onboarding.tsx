@@ -3,10 +3,11 @@ import { Bot, CalendarCheck, Mail, PartyPopper, Wallet } from 'lucide-react';
 import { funcao, supabase } from '../lib/supabase';
 import { abrirExterno, aoVoltarAoApp, ehNativo, salvarArquivo, salvarTexto } from '../lib/nativo';
 import { codigoTransferencia } from '../lib/acesso';
+import { googleDisponivel } from '../lib/google';
 import { Aviso, Btn, Campo, Input, toast } from './ui';
 import ConfigIA from './ConfigIA';
 
-const PASSOS = ['Boas-vindas', 'Seu dinheiro hoje', 'Inteligência artificial', 'Google Agenda e Gmail', 'Pronto!'];
+const PASSOS = ['Boas-vindas', 'Seu dinheiro hoje', 'Inteligência artificial', 'Cobranças e lembretes', 'Pronto!'];
 const ler = () => { try { return Number(localStorage.getItem('gfi-onb') ?? 0); } catch { return 0; } };
 
 export default function Onboarding({ aoTerminar }: { aoTerminar: () => void }) {
@@ -17,6 +18,8 @@ export default function Onboarding({ aoTerminar }: { aoTerminar: () => void }) {
   const [saldos, setSaldos] = useState<Record<string, string>>({});
   const [google, setGoogle] = useState<string>('desconectado');
   const [msgGoogle, setMsgGoogle] = useState('');
+  const [gDisp, setGDisp] = useState<boolean | null>(null);
+  useEffect(() => { googleDisponivel().then(setGDisp); }, []);
   useEffect(() => {
     supabase.from('configuracoes').select('nome_negocio').maybeSingle().then(({ data }) => setNome(data?.nome_negocio ?? ''));
     supabase.from('contas_financeiras').select('*').is('excluido_em', null).order('escopo').then(({ data }) => setContas(data ?? []));
@@ -72,7 +75,17 @@ export default function Onboarding({ aoTerminar }: { aoTerminar: () => void }) {
             <div className="flex gap-2 border-t border-slate-200 pt-3 dark:border-slate-800"><Btn variante="secundario" onClick={() => setPasso(1)}>Voltar</Btn><Btn variante="fantasma" onClick={() => setPasso(3)}>Fazer depois</Btn></div>
           </div>}
 
-          {passo === 3 && <div className="space-y-4">
+          {passo === 3 && gDisp === false && <div className="space-y-4">
+            <p className="text-sm text-slate-600 dark:text-slate-300">Para cobrar clientes e não esquecer vencimentos, use os botões que aparecem em cada conta, na tela <b>Contas</b>:</p>
+            <ul className="space-y-2 text-sm">
+              <li className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">💬 <b>WhatsApp:</b> abre a conversa com o cliente e a mensagem de cobrança pronta.</li>
+              <li className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">✉️ <b>E-mail:</b> abre seu e-mail com a cobrança escrita.</li>
+              <li className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">📅 <b>Agenda:</b> abre o Google Agenda com o vencimento preenchido; é só tocar em Salvar.</li>
+            </ul>
+            <div className="flex gap-2 border-t border-slate-200 pt-3 dark:border-slate-800"><Btn variante="secundario" onClick={() => setPasso(2)}>Voltar</Btn><Btn onClick={() => setPasso(4)}>Continuar</Btn></div>
+          </div>}
+
+          {passo === 3 && gDisp !== false && <div className="space-y-4">
             <div className="grid gap-2 text-sm sm:grid-cols-2">
               <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50"><CalendarCheck className="mb-1 h-5 w-5 text-teal-700" /><b>Agenda:</b> cada vencimento vira um lembrete no seu Google Agenda (3 dias antes, 1 dia antes e no dia).</div>
               <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50"><Mail className="mb-1 h-5 w-5 text-teal-700" /><b>Gmail:</b> envie cobranças educadas e relatórios em PDF pelo seu próprio e-mail, com um clique.</div>

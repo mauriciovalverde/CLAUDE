@@ -64,8 +64,9 @@ export default function ConfigIA({ aoConcluir }: { aoConcluir?: () => void }) {
         else if (!s.modelos.length) toast('Ollama encontrado! Agora baixe um modelo (passo 3).', 'info');
         else toast('Ollama conectado! ✅');
       } else {
-        const r = await funcao('ia-modelo', { acao: 'testar', provedor: prov });
+        const r = await funcao('ia-modelo', { acao: 'testar', provedor: prov, modelo });
         setModelos(r.modelos ?? []); setStatusOk(!!r.ok); toast(r.mensagem ?? (r.ok ? 'Conectado!' : 'Falhou'), r.ok ? 'ok' : 'erro');
+        if (r.ok && r.modelo && r.modelo !== modelo) { setModelo(r.modelo); await salvar({ ia_ollama_modelo: r.modelo }); }
       }
     } finally { setTestando(false); }
   }
@@ -76,9 +77,9 @@ export default function ConfigIA({ aoConcluir }: { aoConcluir?: () => void }) {
     setTestando(false);
     if (!r.ok) { toast(r.mensagem, 'erro'); setStatusOk(false); return; }
     setChave(''); setModelos(r.modelos ?? []); setStatusOk(true);
-    const m = modelo || (r.modelos ?? []).find((x: string) => /gpt-oss/.test(x)) || r.modelos?.[0] || MODELO_PADRAO.ollama_cloud;
+    const m = r.modelo || MODELO_PADRAO.ollama_cloud;
     setModelo(m); await salvar({ ia_provedor: 'ollama_cloud', ia_ollama_modelo: m });
-    toast('Chave salva com segurança e testada ✅');
+    toast(`Funcionando ✅ A IA respondeu de verdade (modelo ${m}).`);
   }
 
   async function baixar(m: string) {
@@ -115,7 +116,8 @@ export default function ConfigIA({ aoConcluir }: { aoConcluir?: () => void }) {
           <Passo n={2}>Depois de entrar, abra <a className="inline-flex items-center gap-1 font-medium text-teal-700 underline" href="https://ollama.com/settings/keys" target="_blank" rel="noreferrer">Settings → Keys <ExternalLink className="h-3 w-3" /></a>, clique em <b>Add API Key</b>, dê um nome (ex.: “gestor”) e copie a chave.</Passo>
           <Passo n={3} feito={statusOk === true}>Cole a chave aqui e clique em salvar:
             <div className="mt-2 flex gap-2"><Input type="password" placeholder="cole a chave aqui" value={chave} onChange={(e) => setChave(e.target.value)} /><Btn onClick={salvarChave} carregando={testando} disabled={!chave.trim()}>Salvar e testar</Btn></div>
-            <p className="mt-1 text-xs text-slate-500">A chave fica guardada cifrada no servidor e nunca aparece de novo na tela.</p>
+            <p className="mt-1 text-xs text-slate-500">Ao salvar, o app faz um teste de verdade e escolhe sozinho um modelo gratuito que funcione na sua conta. A chave fica guardada cifrada no servidor.</p>
+            {statusOk === true && <div className="mt-2 flex items-center gap-2"><span className="text-sm font-medium text-emerald-600">✅ Funcionando{modelo ? ` (${modelo})` : ''}</span><Btn variante="fantasma" className="!py-1 text-xs" onClick={testar} carregando={testando}>Testar de novo</Btn></div>}
           </Passo>
         </ol>
       )}

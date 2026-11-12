@@ -1,7 +1,7 @@
 # Gestor Financeiro: guia de ativação
 
 - **Site:** https://mauriciovalverde.github.io/CLAUDE/gestor/
-- **Android:** arquivo `GestorFinanceiro-1.0.3.apk` (compartilhe pelo WhatsApp, Drive etc.)
+- **Android:** arquivo `GestorFinanceiro-1.0.4.apk` (compartilhe pelo WhatsApp, Drive etc.)
 
 ## ✅ Já está pronto e funcionando para qualquer pessoa, sem você fazer nada
 

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { lerAcesso } from '../lib/acesso';
+import { googleDisponivel } from '../lib/google';
 import { calcularPeriodo, usePeriodo } from '../lib/periodo';
 import { Input, Select } from './ui';
 import ChatPainel from './ChatPainel';
@@ -31,6 +32,7 @@ function IndicadorAgenda() {
   const [st, setSt] = useState<{ status: string; pendentes: number } | null>(null);
   useEffect(() => {
     const carregar = async () => {
+      if (!(await googleDisponivel())) { setSt(null); return; }
       const { data: i } = await supabase.from('v_integracoes').select('status').maybeSingle();
       const { count } = await supabase.from('agenda_sync_fila').select('id', { count: 'exact', head: true }).is('processado_em', null);
       setSt({ status: i?.status ?? 'desconectado', pendentes: count ?? 0 });
