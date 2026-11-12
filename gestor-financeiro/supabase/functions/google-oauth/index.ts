@@ -24,6 +24,9 @@ Deno.serve(async (req) => {
   const acao = new URL(req.url).pathname.split('/').pop();
   const db = admin();
   try {
+    // O app pergunta se a conexão com o Google foi ativada pelo dono (credencial OAuth); se não, esconde o botão.
+    if (acao === 'disponivel') return json({ disponivel: !!(Deno.env.get('GOOGLE_CLIENT_ID') && Deno.env.get('GOOGLE_CLIENT_SECRET')) });
+
     if (acao === 'iniciar') {
       const user = await usuario(req);
       if (!user) return json({ ok: false, erro: 'nao_autenticado' }, 401);

@@ -6,11 +6,24 @@ import { carregar } from '../lib/dados';
 import { brl, dataBR } from '../lib/fmt';
 import ConfigIA from '../components/ConfigIA';
 import { codigoTransferencia } from '../lib/acesso';
+import { googleDisponivel } from '../lib/google';
 import { Aviso, avisarMudanca, Btn, Cabecalho, Campo, Card, Input, q, Select, Tabela, toast, useDados } from '../components/ui';
 
 const LEMBRETES = [[10080, '7 dias antes'], [4320, '3 dias antes'], [2880, '2 dias antes'], [1440, '1 dia antes'], [180, '3 horas antes'], [0, 'No horário do vencimento']] as const;
 
-function Agenda({ cfg, salvarCfg }: { cfg: any; salvarCfg: (p: any) => Promise<void> }) {
+function Agenda(props: { cfg: any; salvarCfg: (p: any) => Promise<void> }) {
+  const [disp, setDisp] = useState<boolean | null>(null);
+  useEffect(() => { googleDisponivel().then(setDisp); }, []);
+  if (disp === null) return null;
+  if (!disp) return (
+    <Card titulo="Cobranças e lembretes">
+      <p className="text-sm text-slate-600 dark:text-slate-300">Em <b>Contas</b>, cada conta tem os botões <b>💬 WhatsApp</b>, <b>✉️ E-mail</b> e <b>📅 Agenda</b>: cobram o cliente e colocam o vencimento no seu Google Agenda com um toque.</p>
+    </Card>
+  );
+  return <AgendaGoogle {...props} />;
+}
+
+function AgendaGoogle({ cfg, salvarCfg }: { cfg: any; salvarCfg: (p: any) => Promise<void> }) {
   const { dados: integ, recarregar } = useDados(async () => {
     const [i, fila] = await Promise.all([q<any>(supabase.from('v_integracoes').select('*').maybeSingle()), q<any[]>(supabase.from('agenda_sync_fila').select('ultimo_erro,tentativas').is('processado_em', null))]);
     return { i, fila };
