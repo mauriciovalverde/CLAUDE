@@ -36,7 +36,7 @@ export default function Onboarding({ aoTerminar }: { aoTerminar: () => void }) {
     setPasso(3);
     const r = await funcao('google-oauth/iniciar', { retorno: ehNativo() ? 'app' : 'web' });
     if (r.ok) { await abrirExterno(r.url); if (ehNativo()) setMsgGoogle('Autorize no navegador que abriu e depois volte para o app. A tela atualiza sozinha.'); }
-    else setMsgGoogle(r.erro === 'google_nao_configurado' ? 'A conexão com o Google ainda não foi ativada pelo administrador do app. Você pode pular e conectar depois em Configurações.' : (r.erro ?? 'Falha ao iniciar.'));
+    else setMsgGoogle(r.erro === 'google_nao_configurado' ? 'Sem problema! Mesmo sem conectar, você já pode cobrar pelo WhatsApp ou e-mail e adicionar cada vencimento ao Google Agenda com um toque (botões 💬 ✉️ 📅 em Contas). Pode clicar em “Fazer depois”.' : (r.erro ?? 'Falha ao iniciar.'));
   }
   async function concluir() {
     await supabase.from('configuracoes').update({ onboarding_concluido: true }).eq('user_id', await uid());

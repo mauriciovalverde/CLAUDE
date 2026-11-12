@@ -4,6 +4,7 @@ import { brl, dataBR, hoje } from '../lib/fmt';
 import { avisarMudanca, Aviso, Btn, Campo, Input, Modal, Select, toast } from './ui';
 import { CalendarCheck, CalendarClock, CalendarX } from 'lucide-react';
 import { emailCobranca } from '../lib/ia/executor';
+import * as COMP from '../lib/compartilhar';
 
 export function AgendaIcone({ o }: { o: any }) {
   const s = o.agenda_status;
@@ -157,4 +158,32 @@ export function CobrancaEmailModal({ o, fechar }: { o: any | null; fechar: () =>
   if (!o || !dados) return null;
   const m = emailCobranca(o, dados.nome);
   return <EmailModal aberto titulo={`Cobrança por e-mail · ${o.cliente_nome ?? ''}`} fechar={() => { setDados(null); fechar(); }} para={dados.email} assunto={m.assunto} html={m.html} tipo="cobranca" clienteId={o.cliente_id} obrigacaoId={o.id} />;
+}
+
+/** Botões de cobrança/lembrete que funcionam sem nenhuma configuração. */
+export function AcoesLembrete({ o, aoEmailGmail, compacto }: { o: any; aoEmailGmail?: (o: any) => void; compacto?: boolean }) {
+  const [info, setInfo] = useState<{ email: string; negocio: string; gmail: boolean } | null>(null);
+  async function carregar() {
+    if (info) return info;
+    const [c, cfg, integ] = await Promise.all([
+      o.cliente_id ? supabase.from('clientes').select('email,telefone').eq('id', o.cliente_id).single() : Promise.resolve({ data: null } as any),
+      supabase.from('configuracoes').select('nome_negocio').maybeSingle(),
+      supabase.from('v_integracoes').select('status').maybeSingle(),
+    ]);
+    const r = { email: c.data?.email ?? '', negocio: cfg.data?.nome_negocio ?? '', gmail: integ.data?.status === 'conectado' };
+    setInfo(r); return r;
+  }
+  const { textoCobranca, linkWhatsApp, linkEmail, linkGoogleAgenda, abrirLink } = COMP;
+  const cls = `!px-2 !py-1 text-xs ${compacto ? '' : ''}`;
+  return (
+    <span className="inline-flex flex-wrap gap-1">
+      {o.tipo === 'receber' && o.cliente_telefone && <Btn variante="fantasma" className={cls} title="Cobrar pelo WhatsApp" onClick={async (e) => { e.stopPropagation(); const i = await carregar(); abrirLink(linkWhatsApp(o.cliente_telefone, textoCobranca(o, i.negocio))); }}>💬<span className="hidden sm:inline">WhatsApp</span></Btn>}
+      {o.tipo === 'receber' && o.cliente_id && <Btn variante="fantasma" className={cls} title="Cobrar por e-mail" onClick={async (e) => {
+        e.stopPropagation(); const i = await carregar();
+        if (i.gmail && aoEmailGmail) aoEmailGmail(o);
+        else abrirLink(linkEmail(i.email, `Lembrete de pagamento - ${o.descricao}`, textoCobranca(o, i.negocio)));
+      }}>✉️<span className="hidden sm:inline">E-mail</span></Btn>}
+      {o.agenda_status !== 'sincronizado' && <Btn variante="fantasma" className={cls} title="Adicionar ao Google Agenda" onClick={(e) => { e.stopPropagation(); abrirLink(linkGoogleAgenda(o)); }}>📅<span className="hidden sm:inline">Agenda</span></Btn>}
+    </span>
+  );
 }

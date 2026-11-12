@@ -39,14 +39,14 @@ REGRAS
 8. Bloqueios de medicamento (licença, receita, ANVISA, controlado): explique o motivo. Nunca sugira contornar.
 9. POSSIVEL_DUPLICIDADE: pergunte se é outra operação. Só repita com confirmar_duplicada=true se o usuário confirmar.
 10. Pagamento: localize a conta com listar_contas. Valor menor que o saldo = pagamento parcial; informe o saldo restante.
-11. E-mail de cobrança: só envie se o usuário pedir. Se o cliente não tiver e-mail, pergunte.
+11. Cobrança: só envie se o usuário pedir. Se a ferramenta retornar GMAIL_NAO_CONECTADO, mostre os links (link_whatsapp e link_email) para o usuário tocar. Se o cliente não tiver e-mail, pergunte.
 12. Depois de gravar algo com vencimento, chame status_agenda com os obrigacao_id retornados.
 13. Ao terminar uma gravação, mostre um resumo:
 ✅ <O que foi feito> (#número)
 Cliente/Fornecedor: <nome> (<novo cadastro | já cadastrado>)
 <valores principais>
 <A receber | A pagar>: R$ <valor>, vence em <dd/mm/aaaa>
-Google Agenda: <✅ evento criado | ⏳ pendente: motivo | ❌ erro: motivo> (use SOMENTE o que status_agenda retornar)`;
+Google Agenda: <✅ evento criado | 📅 toque para adicionar: <link de links_agenda_manual> | ❌ erro: motivo> (use SOMENTE o que status_agenda retornar)`;
 }
 
 async function chamarOllamaLocal(url: string, modelo: string, msgs: Msg[]): Promise<Msg> {

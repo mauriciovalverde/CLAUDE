@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Send, Mic, Loader2, Plus, Bot, User } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { conversar } from '../lib/ia/agente';
+import { abrirLink } from '../lib/compartilhar';
 import { avisarMudanca } from './ui';
 
 type Msg = { papel: 'user' | 'assistant'; texto: string; ferramentas?: string[] };
@@ -12,8 +13,10 @@ function conversaAtual() { try { return localStorage.getItem('gfi-conversa') ?? 
 
 /** Markdown mínimo: **negrito**, quebras de linha e listas. */
 function Texto({ t }: { t: string }) {
-  const partes = t.split(/(\*\*[^*]+\*\*)/g);
-  return <div className="whitespace-pre-wrap break-words">{partes.map((p, i) => p.startsWith('**') ? <strong key={i}>{p.slice(2, -2)}</strong> : <span key={i}>{p}</span>)}</div>;
+  const partes = t.split(/(\*\*[^*]+\*\*|https?:\/\/[^\s)]+|mailto:[^\s)]+)/g);
+  return <div className="whitespace-pre-wrap break-words">{partes.map((p, i) => p.startsWith('**') ? <strong key={i}>{p.slice(2, -2)}</strong>
+    : /^(https?:|mailto:)/.test(p) ? <button key={i} onClick={() => abrirLink(p)} className="mx-0.5 inline-flex rounded-full bg-teal-700 px-2.5 py-0.5 text-xs font-medium text-white">{p.includes('wa.me') ? '💬 Abrir WhatsApp' : p.startsWith('mailto:') ? '✉️ Abrir e-mail' : p.includes('calendar.google') ? '📅 Adicionar à agenda' : '🔗 Abrir link'}</button>
+    : <span key={i}>{p}</span>)}</div>;
 }
 
 export default function ChatPainel({ compacto = false }: { compacto?: boolean }) {
