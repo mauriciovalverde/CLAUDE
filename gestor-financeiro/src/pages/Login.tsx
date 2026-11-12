@@ -21,7 +21,7 @@ export default function Login() {
         if (senha.length < 8) throw new Error('A senha precisa ter pelo menos 8 caracteres.');
         const { data, error } = await supabase.auth.signUp({ email, password: senha, options: { emailRedirectTo: urlApp() } });
         if (error) throw error;
-        if (!data.session) setMsg({ t: 'ok', m: 'Conta criada. Abra o e-mail de confirmação que enviamos e depois entre aqui.' });
+        if (!data.session) { setMsg({ t: 'ok', m: 'Conta criada! Abra o e-mail que enviamos e toque em "Confirm your mail". Depois volte aqui e entre com seu e-mail e senha. (Se a página aberta pelo link der erro, não tem problema: a confirmação já foi feita.)' }); setModo('entrar'); }
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: urlApp() });
         if (error) throw error;
