@@ -62,14 +62,17 @@ export class Relatorio {
     let lx = x0; series.forEach((s) => { d.setFillColor(...s.cor); d.rect(lx, y0 + 18, 8, 8, 'F'); d.setFontSize(7); d.setTextColor(51, 65, 85); d.text(s.nome, lx + 11, y0 + 25); lx += d.getTextWidth(s.nome) + 26; });
     this.y = y0 + 40;
   }
-  salvar(nome: string) {
+  private rodapes = false;
+  finalizar() {
+    if (this.rodapes) return; this.rodapes = true;
     const d = this.doc, n = d.getNumberOfPages(), emitido = new Date().toLocaleString('pt-BR');
     for (let i = 1; i <= n; i++) {
       d.setPage(i); d.setFont('helvetica', 'normal'); d.setFontSize(7); d.setTextColor(148, 163, 184);
       d.text(`Emitido em ${emitido} · Documento confidencial (LGPD)`, 40, this.H - 24); d.text(`Página ${i} de ${n}`, this.W - 40, this.H - 24, { align: 'right' });
     }
-    d.save(nome);
   }
+  salvar(nome: string) { this.finalizar(); this.doc.save(nome); }
+  base64() { this.finalizar(); return (this.doc.output('datauristring') as string).split(',')[1]; }
 }
 
 export function pdfCliente(c: any, res: any, vendas: any[], emps: any[], obr: any[], pags: any[]) {

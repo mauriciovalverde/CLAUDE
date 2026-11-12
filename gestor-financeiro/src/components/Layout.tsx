@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import {
   Bot, LayoutDashboard, Receipt, Users, ShoppingCart, Truck, Package, HandCoins, Home, BadgeDollarSign,
-  TrendingUp, FileText, Settings, Menu, X, CalendarCheck, CalendarClock, CalendarX, LogOut, Moon, Sun, MessageCircle,
+  TrendingUp, FileText, Settings, HelpCircle, Menu, X, CalendarCheck, CalendarClock, CalendarX, LogOut, Moon, Sun, MessageCircle,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { calcularPeriodo, usePeriodo } from '../lib/periodo';
@@ -22,6 +22,7 @@ const MENU = [
   { id: 'comparativo', t: 'Comparativo', i: TrendingUp },
   { id: 'relatorios', t: 'Relatórios', i: FileText },
   { id: 'configuracoes', t: 'Configurações', i: Settings },
+  { id: 'ajuda', t: 'Ajuda', i: HelpCircle },
 ];
 const INFERIOR = ['chat', 'dashboard', 'contas', 'clientes'];
 

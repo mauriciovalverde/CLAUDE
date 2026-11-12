@@ -4,7 +4,8 @@ import { usePeriodo } from '../lib/periodo';
 import { carregar, somar } from '../lib/dados';
 import { brl, cod, dataBR } from '../lib/fmt';
 import { Abas, Badge, Btn, Cabecalho, Card, Input, Select, Stat, Tabela, useDados } from '../components/ui';
-import { AgendaIcone, NovaContaModal, PagarModal, VencimentoModal } from '../components/Acoes';
+import { AgendaIcone, CobrancaEmailModal, NovaContaModal, PagarModal, VencimentoModal } from '../components/Acoes';
+import { Mail } from 'lucide-react';
 
 const ABAS = [
   { id: 'todas', t: 'Todas' }, { id: 'rec_vendas', t: 'Receber · vendas' }, { id: 'rec_emp', t: 'Receber · empréstimos' },
@@ -20,6 +21,7 @@ export default function Contas({ params }: { params?: URLSearchParams }) {
   const [pagar, setPagar] = useState<any>(null);
   const [venc, setVenc] = useState<any>(null);
   const [nova, setNova] = useState(false);
+  const [cobrar, setCobrar] = useState<any>(null);
   const { dados } = useDados(() => carregar.obrigacoes(usarPeriodo ? { de: periodo.de, ate: periodo.ate } : {}), [usarPeriodo, periodo.de, periodo.ate]);
 
   const filtro = (o: any) => {
@@ -63,12 +65,13 @@ export default function Contas({ params }: { params?: URLSearchParams }) {
           { k: 'saldo', t: 'Saldo', num: true, r: (o) => <strong>{brl(o.saldo)}</strong> },
           { k: 'situacao', t: 'Situação', r: (o) => <Badge s={o.situacao} /> },
           { k: 'agenda', t: 'Agenda', r: (o) => <AgendaIcone o={o} /> },
-          { k: 'acoes', t: '', r: (o) => ['pendente', 'parcial', 'atrasado'].includes(o.situacao) ? <div className="flex justify-end gap-1"><Btn variante="secundario" className="!px-2 !py-1 text-xs" onClick={() => setPagar(o)}>{o.tipo === 'receber' ? 'Receber' : 'Pagar'}</Btn><Btn variante="fantasma" className="!px-2 !py-1 text-xs" onClick={() => setVenc(o)}>Prorrogar</Btn></div> : <span className="text-xs text-slate-400">{cod('OB', o.numero)}</span> },
+          { k: 'acoes', t: '', r: (o) => ['pendente', 'parcial', 'atrasado'].includes(o.situacao) ? <div className="flex justify-end gap-1"><Btn variante="secundario" className="!px-2 !py-1 text-xs" onClick={() => setPagar(o)}>{o.tipo === 'receber' ? 'Receber' : 'Pagar'}</Btn><Btn variante="fantasma" className="!px-2 !py-1 text-xs" onClick={() => setVenc(o)}>Prorrogar</Btn>{o.tipo === 'receber' && o.cliente_id && <Btn variante="fantasma" className="!px-2 !py-1 text-xs" title="Cobrar por e-mail" onClick={() => setCobrar(o)}><Mail className="h-4 w-4" /></Btn>}</div> : <span className="text-xs text-slate-400">{cod('OB', o.numero)}</span> },
         ]} />
       </Card>
       <PagarModal o={pagar} fechar={() => setPagar(null)} />
       <VencimentoModal o={venc} fechar={() => setVenc(null)} />
       <NovaContaModal aberto={nova} fechar={() => setNova(false)} />
+      <CobrancaEmailModal o={cobrar} fechar={() => setCobrar(null)} />
     </div>
   );
 }

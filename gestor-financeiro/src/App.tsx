@@ -6,6 +6,7 @@ import { PeriodoProvider } from './lib/periodo';
 import { Toasts } from './components/ui';
 import Layout from './components/Layout';
 import Login from './pages/Login';
+import Onboarding from './components/Onboarding';
 
 const paginas: Record<string, React.LazyExoticComponent<React.ComponentType<any>>> = {
   chat: lazy(() => import('./pages/Chat')),
@@ -21,6 +22,7 @@ const paginas: Record<string, React.LazyExoticComponent<React.ComponentType<any>
   comparativo: lazy(() => import('./pages/Comparativo')),
   relatorios: lazy(() => import('./pages/Relatorios')),
   configuracoes: lazy(() => import('./pages/Configuracoes')),
+  ajuda: lazy(() => import('./pages/Ajuda')),
 };
 
 export function useRota() {
@@ -39,6 +41,7 @@ export const ir = (caminho: string) => { window.location.hash = '/' + caminho; }
 export default function App() {
   const [sessao, setSessao] = useState<Session | null | undefined>(undefined);
   const rota = useRota();
+  const [onboarding, setOnboarding] = useState(false);
 
   useEffect(() => {
     try {
@@ -53,7 +56,11 @@ export default function App() {
 
   useEffect(() => {
     if (!sessao) return;
-    supabase.rpc('inicializar_usuario').then(() => sincronizarAgenda());
+    supabase.rpc('inicializar_usuario').then(async () => {
+      const { data } = await supabase.from('configuracoes').select('onboarding_concluido').maybeSingle();
+      setOnboarding(data ? !data.onboarding_concluido : false);
+      sincronizarAgenda();
+    });
   }, [sessao?.user.id]);
 
   if (sessao === undefined) return <div className="flex h-screen items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-teal-700" /></div>;
@@ -63,6 +70,7 @@ export default function App() {
   return (
     <PeriodoProvider>
       <Toasts />
+      {onboarding && <Onboarding aoTerminar={() => { setOnboarding(false); window.location.hash = '/chat'; }} />}
       <Layout rota={rota.pagina} email={sessao.user.email ?? ''}>
         <Suspense fallback={<div className="flex justify-center p-10"><Loader2 className="h-6 w-6 animate-spin text-teal-700" /></div>}>
           <Pagina id={rota.id} params={rota.params} />

@@ -8,7 +8,8 @@ import { admin, cifrar, cors, decifrar, json, segredoInterno } from './comum.ts'
 const SUPA = Deno.env.get('SUPABASE_URL')!;
 const REDIRECT = Deno.env.get('GOOGLE_REDIRECT_URI') ?? `${SUPA}/functions/v1/google-oauth/callback`;
 const APP = Deno.env.get('APP_URL') ?? 'https://mauriciovalverde.github.io/CLAUDE/gestor/';
-const ESCOPOS = 'openid email https://www.googleapis.com/auth/calendar.events';
+// Agenda (eventos) + Gmail (somente ENVIAR; ler a caixa exigiria auditoria de segurança do Google)
+const ESCOPOS = 'openid email https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.send';
 
 async function usuario(req: Request) {
   const u = createClient(SUPA, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });

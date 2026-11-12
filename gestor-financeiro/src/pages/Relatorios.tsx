@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { FileDown } from 'lucide-react';
+import { FileDown, Mail } from 'lucide-react';
+import { EmailModal } from '../components/Acoes';
 import { supabase } from '../lib/supabase';
 import { usePeriodo } from '../lib/periodo';
 import { carregar, mesesEntre, porMes, somar } from '../lib/dados';
@@ -19,10 +20,11 @@ export default function Relatorios() {
   const [cliente, setCliente] = useState('');
   const [clientes, setClientes] = useState<any[] | null>(null);
   const [gerando, setGerando] = useState(false);
+  const [email, setEmail] = useState<{ nome: string; base64: string; titulo: string } | null>(null);
   if (!clientes) supabase.from('clientes').select('id,nome').is('excluido_em', null).order('nome').then(({ data }) => setClientes(data ?? []));
   const alternar = (k: string) => setSel((s) => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
-  async function gerar() {
+  async function gerar(modo: 'baixar' | 'email' = 'baixar') {
     setGerando(true);
     try {
       const { de, ate } = periodo;
@@ -114,8 +116,9 @@ export default function Relatorios() {
         const anos = new Map<string, number>(); mensal.forEach((m) => anos.set(m.mes.slice(0, 4), (anos.get(m.mes.slice(0, 4)) ?? 0) + +m.faturamento));
         r.tabela(['Ano', 'Faturamento'], [...anos].map(([a, v]) => [a, brl(v)]), { numericas: [1] });
       }
-      r.salvar(`gfi-relatorio-${de}_${ate}.pdf`);
-      toast('PDF gerado.');
+      const nomeArq = `relatorio-${de}_${ate}.pdf`;
+      if (modo === 'email') setEmail({ nome: nomeArq, base64: r.base64(), titulo });
+      else { r.salvar(nomeArq); toast('PDF gerado.'); }
     } catch (e: any) { toast(e.message, 'erro'); } finally { setGerando(false); }
   }
 
@@ -138,7 +141,8 @@ export default function Relatorios() {
           {MODULOS.map(([k, t]) => <label key={k} className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-sm ${sel.has(k) ? 'border-teal-600 bg-teal-50 dark:bg-teal-950/30' : 'border-slate-200 dark:border-slate-800'}`}><input type="checkbox" checked={sel.has(k)} onChange={() => alternar(k)} />{t}</label>)}
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Btn onClick={gerar} carregando={gerando} disabled={!sel.size}><FileDown className="h-4 w-4" />Gerar PDF</Btn>
+          <Btn onClick={() => gerar()} carregando={gerando} disabled={!sel.size}><FileDown className="h-4 w-4" />Gerar PDF</Btn>
+          <Btn variante="secundario" onClick={() => gerar('email')} disabled={!sel.size || gerando}><Mail className="h-4 w-4" />Enviar por e-mail</Btn>
           <Btn variante="secundario" onClick={() => setSel(new Set(MODULOS.map((m) => m[0])))}>Selecionar todos</Btn>
           <span className="text-xs text-slate-500">Emitido em {dataBR(hoje())} com cabeçalho, totais, subtotais, gráficos e paginação.</span>
         </div>
@@ -146,7 +150,10 @@ export default function Relatorios() {
       <Card titulo="Relatório individual por cliente">
         <div className="flex flex-wrap gap-2"><Select className="!w-auto min-w-60" value={cliente} onChange={(e) => setCliente(e.target.value)}><option value="">Selecione o cliente…</option>{clientes?.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}</Select><Btn onClick={gerarCliente} disabled={!cliente}><FileDown className="h-4 w-4" />Gerar PDF do cliente</Btn></div>
       </Card>
-      <Aviso>Dica: peça pelo chat — “gere o relatório de vendas de outubro” — e eu te digo os números; o PDF é gerado aqui.</Aviso>
+      <Aviso>Dica: “Enviar por e-mail” manda o PDF pelo seu Gmail (ex.: para o contador). Conecte o Google em Configurações.</Aviso>
+      {email && <EmailModal aberto titulo="Enviar relatório por e-mail" fechar={() => setEmail(null)} assunto={`${email.titulo} · ${dataBR(periodo.de)} a ${dataBR(periodo.ate)}`}
+        html={`<p>Olá!</p><p>Segue em anexo o <b>${email.titulo}</b> referente a ${dataBR(periodo.de)} a ${dataBR(periodo.ate)}.</p><p>Gerado pelo Gestor Financeiro.</p>`}
+        anexo={() => ({ nome: email.nome, base64: email.base64 })} tipo="relatorio" />}
     </div>
   );
 }
