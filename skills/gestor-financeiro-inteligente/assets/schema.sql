@@ -4,8 +4,11 @@
 -- Tudo com RLS por usuário, auditoria, exclusão lógica e idempotência.
 -- =====================================================================
 
-create extension if not exists pgcrypto;
-create extension if not exists pg_trgm;
+create schema if not exists extensions;
+create extension if not exists pgcrypto with schema extensions;
+
+create extension if not exists pg_trgm with schema extensions;
+grant usage on schema extensions to anon, authenticated, service_role;
 
 -- ---------------------------------------------------------------------
 -- Utilitários
@@ -108,7 +111,7 @@ create table clientes (
   excluido_em timestamptz
 );
 create unique index clientes_tel_unico on clientes(user_id, telefone_norm) where telefone_norm is not null and excluido_em is null;
-create index clientes_nome_trgm on clientes using gin (nome_busca gin_trgm_ops);
+create index clientes_nome_trgm on clientes using gin (nome_busca extensions.gin_trgm_ops);
 
 create table fornecedores (
   id uuid primary key default gen_random_uuid(),
@@ -123,7 +126,7 @@ create table fornecedores (
   atualizado_em timestamptz not null default now(),
   excluido_em timestamptz
 );
-create index fornecedores_nome_trgm on fornecedores using gin (nome_busca gin_trgm_ops);
+create index fornecedores_nome_trgm on fornecedores using gin (nome_busca extensions.gin_trgm_ops);
 
 -- ---------------------------------------------------------------------
 -- Produtos, lotes e estoque
@@ -158,7 +161,7 @@ create table produtos (
   atualizado_em timestamptz not null default now(),
   excluido_em timestamptz
 );
-create index produtos_nome_trgm on produtos using gin (nome_busca gin_trgm_ops);
+create index produtos_nome_trgm on produtos using gin (nome_busca extensions.gin_trgm_ops);
 create unique index produtos_codigo_unico on produtos(user_id, codigo) where codigo is not null and excluido_em is null;
 
 create table lotes (
@@ -711,12 +714,12 @@ language sql stable as $$
   select c.id, c.nome, c.telefone,
          case when normalizar_telefone(p_texto) is not null and length(normalizar_telefone(p_texto)) >= 8
                    and c.telefone_norm like '%' || right(normalizar_telefone(p_texto), 8) then 1.0
-              else similarity(c.nome_busca, sem_acento(p_texto)) end::real as score
+              else extensions.similarity(c.nome_busca, sem_acento(p_texto)) end::real as score
   from clientes c
   where c.excluido_em is null
     and ( (normalizar_telefone(p_texto) is not null and length(normalizar_telefone(p_texto)) >= 8
            and c.telefone_norm like '%' || right(normalizar_telefone(p_texto), 8))
-       or c.nome_busca % sem_acento(p_texto)
+       or extensions.similarity(c.nome_busca, sem_acento(p_texto)) > 0.3
        or c.nome_busca like '%' || sem_acento(p_texto) || '%')
   order by score desc limit 5
 $$;
