@@ -1,0 +1,7 @@
+{
+  "appId": "app.planejadorfinanceiro.meuano",
+  "appName": "Planejador",
+  "webDir": "dist",
+  "android": { "allowMixedContent": false },
+  "server": { "androidScheme": "https" }
+}
