@@ -3,6 +3,7 @@ import { rpc, sincronizarAgenda, supabase } from '../lib/supabase';
 import { brl, dataBR, hoje } from '../lib/fmt';
 import { avisarMudanca, Aviso, Btn, Campo, Input, Modal, Select, toast } from './ui';
 import { CalendarCheck, CalendarClock, CalendarX } from 'lucide-react';
+import { emailCobranca } from '../lib/ia/executor';
 
 export function AgendaIcone({ o }: { o: any }) {
   const s = o.agenda_status;
@@ -108,4 +109,52 @@ export function NovaContaModal({ aberto, fechar, escopoPadrao = 'pessoal', tipoP
       <div className="mt-4 flex justify-end gap-2"><Btn variante="secundario" onClick={fechar}>Cancelar</Btn><Btn onClick={salvar} carregando={carregando}>Salvar</Btn></div>
     </Modal>
   );
+}
+
+/** Envio de e-mail pelo Gmail do usuário (cobrança ou relatório). */
+export function EmailModal({ aberto, fechar, titulo, para: paraInicial = '', assunto: assuntoInicial = '', html, anexo, tipo = 'avulso', clienteId, obrigacaoId, aoSalvarEmail }:
+  { aberto: boolean; fechar: () => void; titulo: string; para?: string; assunto?: string; html: string; anexo?: () => { nome: string; base64: string }; tipo?: string; clienteId?: string; obrigacaoId?: string; aoSalvarEmail?: (e: string) => void }) {
+  const [para, setPara] = useState(paraInicial);
+  const [assunto, setAssunto] = useState(assuntoInicial);
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState('');
+  useEffect(() => { if (aberto) { setPara(paraInicial); setAssunto(assuntoInicial); setErro(''); } }, [aberto]);
+  if (!aberto) return null;
+  async function enviar() {
+    setEnviando(true); setErro('');
+    try {
+      if (clienteId && para && para !== paraInicial) { await supabase.from('clientes').update({ email: para }).eq('id', clienteId); aoSalvarEmail?.(para); }
+      const a = anexo?.();
+      const { funcao } = await import('../lib/supabase');
+      const r = await funcao('gmail-enviar', { para, assunto, html, tipo, cliente_id: clienteId, obrigacao_id: obrigacaoId, anexo_base64: a?.base64, anexo_nome: a?.nome });
+      if (!r.ok) throw new Error(r.mensagem ?? r.erro);
+      toast(`E-mail enviado para ${para} ✉️`); fechar();
+    } catch (e: any) { setErro(e.message); } finally { setEnviando(false); }
+  }
+  return (
+    <Modal aberto titulo={titulo} fechar={fechar} largo>
+      <div className="space-y-3">
+        <Campo rotulo="Para (e-mail)" dica={clienteId ? 'Se for novo, fica salvo no cadastro do cliente.' : undefined}><Input type="email" value={para} onChange={(e) => setPara(e.target.value)} placeholder="nome@exemplo.com" /></Campo>
+        <Campo rotulo="Assunto"><Input value={assunto} onChange={(e) => setAssunto(e.target.value)} /></Campo>
+        <div><span className="mb-1 block text-sm font-medium">Prévia da mensagem</span><div className="max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white p-3 text-slate-900 dark:border-slate-700" dangerouslySetInnerHTML={{ __html: html }} /></div>
+        {anexo && <p className="text-xs text-slate-500">📎 O relatório em PDF vai anexado.</p>}
+        {erro && <Aviso tipo="erro">{erro}</Aviso>}
+      </div>
+      <div className="mt-4 flex justify-end gap-2"><Btn variante="secundario" onClick={fechar}>Cancelar</Btn><Btn onClick={enviar} carregando={enviando} disabled={!para || !assunto}>Enviar pelo meu Gmail</Btn></div>
+    </Modal>
+  );
+}
+
+export function CobrancaEmailModal({ o, fechar }: { o: any | null; fechar: () => void }) {
+  const [dados, setDados] = useState<{ email: string; nome: string } | null>(null);
+  useEffect(() => {
+    if (!o) return;
+    Promise.all([
+      o.cliente_id ? supabase.from('clientes').select('email').eq('id', o.cliente_id).single() : Promise.resolve({ data: null }),
+      supabase.from('configuracoes').select('nome_negocio').maybeSingle(),
+    ]).then(([c, cfg]: any) => setDados({ email: c.data?.email ?? '', nome: cfg.data?.nome_negocio ?? '' }));
+  }, [o?.id]);
+  if (!o || !dados) return null;
+  const m = emailCobranca(o, dados.nome);
+  return <EmailModal aberto titulo={`Cobrança por e-mail · ${o.cliente_nome ?? ''}`} fechar={() => { setDados(null); fechar(); }} para={dados.email} assunto={m.assunto} html={m.html} tipo="cobranca" clienteId={o.cliente_id} obrigacaoId={o.id} />;
 }

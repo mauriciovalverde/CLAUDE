@@ -8,14 +8,16 @@ import { admin, cifrar, cors, decifrar, json, segredoInterno } from './comum.ts'
 const SUPA = Deno.env.get('SUPABASE_URL')!;
 const REDIRECT = Deno.env.get('GOOGLE_REDIRECT_URI') ?? `${SUPA}/functions/v1/google-oauth/callback`;
 const APP = Deno.env.get('APP_URL') ?? 'https://mauriciovalverde.github.io/CLAUDE/gestor/';
-const ESCOPOS = 'openid email https://www.googleapis.com/auth/calendar.events';
+// Agenda (eventos) + Gmail (somente ENVIAR; ler a caixa exigiria auditoria de segurança do Google)
+const ESCOPOS = 'openid email https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.send';
 
 async function usuario(req: Request) {
   const u = createClient(SUPA, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });
   const { data: { user } } = await u.auth.getUser();
   return user;
 }
-const voltar = (q: string) => Response.redirect(`${APP}#/configuracoes?${q}`, 302);
+// Conexão iniciada pelo app Android termina numa página simples ("volte ao aplicativo"); pela web, volta às Configurações.
+const voltar = (q: string, app = false) => Response.redirect(`${APP}#/${app ? 'conectado' : 'configuracoes'}?${q}`, 302);
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
@@ -28,7 +30,8 @@ Deno.serve(async (req) => {
       if (!Deno.env.get('GOOGLE_CLIENT_ID') || !Deno.env.get('GOOGLE_CLIENT_SECRET')) {
         return json({ ok: false, erro: 'google_nao_configurado', mensagem: 'Faltam GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET nos secrets das Edge Functions.' });
       }
-      const state = [...crypto.getRandomValues(new Uint8Array(32))].map((b) => b.toString(16).padStart(2, '0')).join('');
+      const corpo = await req.json().catch(() => ({}));
+      const state = [...crypto.getRandomValues(new Uint8Array(32))].map((b) => b.toString(16).padStart(2, '0')).join('') + (corpo.retorno === 'app' ? '.app' : '');
       const { error } = await db.from('integracoes').upsert({
         user_id: user.id, provedor: 'google_calendar', oauth_state: state,
         oauth_state_expira: new Date(Date.now() + 10 * 60000).toISOString(),
@@ -44,10 +47,11 @@ Deno.serve(async (req) => {
     if (acao === 'callback') {
       const u = new URL(req.url);
       const code = u.searchParams.get('code'), state = u.searchParams.get('state');
-      if (u.searchParams.get('error')) return voltar('google=negado');
-      if (!code || !state) return voltar('google=erro&motivo=parametros');
+      const app = !!state?.endsWith('.app');
+      if (u.searchParams.get('error')) return voltar('google=negado', app);
+      if (!code || !state) return voltar('google=erro&motivo=parametros', app);
       const { data: integ } = await db.from('integracoes').select('*').eq('oauth_state', state).maybeSingle();
-      if (!integ || new Date(integ.oauth_state_expira).getTime() < Date.now()) return voltar('google=erro&motivo=state');
+      if (!integ || new Date(integ.oauth_state_expira).getTime() < Date.now()) return voltar('google=erro&motivo=state', app);
       await db.from('integracoes').update({ oauth_state: null, oauth_state_expira: null }).eq('id', integ.id);
 
       const r = await fetch('https://oauth2.googleapis.com/token', {
@@ -60,7 +64,7 @@ Deno.serve(async (req) => {
       const t = await r.json();
       if (!r.ok || !t.refresh_token) {
         await db.from('integracoes').update({ status: 'erro', ultimo_erro: t.error_description ?? t.error ?? 'sem refresh_token' }).eq('id', integ.id);
-        return voltar('google=erro&motivo=token');
+        return voltar('google=erro&motivo=token', app);
       }
       let email: string | null = null;
       try { email = JSON.parse(atob(t.id_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).email; } catch { /* opcional */ }
@@ -77,7 +81,7 @@ Deno.serve(async (req) => {
         headers: { 'Content-Type': 'application/json', 'x-interno': await segredoInterno(), Authorization: `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}` },
         body: JSON.stringify({ user_id: integ.user_id, forcar: true }),
       }).catch(() => {});
-      return voltar('google=conectado');
+      return voltar('google=conectado', app);
     }
 
     if (acao === 'desconectar') {

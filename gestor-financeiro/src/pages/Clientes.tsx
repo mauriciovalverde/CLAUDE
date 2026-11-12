@@ -5,17 +5,18 @@ import { supabase, rpc } from '../lib/supabase';
 import { carregar, somar } from '../lib/dados';
 import { brl, cod, dataBR, tel } from '../lib/fmt';
 import { Abas, avisarMudanca, Badge, Btn, Cabecalho, Campo, Card, Input, Modal, q, Stat, Tabela, Textarea, toast, useDados } from '../components/ui';
-import { AgendaIcone, PagarModal } from '../components/Acoes';
+import { AgendaIcone, CobrancaEmailModal, PagarModal } from '../components/Acoes';
 import { pdfCliente } from '../lib/pdf';
 
 function NovoCliente({ aberto, fechar }: { aberto: boolean; fechar: () => void }) {
-  const [f, setF] = useState({ nome: '', telefone: '', obs: '' });
+  const [f, setF] = useState({ nome: '', telefone: '', email: '', obs: '' });
   const [msg, setMsg] = useState('');
   if (!aberto) return null;
   async function salvar() {
     try {
       const r = await rpc('upsert_cliente', { p_nome: f.nome, p_telefone: f.telefone || null, p_obs: f.obs || null });
       if (r.status === 'ambiguo') { setMsg(r.pergunta); return; }
+      if (f.email.trim()) await supabase.from('clientes').update({ email: f.email.trim() }).eq('id', r.cliente_id);
       toast(r.status === 'criado' ? 'Cliente cadastrado.' : 'Cliente já existia; nada duplicado.'); avisarMudanca(); fechar(); ir(`clientes/${r.cliente_id}`);
     } catch (e: any) { toast(e.message, 'erro'); }
   }
@@ -24,6 +25,7 @@ function NovoCliente({ aberto, fechar }: { aberto: boolean; fechar: () => void }
       <div className="space-y-3">
         <Campo rotulo="Nome completo"><Input value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} /></Campo>
         <Campo rotulo="Telefone (com DDD)"><Input inputMode="tel" value={f.telefone} onChange={(e) => setF({ ...f, telefone: e.target.value })} /></Campo>
+        <Campo rotulo="E-mail (para cobranças, opcional)"><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Campo>
         <Campo rotulo="Observações"><Textarea rows={2} value={f.obs} onChange={(e) => setF({ ...f, obs: e.target.value })} /></Campo>
         {msg && <p className="text-sm text-amber-700">{msg}</p>}
       </div>
@@ -36,6 +38,7 @@ function Ficha({ id }: { id: string }) {
   const [aba, setAba] = useState('resumo');
   const [pagar, setPagar] = useState<any>(null);
   const [editando, setEditando] = useState(false);
+  const [cobrar, setCobrar] = useState<any>(null);
   const { dados, recarregar } = useDados(async () => {
     const [c, res, vendas, emps, obr, pags] = await Promise.all([
       q(supabase.from('clientes').select('*').eq('id', id).single()),
@@ -58,7 +61,7 @@ function Ficha({ id }: { id: string }) {
   ].sort((a, b) => b.d.localeCompare(a.d));
 
   async function salvar() {
-    const { error } = await supabase.from('clientes').update({ nome: f.nome, telefone: f.telefone || null, observacoes: f.observacoes || null }).eq('id', id);
+    const { error } = await supabase.from('clientes').update({ nome: f.nome, telefone: f.telefone || null, email: f.email || null, observacoes: f.observacoes || null }).eq('id', id);
     if (error) toast(error.message.includes('clientes_tel_unico') ? 'Já existe outro cliente com esse telefone.' : error.message, 'erro');
     else { toast('Cadastro atualizado.'); setEditando(false); recarregar(); }
   }
@@ -72,7 +75,7 @@ function Ficha({ id }: { id: string }) {
   return (
     <div className="space-y-4">
       <button onClick={() => ir('clientes')} className="flex items-center gap-1 text-sm text-teal-700"><ArrowLeft className="h-4 w-4" />Clientes</button>
-      <Cabecalho titulo={c.nome} sub={`${tel(c.telefone) || 'sem telefone'} · cliente desde ${dataBR(c.criado_em)} · ${cod('CL', c.numero)}`}
+      <Cabecalho titulo={c.nome} sub={`${tel(c.telefone) || 'sem telefone'}${c.email ? ` · ${c.email}` : ''} · cliente desde ${dataBR(c.criado_em)} · ${cod('CL', c.numero)}`}
         acoes={<>
           <Btn variante="secundario" onClick={() => { setF(c); setEditando(true); }}>Editar</Btn>
           <Btn variante="secundario" onClick={() => pdfCliente(c, res, vendas, emps, obr, pags)}><FileDown className="h-4 w-4" />PDF</Btn>
@@ -91,7 +94,7 @@ function Ficha({ id }: { id: string }) {
           { k: 'descricao', t: 'Descrição' }, { k: 'vencimento', t: 'Vencimento', r: (o) => dataBR(o.vencimento) },
           { k: 'saldo', t: 'Saldo', num: true, r: (o) => brl(o.saldo) }, { k: 'situacao', t: 'Situação', r: (o) => <Badge s={o.situacao} /> },
           { k: 'ag', t: 'Agenda', r: (o) => <AgendaIcone o={o} /> },
-          { k: 'a', t: '', r: (o) => <Btn variante="secundario" className="!px-2 !py-1 text-xs" onClick={() => setPagar(o)}>Receber</Btn> },
+          { k: 'a', t: '', r: (o) => <div className="flex gap-1"><Btn variante="secundario" className="!px-2 !py-1 text-xs" onClick={() => setPagar(o)}>Receber</Btn><Btn variante="fantasma" className="!px-2 !py-1 text-xs" onClick={() => setCobrar({ ...o, cliente_nome: c.nome })}>✉️ Cobrar</Btn></div> },
         ]} />}
         {aba === 'vendas' && <Tabela linhas={vendas} colunas={[
           { k: 'numero', t: 'Venda', r: (v) => cod('V', v.numero) }, { k: 'data', t: 'Data', r: (v) => dataBR(v.data) },
@@ -111,10 +114,12 @@ function Ficha({ id }: { id: string }) {
       </Card>
       <div className="text-right"><Btn variante="fantasma" className="text-rose-600" onClick={excluir}>Mover para a lixeira</Btn></div>
       <PagarModal o={pagar} fechar={() => setPagar(null)} />
+      <CobrancaEmailModal o={cobrar} fechar={() => { setCobrar(null); recarregar(); }} />
       <Modal aberto={editando} fechar={() => setEditando(false)} titulo="Editar cliente">
         {f && <div className="space-y-3">
           <Campo rotulo="Nome"><Input value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} /></Campo>
           <Campo rotulo="Telefone"><Input value={f.telefone ?? ''} onChange={(e) => setF({ ...f, telefone: e.target.value })} /></Campo>
+          <Campo rotulo="E-mail"><Input type="email" value={f.email ?? ''} onChange={(e) => setF({ ...f, email: e.target.value })} /></Campo>
           <Campo rotulo="Observações"><Textarea rows={3} value={f.observacoes ?? ''} onChange={(e) => setF({ ...f, observacoes: e.target.value })} /></Campo>
           <div className="flex justify-end gap-2"><Btn variante="secundario" onClick={() => setEditando(false)}>Cancelar</Btn><Btn onClick={salvar}>Salvar</Btn></div>
         </div>}

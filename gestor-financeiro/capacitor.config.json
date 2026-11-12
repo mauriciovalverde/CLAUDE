@@ -1,0 +1,7 @@
+{
+  "appId": "app.gestorfinanceiro.inteligente",
+  "appName": "Gestor Financeiro",
+  "webDir": "dist",
+  "android": { "allowMixedContent": false },
+  "server": { "androidScheme": "https" }
+}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Send, Mic, Loader2, Plus, Bot, User } from 'lucide-react';
-import { funcao, supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
+import { conversar } from '../lib/ia/agente';
 import { avisarMudanca } from './ui';
 
 type Msg = { papel: 'user' | 'assistant'; texto: string; ferramentas?: string[] };
@@ -36,11 +37,11 @@ export default function ChatPainel({ compacto = false }: { compacto?: boolean })
     setTexto(''); setEnviando(true);
     setMsgs((m) => [...m, { papel: 'user', texto: msg }]);
     try {
-      const r = await funcao('ia-comando', { conversa_id: conversa, mensagem_id: crypto.randomUUID(), texto: msg });
-      setMsgs((m) => [...m, { papel: 'assistant', texto: r.resposta ?? `❌ ${r.erro ?? 'Erro desconhecido'}. Nada foi gravado.`, ferramentas: r.ferramentas?.map((f: any) => f.nome) }]);
+      const r = await conversar(conversa, crypto.randomUUID(), msg, msgs.map((m) => ({ papel: m.papel, texto: m.texto })));
+      setMsgs((m) => [...m, { papel: 'assistant', texto: r.resposta, ferramentas: r.ferramentas?.map((f: any) => f.nome) }]);
       if (r.ferramentas?.length) avisarMudanca();
     } catch (e: any) {
-      setMsgs((m) => [...m, { papel: 'assistant', texto: `❌ Sem conexão com o servidor (${e.message}). Nada foi gravado; tente de novo.` }]);
+      setMsgs((m) => [...m, { papel: 'assistant', texto: `❌ Sem conexão (${e.message}). Confira a internet e tente de novo.` }]);
     } finally { setEnviando(false); }
   }
 

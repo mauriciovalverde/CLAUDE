@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { CalendarCheck, Download, RefreshCw, Unplug } from 'lucide-react';
 import { funcao, supabase } from '../lib/supabase';
+import { abrirExterno, ehNativo, salvarArquivo } from '../lib/nativo';
 import { carregar } from '../lib/dados';
 import { brl, dataBR } from '../lib/fmt';
+import ConfigIA from '../components/ConfigIA';
 import { Aviso, avisarMudanca, Btn, Cabecalho, Campo, Card, Input, q, Select, Tabela, toast, useDados } from '../components/ui';
 
 const LEMBRETES = [[10080, '7 dias antes'], [4320, '3 dias antes'], [2880, '2 dias antes'], [1440, '1 dia antes'], [180, '3 horas antes'], [0, 'No horário do vencimento']] as const;
@@ -16,9 +18,9 @@ function Agenda({ cfg, salvarCfg }: { cfg: any; salvarCfg: (p: any) => Promise<v
   const status = integ?.i?.status ?? 'desconectado';
   async function conectar() {
     setOcupado(true);
-    const r = await funcao('google-oauth/iniciar');
+    const r = await funcao('google-oauth/iniciar', { retorno: ehNativo() ? 'app' : 'web' });
     setOcupado(false);
-    if (r.ok) window.location.href = r.url;
+    if (r.ok) { await abrirExterno(r.url); if (ehNativo()) toast('Autorize no navegador e depois volte para o app.', 'info'); }
     else toast(r.erro === 'google_nao_configurado' ? 'A credencial OAuth do Google ainda não foi configurada no servidor (veja as instruções abaixo).' : r.erro, 'erro');
   }
   async function sincronizar() { setOcupado(true); const r = await funcao('agenda-sync', { forcar: true }); setOcupado(false); toast(r.ok ? `Sincronização: ${r.sincronizados} ok, ${r.pendentes} pendentes, ${r.erros} erros.` : r.erro, r.ok ? 'ok' : 'erro'); recarregar(); avisarMudanca(); }
@@ -30,7 +32,7 @@ function Agenda({ cfg, salvarCfg }: { cfg: any; salvarCfg: (p: any) => Promise<v
   async function desconectar() { if (!confirm('Desconectar o Google Agenda? As alterações ficam guardadas e sincronizam quando reconectar.')) return; await funcao('google-oauth/desconectar'); recarregar(); avisarMudanca(); }
   const lembretes: number[] = cfg?.lembretes_minutos ?? [4320, 1440, 0];
   return (
-    <Card titulo={<span className="flex items-center gap-2"><CalendarCheck className="h-4 w-4 text-teal-700" />Google Agenda</span>}>
+    <Card titulo={<span className="flex items-center gap-2"><CalendarCheck className="h-4 w-4 text-teal-700" />Google (Agenda e Gmail)</span>}>
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <span className={`rounded-full px-3 py-1 text-sm font-medium ${status === 'conectado' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>{status === 'conectado' ? `Conectado · ${integ?.i?.conta_email ?? ''}` : status === 'revogado' ? 'Autorização expirada: reconecte' : 'Desconectado'}</span>
         <span className="text-sm text-slate-500">{integ?.fila?.length ?? 0} item(ns) aguardando sincronização</span>
@@ -38,7 +40,7 @@ function Agenda({ cfg, salvarCfg }: { cfg: any; salvarCfg: (p: any) => Promise<v
       {integ?.i?.ultimo_erro && <div className="mb-3"><Aviso tipo="erro">Último erro: {integ.i.ultimo_erro}</Aviso></div>}
       {!!integ?.fila?.find((f: any) => f.ultimo_erro && f.ultimo_erro !== 'google_desconectado') && <div className="mb-3"><Aviso tipo="alerta">Falha recente: {integ.fila.find((f: any) => f.ultimo_erro)?.ultimo_erro}</Aviso></div>}
       <div className="flex flex-wrap gap-2">
-        {status !== 'conectado' ? <Btn onClick={conectar} carregando={ocupado}>Conectar Google Agenda</Btn> : <Btn variante="secundario" onClick={desconectar}><Unplug className="h-4 w-4" />Desconectar</Btn>}
+        {status !== 'conectado' ? <Btn onClick={conectar} carregando={ocupado}>Conectar Google (Agenda + Gmail)</Btn> : <Btn variante="secundario" onClick={desconectar}><Unplug className="h-4 w-4" />Desconectar</Btn>}
         <Btn variante="secundario" onClick={sincronizar} carregando={ocupado}><RefreshCw className="h-4 w-4" />Sincronizar agora</Btn>
         <Btn variante="fantasma" onClick={reconstruir}>Reconstruir agenda</Btn>
       </div>
@@ -76,8 +78,8 @@ export default function Configuracoes({ params }: { params?: URLSearchParams }) 
     const tabelas = ['clientes', 'fornecedores', 'produtos', 'lotes', 'compras', 'compra_itens', 'vendas', 'venda_itens', 'emprestimos', 'emprestimo_eventos', 'obrigacoes', 'pagamentos', 'lancamentos', 'recorrencias', 'contracheques', 'contracheque_itens', 'categorias', 'contas_financeiras', 'configuracoes', 'movimentacoes_estoque', 'receitas_medicas'];
     const out: any = { exportado_em: new Date().toISOString(), versao: 1 };
     for (const t of tabelas) out[t] = (await supabase.from(t).select('*')).data ?? [];
-    const blob = new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `gfi-backup-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+    const txt = JSON.stringify(out, null, 1);
+    await salvarArquivo(`gfi-backup-${new Date().toISOString().slice(0, 10)}.json`, btoa(unescape(encodeURIComponent(txt))), 'application/json');
     toast('Backup exportado.');
   }
   async function saldoInicial(c: any) {
@@ -90,7 +92,9 @@ export default function Configuracoes({ params }: { params?: URLSearchParams }) 
   return (
     <div className="space-y-4">
       <Cabecalho titulo="Configurações" />
+      <Card titulo="Inteligência artificial"><ConfigIA /></Card>
       <Agenda cfg={cfg} salvarCfg={salvarCfg} />
+      <Card titulo="Seu negócio"><Campo rotulo="Nome (aparece nos e-mails e relatórios)"><Input defaultValue={cfg?.nome_negocio ?? ''} onBlur={(e) => salvarCfg({ nome_negocio: e.target.value || null })} /></Campo></Card>
       <Card titulo="Contas financeiras (saldos)">
         <Tabela linhas={contas} colunas={[{ k: 'nome', t: 'Conta' }, { k: 'escopo', t: 'Escopo' }, { k: 'saldo', t: 'Saldo atual', num: true, r: (c) => brl(c.saldo) }, { k: 'a', t: '', r: (c) => <Btn variante="fantasma" className="!px-2 !py-1 text-xs" onClick={() => saldoInicial(c)}>Saldo inicial</Btn> }]} />
       </Card>
