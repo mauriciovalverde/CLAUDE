@@ -26,3 +26,10 @@ export const SITUACAO_COR: Record<string, string> = {
   renegociado: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
   cancelado: 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-500',
 };
+/** Rótulo curto para eixos de gráfico: 850 · 1,5k · 2,3mi */
+export const compacto = (v: number) => {
+  const a = Math.abs(v);
+  if (a >= 1e6) return `${num(v / 1e6, 1)}mi`;
+  if (a >= 1e3) return `${num(v / 1e3, a >= 1e4 ? 0 : 1)}k`;
+  return num(v, 0);
+};

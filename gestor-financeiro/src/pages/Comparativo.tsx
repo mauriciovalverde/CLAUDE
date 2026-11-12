@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
 import { carregar } from '../lib/dados';
-import { brl, fimMes, hoje, mesNome, num, pct } from '../lib/fmt';
+import { brl, fimMes, hoje, mesNome, num, pct, compacto } from '../lib/fmt';
 // @ts-ignore
 import { crescimentoPct } from '../lib/calculos.js';
 import { Cabecalho, Card, Input, Select, Tabela, useDados } from '../components/ui';
@@ -62,7 +62,7 @@ export default function Comparativo() {
         <Var rotulo="Custo (CMV)" a={n(A.cmv)} b={n(B.cmv)} />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card titulo="Evolução (12 meses)"><ResponsiveContainer width="100%" height={240}><LineChart data={ultimos}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="mes" /><YAxis width={45} tickFormatter={(v) => num(v / 1000, 0) + 'k'} /><Tooltip formatter={(v: any) => brl(v)} /><Legend /><Line dataKey="Faturamento" stroke="#0F766E" strokeWidth={2} /><Line dataKey="Lucro bruto" stroke="#F59E0B" strokeWidth={2} /></LineChart></ResponsiveContainer></Card>
+        <Card titulo="Evolução (12 meses)"><ResponsiveContainer width="100%" height={240}><LineChart data={ultimos}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="mes" /><YAxis width={45} tickFormatter={compacto} /><Tooltip formatter={(v: any) => brl(v)} /><Legend /><Line dataKey="Faturamento" stroke="#0F766E" strokeWidth={2} /><Line dataKey="Lucro bruto" stroke="#F59E0B" strokeWidth={2} /></LineChart></ResponsiveContainer></Card>
         <Card titulo="Produtos mais vendidos (qtd)"><ResponsiveContainer width="100%" height={240}><BarChart data={top}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="nome" /><YAxis width={30} /><Tooltip /><Legend /><Bar dataKey="antes" name={mesNome(mesAnt)} fill="#94A3B8" /><Bar dataKey="agora" name={mesNome(mes)} fill="#0F766E" /></BarChart></ResponsiveContainer></Card>
       </div>
       <Card titulo="Histórico mensal">

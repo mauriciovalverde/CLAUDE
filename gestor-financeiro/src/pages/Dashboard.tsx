@@ -2,7 +2,7 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Line, Line
 import { AlertTriangle, Wallet } from 'lucide-react';
 import { usePeriodo } from '../lib/periodo';
 import { carregar, mesesEntre, porMes, somar } from '../lib/dados';
-import { addDias, brl, dataBR, hoje, mesNome, num, pct } from '../lib/fmt';
+import { addDias, brl, dataBR, hoje, mesNome, num, pct, compacto } from '../lib/fmt';
 import { Badge, Cabecalho, Card, Stat, Tabela, useDados } from '../components/ui';
 import { supabase } from '../lib/supabase';
 
@@ -87,16 +87,16 @@ export default function Dashboard() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card titulo="Receitas × despesas">
-          <ResponsiveContainer width="100%" height={240}><BarChart data={serie}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="mes" /><YAxis tickFormatter={(v) => num(v / 1000, 0) + 'k'} width={40} /><Tooltip {...tip} /><Legend /><Bar dataKey="Receitas" fill="#10B981" radius={[6, 6, 0, 0]} /><Bar dataKey="Despesas" fill="#EF4444" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer>
+          <ResponsiveContainer width="100%" height={240}><BarChart data={serie}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="mes" /><YAxis tickFormatter={compacto} width={40} /><Tooltip {...tip} /><Legend /><Bar dataKey="Receitas" fill="#10B981" radius={[6, 6, 0, 0]} /><Bar dataKey="Despesas" fill="#EF4444" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer>
         </Card>
         <Card titulo="Faturamento × lucro das vendas">
-          <ResponsiveContainer width="100%" height={240}><LineChart data={serie}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="mes" /><YAxis tickFormatter={(v) => num(v / 1000, 0) + 'k'} width={40} /><Tooltip {...tip} /><Legend /><Line dataKey="Faturamento" stroke="#0F766E" strokeWidth={2} /><Line dataKey="Lucro" stroke="#F59E0B" strokeWidth={2} /></LineChart></ResponsiveContainer>
+          <ResponsiveContainer width="100%" height={240}><LineChart data={serie}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="mes" /><YAxis tickFormatter={compacto} width={40} /><Tooltip {...tip} /><Legend /><Line dataKey="Faturamento" stroke="#0F766E" strokeWidth={2} /><Line dataKey="Lucro" stroke="#F59E0B" strokeWidth={2} /></LineChart></ResponsiveContainer>
         </Card>
         <Card titulo="Fluxo de caixa futuro (90 dias)">
-          {fluxoSaldo.length ? <ResponsiveContainer width="100%" height={240}><BarChart data={fluxoSaldo}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="semana" /><YAxis tickFormatter={(v) => num(v / 1000, 0) + 'k'} width={40} /><Tooltip {...tip} /><Legend /><Bar dataKey="Receber" fill="#10B981" /><Bar dataKey="Pagar" fill="#EF4444" /></BarChart></ResponsiveContainer> : <p className="text-sm text-slate-500">Sem vencimentos nos próximos 90 dias.</p>}
+          {fluxoSaldo.length ? <ResponsiveContainer width="100%" height={240}><BarChart data={fluxoSaldo}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="semana" /><YAxis tickFormatter={compacto} width={40} /><Tooltip {...tip} /><Legend /><Bar dataKey="Receber" fill="#10B981" /><Bar dataKey="Pagar" fill="#EF4444" /></BarChart></ResponsiveContainer> : <p className="text-sm text-slate-500">Sem vencimentos nos próximos 90 dias.</p>}
         </Card>
         <Card titulo="Emprestado × recebido de empréstimos">
-          <ResponsiveContainer width="100%" height={240}><AreaChart data={serie}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="mes" /><YAxis tickFormatter={(v) => num(v / 1000, 0) + 'k'} width={40} /><Tooltip {...tip} /><Legend /><Area dataKey="Emprestado" stroke="#8B5CF6" fill="#8B5CF6" fillOpacity={0.2} /><Area dataKey="Recebido" stroke="#0EA5E9" fill="#0EA5E9" fillOpacity={0.2} /></AreaChart></ResponsiveContainer>
+          <ResponsiveContainer width="100%" height={240}><AreaChart data={serie}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="mes" /><YAxis tickFormatter={compacto} width={40} /><Tooltip {...tip} /><Legend /><Area dataKey="Emprestado" stroke="#8B5CF6" fill="#8B5CF6" fillOpacity={0.2} /><Area dataKey="Recebido" stroke="#0EA5E9" fill="#0EA5E9" fillOpacity={0.2} /></AreaChart></ResponsiveContainer>
         </Card>
         <Card titulo="Distribuição das despesas">
           {pizza.length ? <ResponsiveContainer width="100%" height={240}><PieChart><Pie data={pizza} dataKey="value" nameKey="name" innerRadius={55} outerRadius={90} paddingAngle={2}>{pizza.map((_, i) => <Cell key={i} fill={CORES[i % CORES.length]} />)}</Pie><Tooltip {...tip} /><Legend /></PieChart></ResponsiveContainer> : <p className="text-sm text-slate-500">Sem despesas no período.</p>}
@@ -105,7 +105,7 @@ export default function Dashboard() {
           {topProd.length ? <ResponsiveContainer width="100%" height={240}><BarChart data={topProd} layout="vertical"><XAxis type="number" /><YAxis type="category" dataKey="nome" width={90} /><Tooltip contentStyle={tip.contentStyle} /><Bar dataKey="Quantidade" fill="#0F766E" radius={[0, 6, 6, 0]} /></BarChart></ResponsiveContainer> : <p className="text-sm text-slate-500">Sem vendas no período.</p>}
         </Card>
         <Card titulo="Clientes que mais compram">
-          {topCli.length ? <ResponsiveContainer width="100%" height={240}><BarChart data={topCli} layout="vertical"><XAxis type="number" tickFormatter={(v) => num(v / 1000, 1) + 'k'} /><YAxis type="category" dataKey="nome" width={110} /><Tooltip {...tip} /><Bar dataKey="Valor" fill="#0EA5E9" radius={[0, 6, 6, 0]} /></BarChart></ResponsiveContainer> : <p className="text-sm text-slate-500">Sem vendas no período.</p>}
+          {topCli.length ? <ResponsiveContainer width="100%" height={240}><BarChart data={topCli} layout="vertical"><XAxis type="number" tickFormatter={compacto} /><YAxis type="category" dataKey="nome" width={110} /><Tooltip {...tip} /><Bar dataKey="Valor" fill="#0EA5E9" radius={[0, 6, 6, 0]} /></BarChart></ResponsiveContainer> : <p className="text-sm text-slate-500">Sem vendas no período.</p>}
         </Card>
         <Card titulo={<span className="flex items-center gap-1.5"><AlertTriangle className="h-4 w-4 text-amber-500" />Alertas de estoque</span>}>
           <Tabela linhas={alertas} chave="nome" vazio="Nenhum alerta." colunas={[

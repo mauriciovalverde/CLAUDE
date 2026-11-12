@@ -29,6 +29,10 @@ jobs:
           BASE_PATH: /${{ github.event.repository.name }}/
       # SPA: o GitHub Pages devolve 404.html para rotas como /claude/diario
       - run: cp dist/index.html dist/404.html
+      # Gestor Financeiro Inteligente (app separado, publicado em /<repo>/gestor/)
+      - run: npm ci && npm run build
+        working-directory: gestor-financeiro
+      - run: cp -r gestor-financeiro/dist dist/gestor
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

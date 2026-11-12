@@ -4,7 +4,7 @@ import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveCo
 import { supabase } from '../lib/supabase';
 import { usePeriodo } from '../lib/periodo';
 import { carregar, mesesEntre, porMes, somar } from '../lib/dados';
-import { brl, dataBR, mesNome, num } from '../lib/fmt';
+import { brl, dataBR, mesNome, num, compacto } from '../lib/fmt';
 import { Abas, avisarMudanca, Badge, Btn, Cabecalho, Card, q, Stat, Tabela, toast, useDados } from '../components/ui';
 import { AgendaIcone, NovaContaModal, PagarModal } from '../components/Acoes';
 import { CORES } from './Dashboard';
@@ -50,7 +50,7 @@ export default function Pessoal() {
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card titulo="Evolução financeira">
-          <ResponsiveContainer width="100%" height={230}><BarChart data={serie}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="mes" /><YAxis width={45} tickFormatter={(v) => num(v / 1000, 0) + 'k'} /><Tooltip formatter={(v: any) => brl(v)} /><Legend /><Bar dataKey="Receitas" fill="#10B981" radius={[6, 6, 0, 0]} /><Bar dataKey="Despesas" fill="#EF4444" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer>
+          <ResponsiveContainer width="100%" height={230}><BarChart data={serie}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="mes" /><YAxis width={45} tickFormatter={compacto} /><Tooltip formatter={(v: any) => brl(v)} /><Legend /><Bar dataKey="Receitas" fill="#10B981" radius={[6, 6, 0, 0]} /><Bar dataKey="Despesas" fill="#EF4444" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer>
         </Card>
         <Card titulo="Gastos por categoria">
           {pizza.length ? <ResponsiveContainer width="100%" height={230}><PieChart><Pie data={pizza} dataKey="value" nameKey="name" innerRadius={50} outerRadius={85}>{pizza.map((_, i) => <Cell key={i} fill={CORES[i % CORES.length]} />)}</Pie><Tooltip formatter={(v: any) => brl(v)} /><Legend /></PieChart></ResponsiveContainer> : <p className="text-sm text-slate-500">Sem despesas no período.</p>}

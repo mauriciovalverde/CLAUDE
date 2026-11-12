@@ -52,7 +52,7 @@ export default function Relatorios() {
       }
       if (sel.has('emprestimos')) {
         r.secao('Empréstimos');
-        r.tabela(['Nº', 'Cliente', 'Data', 'Principal', 'Taxa', 'Total previsto', 'Vencimento', 'Situação'], emps.map((e) => [e.numero, e.clientes?.nome, dataBR(e.data), brl(e.principal), `${e.taxa_pct}% ${e.periodicidade}${e.acima_limite_legal ? ' ⚠' : ''}`, brl(e.total_previsto), dataBR(e.vencimento), e.status]),
+        r.tabela(['Nº', 'Cliente', 'Data', 'Principal', 'Taxa', 'Total previsto', 'Vencimento', 'Situação'], emps.map((e) => [e.numero, e.clientes?.nome, dataBR(e.data), brl(e.principal), `${e.taxa_pct}% ${e.periodicidade}${e.acima_limite_legal ? ' (!)' : ''}`, brl(e.total_previsto), dataBR(e.vencimento), e.status]),
           { numericas: [3, 5], total: ['', 'Total', '', brl(somar(emps, 'principal')), '', brl(somar(emps, 'total_previsto')), '', ''] });
         const acima = emps.filter((e) => e.acima_limite_legal);
         if (acima.length) r.texto(`Condições acima da referência legal configurada: ${acima.map((e) => `nº ${e.numero} (${pct(e.taxa_mensal_equivalente_pct)} a.m.)`).join(', ')}. O registro não implica legalidade da taxa.`, 8);

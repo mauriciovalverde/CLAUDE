@@ -3,7 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { rpc } from '../lib/supabase';
 import { carregar, somar } from '../lib/dados';
-import { brl, dataBR, hoje, inicioMes, mesNome, num, pct } from '../lib/fmt';
+import { brl, dataBR, hoje, inicioMes, mesNome, num, pct, compacto } from '../lib/fmt';
 import { Aviso, avisarMudanca, Btn, Cabecalho, Campo, Card, Input, Modal, Select, Stat, Tabela, toast, useDados } from '../components/ui';
 
 const RUBRICAS: Record<string, [string, string]> = {
@@ -72,7 +72,7 @@ export default function Salario() {
         <Stat rotulo="Líquido no ano" valor={brl(anos.get(hoje().slice(0, 4))?.liquido ?? 0)} />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card titulo="Bruto × líquido × descontos"><ResponsiveContainer width="100%" height={230}><BarChart data={serie}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="mes" /><YAxis width={45} tickFormatter={(v) => num(v / 1000, 0) + 'k'} /><Tooltip formatter={(v: any) => brl(v)} /><Legend /><Bar dataKey="Bruto" fill="#0EA5E9" /><Bar dataKey="Líquido" fill="#10B981" /><Bar dataKey="Descontos" fill="#EF4444" /></BarChart></ResponsiveContainer></Card>
+        <Card titulo="Bruto × líquido × descontos"><ResponsiveContainer width="100%" height={230}><BarChart data={serie}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="mes" /><YAxis width={45} tickFormatter={compacto} /><Tooltip formatter={(v: any) => brl(v)} /><Legend /><Bar dataKey="Bruto" fill="#0EA5E9" /><Bar dataKey="Líquido" fill="#10B981" /><Bar dataKey="Descontos" fill="#EF4444" /></BarChart></ResponsiveContainer></Card>
         <Card titulo="Variação mensal do líquido"><ResponsiveContainer width="100%" height={230}><LineChart data={serie}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="mes" /><YAxis width={40} tickFormatter={(v) => num(v, 0) + '%'} /><Tooltip formatter={(v: any) => pct(v)} /><Line dataKey="Variação %" stroke="#0F766E" strokeWidth={2} /></LineChart></ResponsiveContainer></Card>
       </div>
       <Card titulo="Histórico de contracheques">
