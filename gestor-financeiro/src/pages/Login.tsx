@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { urlApp } from '../lib/nativo';
 import { Aviso, Btn, Campo, Input } from '../components/ui';
 
 export default function Login() {
@@ -8,7 +9,7 @@ export default function Login() {
   const [senha, setSenha] = useState('');
   const [msg, setMsg] = useState<{ t: 'erro' | 'ok'; m: string } | null>(null);
   const [carregando, setCarregando] = useState(false);
-  const urlApp = window.location.origin + window.location.pathname;
+
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault(); setCarregando(true); setMsg(null);
@@ -18,11 +19,11 @@ export default function Login() {
         if (error) throw error;
       } else if (modo === 'criar') {
         if (senha.length < 8) throw new Error('A senha precisa ter pelo menos 8 caracteres.');
-        const { data, error } = await supabase.auth.signUp({ email, password: senha, options: { emailRedirectTo: urlApp } });
+        const { data, error } = await supabase.auth.signUp({ email, password: senha, options: { emailRedirectTo: urlApp() } });
         if (error) throw error;
         if (!data.session) setMsg({ t: 'ok', m: 'Conta criada. Abra o e-mail de confirmação que enviamos e depois entre aqui.' });
       } else {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: urlApp });
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: urlApp() });
         if (error) throw error;
         setMsg({ t: 'ok', m: 'Enviamos um link para redefinir a senha.' });
       }

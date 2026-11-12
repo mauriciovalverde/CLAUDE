@@ -7,6 +7,8 @@ import { Toasts } from './components/ui';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Onboarding from './components/Onboarding';
+import { aoVoltarAoApp } from './lib/nativo';
+import { avisarMudanca } from './components/ui';
 
 const paginas: Record<string, React.LazyExoticComponent<React.ComponentType<any>>> = {
   chat: lazy(() => import('./pages/Chat')),
@@ -49,6 +51,7 @@ export default function App() {
       const escuro = t ? t === 'escuro' : window.matchMedia('(prefers-color-scheme: dark)').matches;
       document.documentElement.classList.toggle('dark', escuro);
     } catch { /* ignore */ }
+    aoVoltarAoApp(() => avisarMudanca());
     supabase.auth.getSession().then(({ data }) => setSessao(data.session));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSessao(s));
     return () => sub.subscription.unsubscribe();
@@ -63,6 +66,12 @@ export default function App() {
     });
   }, [sessao?.user.id]);
 
+  // Retorno do Google quando a conexão foi iniciada pelo aplicativo Android (abre no navegador do celular)
+  if (rota.pagina === 'conectado') return (
+    <div className="flex min-h-screen items-center justify-center p-6 text-center"><div><img src="./icone.svg" className="mx-auto mb-4 h-14 w-14" alt="" />
+      <h1 className="text-xl font-bold">{rota.params.get('google') === 'conectado' ? '✅ Conta Google conectada!' : '❌ Não foi possível conectar'}</h1>
+      <p className="mt-2 text-slate-600">{rota.params.get('google') === 'conectado' ? 'Pode fechar esta página e voltar para o aplicativo Gestor Financeiro.' : 'Volte ao aplicativo e tente de novo em Configurações.'}</p></div></div>
+  );
   if (sessao === undefined) return <div className="flex h-screen items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-teal-700" /></div>;
   if (!sessao) return <><Toasts /><Login /></>;
 

@@ -22,3 +22,14 @@ npm run dev
 | `APP_URL` (opcional) | URL do app, padrão `https://mauriciovalverde.github.io/CLAUDE/gestor/` |
 
 Os tokens do Google são cifrados (AES-256-GCM) com chave derivada da service role, que só existe no servidor.
+
+## Aplicativo Android (APK)
+O app web é empacotado com Capacitor (`android/`). Para gerar o APK assinado:
+```bash
+npm run build && npx cap sync android
+cd android
+export ANDROID_HOME=/caminho/android-sdk GFI_KEYSTORE=/caminho/gestor-financeiro.jks GFI_KEYSTORE_SENHA='...'
+./gradlew assembleRelease     # saída: app/build/outputs/apk/release/app-release.apk
+```
+A chave de assinatura (`.jks`) **não** fica no repositório. Guarde-a: atualizações do app precisam da mesma chave.
+No app, o login do Google abre no navegador do celular (o Google bloqueia login dentro de apps); depois é só voltar ao app.

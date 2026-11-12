@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CalendarCheck, Download, RefreshCw, Unplug } from 'lucide-react';
 import { funcao, supabase } from '../lib/supabase';
+import { abrirExterno, ehNativo, salvarArquivo } from '../lib/nativo';
 import { carregar } from '../lib/dados';
 import { brl, dataBR } from '../lib/fmt';
 import ConfigIA from '../components/ConfigIA';
@@ -17,9 +18,9 @@ function Agenda({ cfg, salvarCfg }: { cfg: any; salvarCfg: (p: any) => Promise<v
   const status = integ?.i?.status ?? 'desconectado';
   async function conectar() {
     setOcupado(true);
-    const r = await funcao('google-oauth/iniciar');
+    const r = await funcao('google-oauth/iniciar', { retorno: ehNativo() ? 'app' : 'web' });
     setOcupado(false);
-    if (r.ok) window.location.href = r.url;
+    if (r.ok) { await abrirExterno(r.url); if (ehNativo()) toast('Autorize no navegador e depois volte para o app.', 'info'); }
     else toast(r.erro === 'google_nao_configurado' ? 'A credencial OAuth do Google ainda não foi configurada no servidor (veja as instruções abaixo).' : r.erro, 'erro');
   }
   async function sincronizar() { setOcupado(true); const r = await funcao('agenda-sync', { forcar: true }); setOcupado(false); toast(r.ok ? `Sincronização: ${r.sincronizados} ok, ${r.pendentes} pendentes, ${r.erros} erros.` : r.erro, r.ok ? 'ok' : 'erro'); recarregar(); avisarMudanca(); }
@@ -77,8 +78,8 @@ export default function Configuracoes({ params }: { params?: URLSearchParams }) 
     const tabelas = ['clientes', 'fornecedores', 'produtos', 'lotes', 'compras', 'compra_itens', 'vendas', 'venda_itens', 'emprestimos', 'emprestimo_eventos', 'obrigacoes', 'pagamentos', 'lancamentos', 'recorrencias', 'contracheques', 'contracheque_itens', 'categorias', 'contas_financeiras', 'configuracoes', 'movimentacoes_estoque', 'receitas_medicas'];
     const out: any = { exportado_em: new Date().toISOString(), versao: 1 };
     for (const t of tabelas) out[t] = (await supabase.from(t).select('*')).data ?? [];
-    const blob = new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `gfi-backup-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+    const txt = JSON.stringify(out, null, 1);
+    await salvarArquivo(`gfi-backup-${new Date().toISOString().slice(0, 10)}.json`, btoa(unescape(encodeURIComponent(txt))), 'application/json');
     toast('Backup exportado.');
   }
   async function saldoInicial(c: any) {

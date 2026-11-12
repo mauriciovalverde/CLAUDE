@@ -3,6 +3,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { brl, dataBR, mesNome, pct } from './fmt';
+import { ehNativo, salvarArquivo } from './nativo';
 
 const COR: [number, number, number] = [15, 118, 110];
 
@@ -71,7 +72,7 @@ export class Relatorio {
       d.text(`Emitido em ${emitido} · Documento confidencial (LGPD)`, 40, this.H - 24); d.text(`Página ${i} de ${n}`, this.W - 40, this.H - 24, { align: 'right' });
     }
   }
-  salvar(nome: string) { this.finalizar(); this.doc.save(nome); }
+  salvar(nome: string) { this.finalizar(); if (ehNativo()) salvarArquivo(nome, this.base64(), 'application/pdf'); else this.doc.save(nome); }
   base64() { this.finalizar(); return (this.doc.output('datauristring') as string).split(',')[1]; }
 }
 

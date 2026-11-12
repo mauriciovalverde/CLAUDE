@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Bot, CalendarCheck, Mail, PartyPopper, Wallet } from 'lucide-react';
 import { funcao, supabase } from '../lib/supabase';
+import { abrirExterno, aoVoltarAoApp, ehNativo } from '../lib/nativo';
 import { Aviso, Btn, Campo, Input, toast } from './ui';
 import ConfigIA from './ConfigIA';
 
@@ -18,7 +19,8 @@ export default function Onboarding({ aoTerminar }: { aoTerminar: () => void }) {
   useEffect(() => {
     supabase.from('configuracoes').select('nome_negocio').maybeSingle().then(({ data }) => setNome(data?.nome_negocio ?? ''));
     supabase.from('contas_financeiras').select('*').is('excluido_em', null).order('escopo').then(({ data }) => setContas(data ?? []));
-    supabase.from('v_integracoes').select('status').maybeSingle().then(({ data }) => setGoogle(data?.status ?? 'desconectado'));
+    const st = () => supabase.from('v_integracoes').select('status').maybeSingle().then(({ data }) => { setGoogle(data?.status ?? 'desconectado'); if (data?.status === 'conectado') setMsgGoogle(''); });
+    st(); aoVoltarAoApp(() => setTimeout(st, 800));
   }, []);
   const uid = async () => (await supabase.auth.getUser()).data.user!.id;
 
@@ -32,8 +34,8 @@ export default function Onboarding({ aoTerminar }: { aoTerminar: () => void }) {
   }
   async function conectarGoogle() {
     setPasso(3);
-    const r = await funcao('google-oauth/iniciar');
-    if (r.ok) window.location.href = r.url;
+    const r = await funcao('google-oauth/iniciar', { retorno: ehNativo() ? 'app' : 'web' });
+    if (r.ok) { await abrirExterno(r.url); if (ehNativo()) setMsgGoogle('Autorize no navegador que abriu e depois volte para o app. A tela atualiza sozinha.'); }
     else setMsgGoogle(r.erro === 'google_nao_configurado' ? 'A conexão com o Google ainda não foi ativada pelo administrador do app. Você pode pular e conectar depois em Configurações.' : (r.erro ?? 'Falha ao iniciar.'));
   }
   async function concluir() {
