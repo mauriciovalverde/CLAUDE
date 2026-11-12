@@ -1,0 +1,2 @@
+{ "name": "Gestor Financeiro Inteligente", "short_name": "Gestor", "start_url": "./", "display": "standalone",
+  "background_color": "#f8fafc", "theme_color": "#0F766E", "icons": [{ "src": "icone.svg", "sizes": "any", "type": "image/svg+xml" }] }
