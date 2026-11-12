@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Bot, CalendarCheck, Mail, PartyPopper, Wallet } from 'lucide-react';
 import { funcao, supabase } from '../lib/supabase';
-import { abrirExterno, aoVoltarAoApp, ehNativo } from '../lib/nativo';
+import { abrirExterno, aoVoltarAoApp, ehNativo, salvarArquivo, salvarTexto } from '../lib/nativo';
+import { codigoTransferencia } from '../lib/acesso';
 import { Aviso, Btn, Campo, Input, toast } from './ui';
 import ConfigIA from './ConfigIA';
 
@@ -90,6 +91,7 @@ export default function Onboarding({ aoTerminar }: { aoTerminar: () => void }) {
             <ul className="space-y-1.5 text-sm">
               {['Comprei 10 unidades de sabonete por 3 reais cada', 'Vendi 2 sabonetes para Maria, 71 99999-0000, por 8 reais cada, ela paga dia 20', 'Paguei 120 reais de internet', 'Quem está me devendo?', 'Manda cobrança por e-mail para a Maria'].map((t) => <li key={t} className="rounded-lg bg-slate-50 px-3 py-2 italic dark:bg-slate-800/50">“{t}”</li>)}
             </ul>
+            {codigoTransferencia() && <Aviso>📱 <b>Importante:</b> guarde seu código para não perder os dados se trocar de celular. <button className="font-semibold text-teal-700 underline" onClick={() => salvarTexto('codigo-gestor-financeiro.txt', `Gestor Financeiro - código para abrir seus dados em outro celular:\n\n${codigoTransferencia()}\n`)}>Salvar código agora</button> (também fica em Configurações).</Aviso>}
             <p className="text-xs text-slate-500">Dúvidas? O menu <b>Ajuda</b> tem um passo a passo de tudo.</p>
             <Btn onClick={concluir}>Ir para o app</Btn>
           </div>}

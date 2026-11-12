@@ -1,11 +1,12 @@
 # Gestor Financeiro: guia de ativação
 
 - **Site:** https://mauriciovalverde.github.io/CLAUDE/gestor/
-- **Android:** arquivo `GestorFinanceiro-1.0.2.apk` (compartilhe pelo WhatsApp, Drive etc.)
+- **Android:** arquivo `GestorFinanceiro-1.0.3.apk` (compartilhe pelo WhatsApp, Drive etc.)
 
 ## ✅ Já está pronto e funcionando para qualquer pessoa, sem você fazer nada
 
-- **Criar conta:** na hora, sem e-mail de confirmação. A pessoa recebe um **código de recuperação** para trocar a senha se esquecer.
+- **Sem cadastro:** a pessoa instala, toca em **Começar a usar** e já está dentro. Cada celular tem seus próprios dados, protegidos e separados.
+- **Trocar de celular:** em Configurações há um **código de transferência**. No celular novo, a pessoa toca em "Troquei de celular", cola o código e encontra tudo de volta. O app lembra de guardar esse código no fim da configuração.
 - **Segurança do banco:** os ajustes já foram aplicados.
 - **Cobrar clientes:** botão **💬 WhatsApp**, que abre a conversa com a mensagem pronta, e **✉️ E-mail**, que abre o app de e-mail do celular.
 - **Lembrete na agenda:** botão **📅 Agenda**, que abre o Google Agenda com o vencimento preenchido; a pessoa só toca em Salvar.

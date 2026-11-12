@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { CalendarCheck, Download, RefreshCw, Unplug } from 'lucide-react';
 import { funcao, supabase } from '../lib/supabase';
-import { abrirExterno, ehNativo, salvarArquivo } from '../lib/nativo';
+import { abrirExterno, ehNativo, salvarArquivo, salvarTexto } from '../lib/nativo';
 import { carregar } from '../lib/dados';
 import { brl, dataBR } from '../lib/fmt';
 import ConfigIA from '../components/ConfigIA';
+import { codigoTransferencia } from '../lib/acesso';
 import { Aviso, avisarMudanca, Btn, Cabecalho, Campo, Card, Input, q, Select, Tabela, toast, useDados } from '../components/ui';
 
 const LEMBRETES = [[10080, '7 dias antes'], [4320, '3 dias antes'], [2880, '2 dias antes'], [1440, '1 dia antes'], [180, '3 horas antes'], [0, 'No horário do vencimento']] as const;
@@ -58,6 +59,23 @@ function Agenda({ cfg, salvarCfg }: { cfg: any; salvarCfg: (p: any) => Promise<v
 }
 async function reconstruirSilencioso() { await funcao('agenda-sync', { reconstruir: true, forcar: true }); }
 
+function TrocarCelular() {
+  const cod = codigoTransferencia();
+  const [ver, setVer] = useState(false);
+  if (!cod) return null;
+  return (
+    <Card titulo="📱 Trocar de celular / guardar meus dados">
+      <p className="text-sm text-slate-600 dark:text-slate-300">Seus dados ficam guardados com segurança na internet. Para abri-los em <b>outro celular</b> (ou se reinstalar o app), use este código. <b>Guarde-o</b>: mande para você mesmo no WhatsApp ou salve no Drive. Quem tiver o código vê seus dados, então não compartilhe com ninguém.</p>
+      {ver && <div className="mt-2 break-all rounded-xl bg-slate-100 p-3 font-mono text-xs dark:bg-slate-800">{cod}</div>}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Btn variante="secundario" onClick={() => setVer(!ver)}>{ver ? 'Esconder' : 'Mostrar código'}</Btn>
+        <Btn variante="secundario" onClick={() => { navigator.clipboard?.writeText(cod); toast('Código copiado. Guarde em lugar seguro.', 'info'); }}>Copiar</Btn>
+        <Btn onClick={() => salvarTexto('codigo-gestor-financeiro.txt', `Gestor Financeiro - código para abrir seus dados em outro celular.\nNo app novo, toque em "Troquei de celular" e cole:\n\n${cod}\n`)}>Salvar / enviar para mim</Btn>
+      </div>
+    </Card>
+  );
+}
+
 export default function Configuracoes({ params }: { params?: URLSearchParams }) {
   const { dados: cfg, recarregar } = useDados(carregar.config, []);
   const { dados: contas } = useDados(carregar.contas, []);
@@ -92,6 +110,7 @@ export default function Configuracoes({ params }: { params?: URLSearchParams }) 
   return (
     <div className="space-y-4">
       <Cabecalho titulo="Configurações" />
+      <TrocarCelular />
       <Card titulo="Inteligência artificial"><ConfigIA /></Card>
       <Agenda cfg={cfg} salvarCfg={salvarCfg} />
       <Card titulo="Seu negócio"><Campo rotulo="Nome (aparece nos e-mails e relatórios)"><Input defaultValue={cfg?.nome_negocio ?? ''} onBlur={(e) => salvarCfg({ nome_negocio: e.target.value || null })} /></Campo></Card>

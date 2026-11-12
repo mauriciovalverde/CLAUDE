@@ -4,6 +4,7 @@ import {
   TrendingUp, FileText, Settings, HelpCircle, Menu, X, CalendarCheck, CalendarClock, CalendarX, LogOut, Moon, Sun, MessageCircle,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { lerAcesso } from '../lib/acesso';
 import { calcularPeriodo, usePeriodo } from '../lib/periodo';
 import { Input, Select } from './ui';
 import ChatPainel from './ChatPainel';
@@ -92,9 +93,9 @@ export default function Layout({ children, rota, email }: { children: ReactNode;
         <a href="#/chat" className="mb-4 flex items-center gap-2 px-2 py-1"><img src="./icone.svg" className="h-8 w-8" alt="" /><div className="leading-tight"><div className="text-sm font-bold">Gestor Financeiro</div><div className="text-[11px] text-slate-500">Inteligente</div></div></a>
         <div className="flex-1 overflow-y-auto"><Nav /></div>
         <div className="mt-2 border-t border-slate-200 pt-2 text-xs text-slate-500 dark:border-slate-800">
-          <div className="truncate px-2">{email}</div>
+          <div className="truncate px-2">{lerAcesso() ? 'Neste celular' : email}</div>
           <div className="mt-1 flex gap-1"><button onClick={alternarTema} className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Tema">{escuro ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</button>
-            <button onClick={() => supabase.auth.signOut()} className="flex items-center gap-1 rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800"><LogOut className="h-4 w-4" />Sair</button></div>
+            {!lerAcesso() && <button onClick={() => supabase.auth.signOut()} className="flex items-center gap-1 rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800"><LogOut className="h-4 w-4" />Sair</button>}</div>
         </div>
       </aside>
 
@@ -104,7 +105,7 @@ export default function Layout({ children, rota, email }: { children: ReactNode;
           <Nav />
           <div className="mt-3 flex gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
             <button onClick={alternarTema} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800">{escuro ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}Tema</button>
-            <button onClick={() => supabase.auth.signOut()} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"><LogOut className="h-4 w-4" />Sair</button>
+            {!lerAcesso() && <button onClick={() => supabase.auth.signOut()} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"><LogOut className="h-4 w-4" />Sair</button>}
           </div>
         </div>
       </div>}
