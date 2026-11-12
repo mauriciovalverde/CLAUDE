@@ -8,7 +8,7 @@ import { executarFerramenta } from './executor';
 
 export type Provedor = 'ollama_local' | 'ollama_cloud' | 'claude';
 export type Msg = { role: 'system' | 'user' | 'assistant' | 'tool'; content?: string; tool_calls?: { id: string; name: string; arguments: any }[]; tool_call_id?: string; name?: string };
-export const MODELO_PADRAO: Record<Provedor, string> = { ollama_local: 'qwen3:8b', ollama_cloud: 'gpt-oss:120b', claude: 'claude-sonnet-5-5' };
+export const MODELO_PADRAO: Record<Provedor, string> = { ollama_local: 'qwen3:8b', ollama_cloud: 'gpt-oss:20b', claude: 'claude-sonnet-5-5' };
 const FERR = (FERRAMENTAS as any[]).map((f) => ({ name: f.name, description: f.description, parameters: f.parameters }));
 const GRAVACAO = /^(registrar|cadastrar|alterar|renegociar|estornar|criar|enviar|atualizar)/;
 
@@ -78,6 +78,12 @@ async function chamarModelo(cfg: any, msgs: Msg[]): Promise<Msg> {
   if (prov === 'ollama_local') return chamarOllamaLocal(cfg?.ia_ollama_url ?? 'http://localhost:11434', modelo, msgs);
   const r = await funcao('ia-modelo', { acao: 'chat', provedor: prov, modelo: prov === 'claude' ? 'claude-sonnet-5-5' : modelo, mensagens: msgs, ferramentas: FERR });
   if (!r.ok) throw new Error(r.mensagem ?? r.erro ?? 'Falha ao falar com a IA.');
+  if (r.modelo_usado && r.modelo_usado !== cfg?.ia_ollama_modelo && prov === 'ollama_cloud') {
+    // o servidor trocou para um modelo gratuito que funciona: guarda para as próximas mensagens
+    cfg.ia_ollama_modelo = r.modelo_usado;
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from('configuracoes').update({ ia_ollama_modelo: r.modelo_usado }).eq('user_id', user!.id);
+  }
   return r.mensagem;
 }
 
