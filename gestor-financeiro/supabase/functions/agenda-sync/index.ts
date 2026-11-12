@@ -170,6 +170,13 @@ Deno.serve(async (req) => {
     const u = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: auth } } });
     const { data: { user } } = await u.auth.getUser();
     if (!user) return json({ ok: false, erro: 'nao_autenticado' }, 401);
+    if (body.reconstruir) {
+      // recoloca todas as obrigações em aberto do usuário na fila (sem duplicar: a fila e o evento são únicos por obrigação)
+      const db = admin();
+      const { data: abertas } = await db.from('obrigacoes').select('id').eq('user_id', user.id).in('status', ['pendente', 'parcial']).is('excluido_em', null);
+      for (const o of abertas ?? []) await db.rpc('enfileirar_agenda', { p_obrigacao: o.id, p_acao: 'upsert' });
+      await db.from('agenda_eventos').update({ hash_conteudo: null }).eq('user_id', user.id);
+    }
     const r = await processar({ userId: user.id, ids: body.obrigacao_ids, forcar: body.forcar ?? true });
     return json({ ok: true, ...r });
   } catch (e) {
