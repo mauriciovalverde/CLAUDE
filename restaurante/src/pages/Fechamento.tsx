@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Lock } from 'lucide-react';
+import { Lock, Unlock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useEu } from '../lib/sessao';
 import { brl, dataBR, dataHora, hoje, lerNum, TURNOS } from '../lib/fmt';
@@ -35,7 +35,8 @@ export default function Fechamento() {
 function MeuCaixa() {
   const { eu } = useEu();
   const [data, setData] = useState(hoje());
-  const [turno, setTurno] = useState(new Date().getHours() < 15 ? 'manha' : 'noite');
+  const [turno, setTurno] = useState('dia');
+  const [abrindo, setAbrindo] = useState(false);
   const [f, setF] = useState<Record<string, any>>({});
   const [reg, setReg] = useState<any>(undefined);
   const [salvando, setSalvando] = useState(false);
@@ -61,6 +62,14 @@ function MeuCaixa() {
     setReg(r); avisarMudanca();
     toast(encerrar ? 'Caixa encerrado e enviado para conferência ✅' : 'Rascunho salvo');
   };
+  // abrir o caixa: registra o saldo inicial (dinheiro que o dono deixou no caixa para o dia)
+  const abrir = async () => {
+    setAbrindo(true);
+    const { data: r, error } = await supabase.from('rest_fechamentos').insert({ data, turno, fundo_troco: n(f.fundo_troco), status: 'aberto' }).select().single();
+    setAbrindo(false);
+    if (error) { toast(error.message.includes('duplicate') ? 'Este caixa já foi aberto.' : error.message, 'erro'); return; }
+    setReg(r); avisarMudanca(); toast(`Caixa aberto com saldo inicial de ${brl(r.fundo_troco)} ✅`);
+  };
   const campo = (k: string, rot: string, dica?: string) => <Campo rotulo={rot} dica={dica}><Dinheiro valor={f[k] ?? ''} mudar={(v) => setF({ ...f, [k]: v })} disabled={!!bloqueado} className="!py-3 text-lg" placeholder="0,00" /></Campo>;
   if (reg === undefined) return null;
   return (
@@ -72,19 +81,30 @@ function MeuCaixa() {
         </div>
         {reg && <div className="mt-2 flex items-center gap-2 text-sm"><Badge s={reg.status} />{reg.status === 'devolvido' && reg.obs_conferencia && <span className="text-rose-700">Administrador: {reg.obs_conferencia}</span>}</div>}
         {bloqueado && <div className="mt-2"><Aviso tipo="info"><Lock className="mr-1 inline h-4 w-4" />Caixa encerrado. Para corrigir, peça ao administrador para devolver.</Aviso></div>}
+        {reg && <div className="mt-3 rounded-xl bg-emerald-50 p-3 dark:bg-emerald-950/30">
+          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-800 dark:text-emerald-300"><Unlock className="h-4 w-4" />Caixa aberto em {dataHora(reg.criado_em)}</div>
+          {campo('fundo_troco', 'Saldo inicial', 'dinheiro que o dono deixou no caixa para começar o dia')}
+        </div>}
       </Card>
+      {!reg && <Card titulo="Abrir caixa">
+        <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">Antes de começar a vender, informe quanto dinheiro tem no caixa para o dia (o valor que o dono disponibilizou para troco).</p>
+        <Campo rotulo="Saldo inicial"><Dinheiro valor={f.fundo_troco ?? ''} mudar={(v) => setF({ ...f, fundo_troco: v })} className="!py-4 text-2xl font-bold" placeholder="0,00" autoFocus /></Campo>
+        <Btn className="mt-3 w-full !py-3.5 text-base" carregando={abrindo} disabled={f.fundo_troco === '' || f.fundo_troco == null || !(lerNum(f.fundo_troco) >= 0)} onClick={abrir}><Unlock className="h-5 w-5" />Abrir caixa de {TURNOS[turno].toLowerCase()} · {dataBR(data)}</Btn>
+        <p className="mt-2 text-xs text-slate-500">Se não deixaram dinheiro, digite 0.</p>
+      </Card>}
+      {reg && <>
       <Card titulo="Recebido em cada forma de pagamento">
         <div className="grid gap-3 sm:grid-cols-2">{FORMAS.map(([k, t]) => <div key={k}>{campo(k, t)}{k === 'outros' && n(f.outros) > 0 && <Input className="mt-1" placeholder="Quais? (ex.: iFood)" value={f.outros_desc} onChange={(e) => setF({ ...f, outros_desc: e.target.value })} disabled={!!bloqueado} />}</div>)}</div>
         <div className="mt-3 grid grid-cols-2 gap-3"><Campo rotulo="Número de vendas"><Input inputMode="numeric" value={f.num_vendas} onChange={(e) => setF({ ...f, num_vendas: e.target.value.replace(/\D/g, '') })} disabled={!!bloqueado} className="!py-3 text-lg" /></Campo>
           <div className="rounded-xl bg-brand-50 p-3 text-right dark:bg-brand-950/40"><div className="text-xs uppercase text-slate-500">Total geral</div><div className="text-2xl font-bold tabular-nums text-brand-700">{brl(c.total)}</div></div></div>
       </Card>
       <Card titulo="Movimentações do caixa">
-        <div className="grid gap-3 sm:grid-cols-2">{campo('fundo_troco', 'Fundo de troco (início do turno)')}{MOVS.map(([k, t, d]) => <div key={k}>{campo(k, t, d)}</div>)}</div>
+        <div className="grid gap-3 sm:grid-cols-2">{MOVS.map(([k, t, d]) => <div key={k}>{campo(k, t, d)}</div>)}</div>
       </Card>
       <Card titulo="Conferência">
         <div className="grid gap-3 sm:grid-cols-2">{campo('dinheiro_contado', 'Dinheiro contado na gaveta', 'conte as notas e moedas no fim do turno')}{campo('valor_sistema', 'Total do sistema/PDV (se tiver)', 'o que a máquina ou o sistema mostra')}</div>
         <div className="mt-3 space-y-1 text-sm">
-          <div className="flex justify-between"><span>Dinheiro esperado na gaveta (troco + dinheiro + reforços − sangrias)</span><b className="tabular-nums">{brl(c.esperado)}</b></div>
+          <div className="flex justify-between"><span>Dinheiro esperado na gaveta (saldo inicial + dinheiro + reforços − sangrias)</span><b className="tabular-nums">{brl(c.esperado)}</b></div>
           {c.difGaveta != null && <div className={`flex justify-between ${Math.abs(c.difGaveta) >= 0.01 ? 'font-semibold text-rose-600' : 'text-emerald-700'}`}><span>Diferença na gaveta</span><span className="tabular-nums">{c.difGaveta > 0 ? 'sobra ' : c.difGaveta < 0 ? 'falta ' : ''}{brl(Math.abs(c.difGaveta))}</span></div>}
           {c.difSistema != null && <div className={`flex justify-between ${Math.abs(c.difSistema) >= 0.01 ? 'font-semibold text-rose-600' : 'text-emerald-700'}`}><span>Informado × sistema</span><span className="tabular-nums">{brl(c.difSistema)}</span></div>}
         </div>
@@ -95,6 +115,7 @@ function MeuCaixa() {
         <Btn variante="secundario" className="flex-1 !py-3" carregando={salvando} onClick={() => salvar(false)}>Salvar rascunho</Btn>
         <Btn className="flex-1 !py-3 text-base" disabled={c.total <= 0} onClick={() => setConfirmar(true)}><Lock className="h-5 w-5" />Encerrar caixa</Btn>
       </div>}
+      </>}
       <Modal aberto={confirmar} fechar={() => setConfirmar(false)} titulo="Encerrar o caixa?">
         <p className="text-sm">Total de <b>{brl(c.total)}</b> em {TURNOS[turno].toLowerCase()} de {dataBR(data)}. Depois de encerrar, só o administrador pode reabrir.</p>
         <Btn className="mt-4 w-full !py-3" carregando={salvando} onClick={() => salvar(true)}>Sim, encerrar</Btn>
@@ -136,7 +157,7 @@ function Conferir({ r, admin, fechar }: { r: any; admin: boolean; fechar: () => 
           {FORMAS.map(([k, t]) => <div key={k} className="flex justify-between border-b py-1 dark:border-slate-800"><span>{t}{k === 'outros' && r.outros_desc ? ` (${r.outros_desc})` : ''}</span><span className="tabular-nums">{brl(r[k])}</span></div>)}
           <div className="flex justify-between border-b py-1 font-bold dark:border-slate-800"><span>Total geral</span><span className="tabular-nums">{brl(c.total)}</span></div>
           <div className="flex justify-between border-b py-1 dark:border-slate-800"><span>Nº de vendas</span><span>{r.num_vendas ?? '—'}{r.num_vendas ? ` · ticket ${brl(c.total / r.num_vendas)}` : ''}</span></div>
-          {[['fundo_troco', 'Fundo de troco'], ...MOVS.map(([k, t]) => [k, t])].map(([k, t]) => <div key={k} className="flex justify-between border-b py-1 dark:border-slate-800"><span>{t}</span><span className="tabular-nums">{brl(r[k])}</span></div>)}
+          {[['fundo_troco', 'Saldo inicial'], ...MOVS.map(([k, t]) => [k, t])].map(([k, t]) => <div key={k} className="flex justify-between border-b py-1 dark:border-slate-800"><span>{t}</span><span className="tabular-nums">{brl(r[k])}</span></div>)}
         </div>
         <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">
           <div className="flex justify-between"><span>Dinheiro esperado na gaveta</span><b>{brl(c.esperado)}</b></div>
