@@ -28,7 +28,7 @@ export async function executarFerramenta(nome: string, a: any): Promise<any> {
     case 'buscar_produto': {
       const l = await acharProduto(a.nome);
       const ids = l.map((p) => p.id);
-      const { data: precos } = ids.length ? await supabase.from('rest_v_itens').select('produto_id,valor_unitario,data,fornecedor').in('produto_id', ids).not('valor_unitario', 'is', null).order('data', { ascending: false }).limit(50) : { data: [] as any[] };
+      const { data: precos } = ids.length ? await supabase.from('rest_v_precos').select('produto_id,valor_unitario,data,fornecedor').in('produto_id', ids).not('valor_unitario', 'is', null).order('data', { ascending: false }).limit(50) : { data: [] as any[] };
       return { ok: true, encontrados: l.map((p) => ({ nome: p.nome, unidade: p.unidade, categoria: nomeCategoria(p.categoria), estoque: p.estoque_atual, ultimo_preco: precos?.find((x) => x.produto_id === p.id) ?? null })), dica: l.length ? undefined : 'Produto novo: será cadastrado ao registrar a compra.' };
     }
     case 'buscar_fornecedor': { const l = await acharFornecedor(a.nome); return { ok: true, encontrados: l.map((f) => ({ nome: f.nome, telefone: f.telefone, condicoes: f.condicoes_pagamento })), dica: l.length ? undefined : 'Fornecedor novo: será cadastrado ao registrar a compra.' }; }
@@ -48,7 +48,7 @@ export async function executarFerramenta(nome: string, a: any): Promise<any> {
       const [forn] = await acharFornecedor(a.fornecedor);
       const fornecedor = forn && forn.chave === chaveFornecedor(a.fornecedor) ? forn : null;
       if (!a.confirmar_duplicada && fornecedor) {
-        const { data: dup } = await supabase.from('rest_compras').select('numero,total').eq('fornecedor_id', fornecedor.id).eq('data', a.data).neq('status', 'cancelada');
+        const { data: dup } = await supabase.from('rest_compras').select('numero,total').eq('fornecedor_id', fornecedor.id).eq('data', a.data).not('status', 'in', '(cancelada,historico)');
         const igual = (dup ?? []).find((c) => Math.abs(+c.total - totalCompra) < 0.01);
         if (igual) return { ok: false, erro: 'POSSIVEL_DUPLICIDADE', mensagem: `Já existe a compra #${igual.numero} de ${fornecedor.nome} em ${a.data} com o mesmo total. É outra compra?` };
       }
@@ -58,7 +58,7 @@ export async function executarFerramenta(nome: string, a: any): Promise<any> {
 
     case 'registrar_despesa': {
       if (!a.confirmar_duplicada) {
-        const { data: dup } = await supabase.from('rest_contas').select('numero').eq('tipo', 'pagar').eq('valor', a.valor).eq('vencimento', a.vencimento).ilike('descricao', a.descricao).neq('status', 'cancelado');
+        const { data: dup } = await supabase.from('rest_contas').select('numero').eq('tipo', 'pagar').eq('valor', a.valor).eq('vencimento', a.vencimento).ilike('descricao', a.descricao).not('status', 'in', '(cancelado,historico)');
         if (dup?.length) return { ok: false, erro: 'POSSIVEL_DUPLICIDADE', mensagem: `Já existe a conta #${dup[0].numero} igual (mesma descrição, valor e vencimento). É outra?` };
       }
       const [forn] = a.fornecedor ? await acharFornecedor(a.fornecedor) : [];
@@ -124,7 +124,7 @@ export async function executarFerramenta(nome: string, a: any): Promise<any> {
     }
 
     case 'contas': {
-      let x = supabase.from('rest_contas').select('numero,descricao,valor,vencimento,status,pago_em, rest_fornecedores(nome)').eq('tipo', a.tipo).neq('status', 'cancelado').order('vencimento').limit(200);
+      let x = supabase.from('rest_contas').select('numero,descricao,valor,vencimento,status,pago_em, rest_fornecedores(nome)').eq('tipo', a.tipo).not('status', 'in', '(cancelado,historico)').order('vencimento').limit(200);
       if (a.situacao === 'abertas' || !a.situacao) x = x.eq('status', 'pendente'); if (a.situacao === 'vencidas') x = x.eq('status', 'pendente').lt('vencimento', hoje()); if (a.situacao === 'pagas') x = x.eq('status', 'pago');
       if (a.de) x = x.gte(a.situacao === 'pagas' ? 'pago_em' : 'vencimento', a.de); if (a.ate) x = x.lte(a.situacao === 'pagas' ? 'pago_em' : 'vencimento', a.ate);
       const { data: l, error } = await x; if (error) return { ok: false, mensagem: error.message };

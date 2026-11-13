@@ -17,8 +17,8 @@ export async function carregarPeriodo(de: string, ate: string) {
   const [itens, vendas, contas, compras] = await Promise.all([
     todas('rest_v_itens', 'compra_id,data,fornecedor,fornecedor_id,produto,produto_id,categoria,quantidade,unidade,valor_unitario,valor_total', (x) => x.gte('data', de).lte('data', ate).order('data')),
     todas('rest_vendas', '*', (x) => x.gte('data', de).lte('data', ate).order('data')),
-    todas('rest_contas', 'tipo,categoria,valor,status,vencimento,pago_em,emissao,origem,descricao,fornecedor_id', (x) => x.neq('status', 'cancelado').or(`and(emissao.gte.${de},emissao.lte.${ate}),and(vencimento.gte.${de},vencimento.lte.${ate}),and(pago_em.gte.${de},pago_em.lte.${ate})`)),
-    todas('rest_compras', 'id,data,total,desconto,fornecedor_id,status', (x) => x.gte('data', de).lte('data', ate).neq('status', 'cancelada')),
+    todas('rest_contas', 'tipo,categoria,valor,status,vencimento,pago_em,emissao,origem,descricao,fornecedor_id', (x) => x.not('status', 'in', '(cancelado,historico)').or(`and(emissao.gte.${de},emissao.lte.${ate}),and(vencimento.gte.${de},vencimento.lte.${ate}),and(pago_em.gte.${de},pago_em.lte.${ate})`)),
+    todas('rest_compras', 'id,data,total,desconto,fornecedor_id,status', (x) => x.gte('data', de).lte('data', ate).not('status', 'in', '(cancelada,historico)')),
   ]);
   return { de, ate, itens, vendas, contas, compras };
 }

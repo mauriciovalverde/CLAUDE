@@ -23,7 +23,7 @@ export default function Compras() {
     if (aba === 'receber') x = x.eq('status', 'comprada'); else { x = x.gte('data', de).lte('data', ate); if (forn) x = x.eq('fornecedor_id', forn); }
     return q<any[]>(x.limit(500));
   }, [aba, de, ate, forn]);
-  const total = useMemo(() => (dados ?? []).filter((c) => c.status !== 'cancelada').reduce((t, c) => t + Number(c.total), 0), [dados]);
+  const total = useMemo(() => (dados ?? []).filter((c) => !['cancelada', 'historico'].includes(c.status)).reduce((t, c) => t + Number(c.total), 0), [dados]);
 
   return (
     <div>

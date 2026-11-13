@@ -156,7 +156,7 @@ create table if not exists rest_compras (
   subtotal numeric(14,2) not null default 0, desconto numeric(14,2) not null default 0, total numeric(14,2) not null,
   responsavel_id uuid default rest_meu_funcionario() references rest_funcionarios(id) on delete set null,
   origem text not null default 'manual' check (origem in ('manual','planilha','nota','ia')),
-  status text not null default 'comprada' check (status in ('comprada','parcial_recebida','recebida','cancelada')),
+  status text not null default 'comprada' check (status in ('comprada','parcial_recebida','recebida','cancelada','historico')),
   recebido_em timestamptz, recebido_por uuid references rest_funcionarios(id),
   obs text, assinatura text, importacao_id uuid references rest_importacoes(id) on delete set null,
   data_estimada boolean not null default false,
@@ -269,7 +269,7 @@ create table if not exists rest_contas (
   valor numeric(14,2) not null check (valor > 0),
   parcela_num int not null default 1, parcela_total int not null default 1,
   grupo_id uuid,
-  status text not null default 'pendente' check (status in ('pendente','pago','cancelado')),
+  status text not null default 'pendente' check (status in ('pendente','pago','cancelado','historico')),
   pago_em date, forma_pagamento text, comprovante_path text,
   origem text not null default 'manual' check (origem in ('manual','compra','planilha','ia','venda')),
   obs text,
@@ -429,4 +429,9 @@ create or replace view rest_v_itens with (security_invoker = true) as
          i.valor_unitario, i.valor_total, i.qtd_recebida, c.restaurante_id
   from rest_compra_itens i join rest_compras c on c.id = i.compra_id
   left join rest_produtos p on p.id = i.produto_id left join rest_fornecedores f on f.id = c.fornecedor_id
+  where c.status not in ('cancelada', 'historico');
+-- 'historico' = guardado só como histórico de preços, fora de todos os valores
+create or replace view rest_v_precos with (security_invoker = true) as
+  select i.produto_id, i.valor_unitario, i.unidade, c.data, c.fornecedor_id, f.nome as fornecedor, c.status = 'historico' as historico, c.restaurante_id
+  from rest_compra_itens i join rest_compras c on c.id = i.compra_id left join rest_fornecedores f on f.id = c.fornecedor_id
   where c.status <> 'cancelada';
