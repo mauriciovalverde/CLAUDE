@@ -3,6 +3,8 @@ import { MODULOS, podeVer } from '../lib/modulos';
 import { useEu } from '../lib/sessao';
 import { brl, hoje, inicioMes } from '../lib/fmt';
 import { useDados } from '../components/ui';
+import { contadores, meusComunicados } from '../lib/comunicados';
+import { Megaphone } from 'lucide-react';
 
 async function contar(t: string, f: (x: any) => any) { const { count } = await f(supabase.from(t).select('id', { count: 'exact', head: true })); return count ?? 0; }
 
@@ -27,6 +29,7 @@ export default function Inicio() {
     } else if (pode('caixa')) {
       add('fechamento', contar('rest_fechamentos', (x) => x.eq('operador_id', eu.id).in('status', ['aberto', 'devolvido'])));
     }
+    tarefas.push(meusComunicados(eu.id).then((l) => { const c = contadores(l); r.comunicados = c.pendentes; r._urg = c.urgentes; r._conf = c.confirmadas; r._prazo = c.prazoProximo; r._venc = c.vencidas; }).catch(() => {}));
     add('pedir', contar('rest_solicitacoes', (x) => x.eq('solicitante_id', eu.id).eq('status', 'em_elaboracao')));
     await Promise.all(tarefas);
     return r;
@@ -44,6 +47,13 @@ export default function Inicio() {
           <p className="text-sm text-slate-500">{rest.nome} · {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
         </div>
       </div>
+
+      {n && <a href="#/comunicados" className={`flex items-center gap-3 rounded-2xl p-4 shadow-sm ${n.comunicados ? (n._urg ? 'animate-pulse bg-red-600 text-white' : 'bg-brand-700 text-white') : 'border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900'}`}>
+        <Megaphone className="h-8 w-8 shrink-0" />
+        <div className="min-w-0 flex-1"><div className="font-bold">COMUNICADOS E AVISOS</div>
+          <div className={`text-sm ${n.comunicados ? 'opacity-90' : 'text-slate-500'}`}>{n.comunicados ? `${n.comunicados} comunicado(s) pendente(s)` : 'Nenhum comunicado pendente'}{n._urg ? ` · ${n._urg} urgente(s)` : ''}{n._prazo ? ` · ${n._prazo} com prazo próximo` : ''}{n._venc ? ` · ${n._venc} vencido(s)` : ''} · {n._conf ?? 0} confirmado(s)</div></div>
+        {n.comunicados > 0 && <span className="rounded-full bg-white px-2.5 py-1 text-sm font-bold text-brand-700">{n.comunicados}</span>}
+      </a>}
 
       {resumo && <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {[['Vendas hoje', brl(resumo.vendas_hoje)], ['Compras hoje', brl(resumo.compras_hoje)], ['Contas vencidas', brl(resumo.vencidas)], ['Saldo de caixa (estimado)', brl(resumo.saldo_caixa)]].map(([t, v]) => (

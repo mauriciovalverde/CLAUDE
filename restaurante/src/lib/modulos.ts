@@ -1,8 +1,9 @@
-import { BarChart3, Fingerprint, UserRoundCheck, Bot, Box, Calculator, ClipboardList, FileText, GitCompareArrows, HandHeart, HelpCircle, Settings, ShoppingBasket, ShoppingCart, Store, Users, UsersRound, Wallet } from 'lucide-react';
+import { BarChart3, Fingerprint, Megaphone, Send, UserRoundCheck, Bot, Box, Calculator, ClipboardList, FileText, GitCompareArrows, HandHeart, HelpCircle, Settings, ShoppingBasket, ShoppingCart, Store, Users, UsersRound, Wallet } from 'lucide-react';
 import type { Papel } from './sessao';
 
 // Blocos da tela principal (cores pastel da referência) e quem pode ver cada um.
 export const MODULOS: { id: string; t: string; i: any; cor: string; tinta: string; papeis: Papel[]; desc: string }[] = [
+  { id: 'comunicados', t: 'Comunicados e avisos', i: Megaphone, cor: 'bg-[#FFE9A8]', tinta: 'text-[#7A5600]', papeis: ['solicitante', 'compras', 'estoque', 'caixa', 'admin'], desc: 'Mensagens da administração' },
   { id: 'meu-ponto', t: 'Meu ponto', i: Fingerprint, cor: 'bg-[#FFE1D6]', tinta: 'text-[#8A2E12]', papeis: ['solicitante', 'compras', 'estoque', 'caixa', 'admin'], desc: 'Bater ponto e espelho' },
   { id: 'pedir', t: 'Pedir produtos', i: ShoppingCart, cor: 'bg-[#FBE3C6]', tinta: 'text-[#8A4B12]', papeis: ['solicitante', 'compras', 'estoque', 'caixa'], desc: 'Escolher e enviar' },
   { id: 'compras', t: 'Compras', i: ShoppingBasket, cor: 'bg-[#EADFC9]', tinta: 'text-[#5B4A2E]', papeis: ['compras'], desc: 'Registrar e receber' },
@@ -17,6 +18,7 @@ export const MODULOS: { id: string; t: string; i: any; cor: string; tinta: strin
   { id: 'vendas', t: 'Vendas', i: Store, cor: 'bg-[#FFF0B8]', tinta: 'text-[#6B5A10]', papeis: ['admin'], desc: 'Faturamento' },
   { id: 'comparativo', t: 'Comparativo', i: GitCompareArrows, cor: 'bg-[#D7EEF3]', tinta: 'text-[#22566A]', papeis: ['admin'], desc: 'Mês contra mês' },
   { id: 'ia', t: 'Central IA', i: Bot, cor: 'bg-[#E3E8FF]', tinta: 'text-[#3A44A0]', papeis: ['admin'], desc: 'Escreva e a IA faz' },
+  { id: 'comunicacao', t: 'Comunicação interna', i: Send, cor: 'bg-[#E0F0FF]', tinta: 'text-[#1D4E89]', papeis: ['admin'], desc: 'Enviar comunicados' },
   { id: 'ponto', t: 'Controle de ponto', i: UserRoundCheck, cor: 'bg-[#DCEBFA]', tinta: 'text-[#1F4E79]', papeis: ['admin'], desc: 'Jornada da equipe' },
   { id: 'equipe', t: 'Equipe', i: Users, cor: 'bg-[#F7DADA]', tinta: 'text-[#7A2A2A]', papeis: ['admin'], desc: 'Acessos e PINs' },
   { id: 'configuracoes', t: 'Configurações', i: Settings, cor: 'bg-[#ECECEC]', tinta: 'text-[#444]', papeis: ['solicitante', 'compras', 'estoque', 'caixa'], desc: 'Restaurante e PIN' },
