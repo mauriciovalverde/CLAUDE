@@ -3,11 +3,11 @@ import { Check, Crosshair, ExternalLink, FileSpreadsheet, FileText, Lock, LockOp
 import { supabase } from '../lib/supabase';
 import { useEu } from '../lib/sessao';
 import { abrirPrivado } from '../lib/arquivos';
-import { addDias, dataBR, dataHora, fimMes, inicioMes } from '../lib/fmt';
+import { addDias, brl, dataBR, dataHora, fimMes, inicioMes } from '../lib/fmt';
 import { gerarExcel, gerarPDF, type Rel } from '../lib/relatorios';
 import { salvarTexto } from '../lib/nativo';
 import { COR_NOME, fmtHM, hojeLocal, horaLocal, local, montarDias, NOMES_TIPO, textoMotivos, totais, type Cor, type Dia } from '../lib/ponto/dados';
-import { carregarPeriodo, COLS_ESPELHO, CorDia, FotoPrivada, Legenda, linhasEspelho } from '../components/ponto/comum';
+import { carregarPeriodo, carregarRecebidos, somarRecebidos, COLS_ESPELHO, CorDia, FotoPrivada, Legenda, linhasEspelho } from '../components/ponto/comum';
 import FuncionarioPonto from '../components/ponto/FuncionarioPonto';
 import { ROTULO_AUS, ROTULO_ENTREGA } from './MeuPonto';
 import { Abas, Aviso, avisarMudanca, Btn, Cabecalho, Campo, Card, Input, Modal, q, Select, Stat, Tabela, Textarea, toast, useDados } from '../components/ui';
@@ -298,18 +298,18 @@ function Fechamento() {
   const [mes, setMes] = useState(addDias(inicioMes(), -1).slice(0, 7));
   const de = mes + '-01', ate = fimMes(de);
   const { dados } = useDados(async () => {
-    const [t, hist, aju] = await Promise.all([apurarTodos(de, ate), q<any[]>(supabase.from('rest_ponto_fechamentos').select('*').order('mes', { ascending: false })), q<any[]>(supabase.from('rest_ponto_ajustes').select('id').eq('status', 'pendente').gte('data_ref', de).lte('data_ref', ate))]);
-    return { ...t, hist, aju };
+    const [t, hist, aju, receb] = await Promise.all([apurarTodos(de, ate), q<any[]>(supabase.from('rest_ponto_fechamentos').select('*').order('mes', { ascending: false })), q<any[]>(supabase.from('rest_ponto_ajustes').select('id').eq('status', 'pendente').gte('data_ref', de).lte('data_ref', ate)), carregarRecebidos(de, ate, null).catch(() => [])]);
+    return { ...t, hist, aju, receb };
   }, [mes]);
   const [motivo, setMotivo] = useState('');
   const [rodando, setRodando] = useState(false);
   if (!dados) return <div className="p-6 text-center text-sm text-slate-500">Carregando…</div>;
   const atual = dados.hist.find((h) => h.mes === de);
-  const resumo = dados.porFunc.map(({ f, dias }) => ({ id: f.id, nome: f.nome, ...totais(dias) }));
+  const resumo = dados.porFunc.map(({ f, dias }) => ({ id: f.id, nome: f.nome, ...totais(dias), recebido: somarRecebidos(dados.receb.filter((x) => x.funcionario_id === f.id)) }));
   const pend = resumo.reduce((t, r) => t + r.pendentes, 0);
   const fechar = async () => {
     setRodando(true);
-    const { error } = await supabase.rpc('rest_ponto_fechar_mes', { p_mes: de, p_resumo: { gerado_em: new Date().toISOString(), funcionarios: resumo.map((r) => ({ id: r.id, nome: r.nome, previsto: r.previsto, trabalhado: r.trabalhado, saldo: r.saldo, extra: r.extra, faltas: r.faltas, atraso: r.atraso, noturno: r.noturnoReal, pendentes: r.pendentes })) } });
+    const { error } = await supabase.rpc('rest_ponto_fechar_mes', { p_mes: de, p_resumo: { gerado_em: new Date().toISOString(), funcionarios: resumo.map((r) => ({ id: r.id, nome: r.nome, previsto: r.previsto, trabalhado: r.trabalhado, saldo: r.saldo, extra: r.extra, faltas: r.faltas, atraso: r.atraso, noturno: r.noturnoReal, pendentes: r.pendentes, vales: r.recebido.vale, transporte: r.recebido.transporte, outros_recebidos: r.recebido.outros })) } });
     setRodando(false); if (error) toast(error.message, 'erro'); else { toast('Mês fechado'); avisarMudanca(); }
   };
   const reabrir = async () => { const { error } = await supabase.rpc('rest_ponto_reabrir_mes', { p_mes: de, p_motivo: motivo }); if (error) toast(error.message, 'erro'); else { toast('Mês reaberto (fica no histórico)'); setMotivo(''); avisarMudanca(); } };
@@ -332,7 +332,10 @@ function Fechamento() {
         { k: 's', t: 'Saldo', r: (r) => <span className={r.saldo < 0 ? 'text-red-600' : ''}>{fmtHM(r.saldo)}</span>, num: true }, { k: 'e', t: 'Extras', r: (r) => fmtHM(r.extra), num: true },
         { k: 'f', t: 'Faltas', r: (r) => r.faltas, num: true }, { k: 'a', t: 'Atrasos', r: (r) => fmtHM(r.atraso), num: true, esconderCelular: true }, { k: 'n', t: 'Noturno', r: (r) => fmtHM(r.noturnoReal), num: true, esconderCelular: true },
         { k: 'pe', t: 'Em análise', r: (r) => r.pendentes || '', num: true },
+        { k: 'rv', t: 'Vales', r: (r) => (r.recebido.vale ? brl(r.recebido.vale) : ''), num: true }, { k: 'rt', t: 'Transporte', r: (r) => (r.recebido.transporte ? brl(r.recebido.transporte) : ''), num: true },
+        { k: 'ro', t: 'Outros receb.', r: (r) => (r.recebido.outros ? brl(r.recebido.outros) : ''), num: true, esconderCelular: true },
       ]} />
+      <p className="text-xs text-slate-500">Vales, transporte e outros = o que cada um já recebeu pelo caixa no mês (lançado na sangria do Caixa, atrelado ao funcionário). Use para descontar/acertar no pagamento.</p>
       <Card titulo="Histórico de fechamentos">
         {!dados.hist.length ? <p className="text-sm text-slate-500">Nenhum mês fechado ainda.</p> : <div className="space-y-1.5 text-sm">{dados.hist.map((h) => <div key={h.id}><b>{h.mes.slice(5, 7)}/{h.mes.slice(0, 4)}</b> · fechado em {dataHora(h.fechado_em)}{h.status === 'reaberto' && <> · <span className="text-amber-700">reaberto em {dataHora(h.reaberto_em)}: {h.motivo_reabertura}</span></>}</div>)}</div>}
       </Card>

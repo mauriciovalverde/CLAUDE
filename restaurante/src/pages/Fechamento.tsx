@@ -8,7 +8,9 @@ import { Abas, Aviso, avisarMudanca, Badge, Btn, Cabecalho, Campo, Card, Dinheir
 const FORMAS: [string, string][] = [['dinheiro', '💵 Dinheiro (vendas, sem o valor inicial)'], ['debito', '💳 Cartão de débito'], ['credito', '💳 Cartão de crédito'], ['pix', '⚡ PIX'], ['vale_alimentacao', '🛒 Vale-alimentação'], ['vale_refeicao', '🍽️ Vale-refeição'], ['outros', '🛵 iFood / 99Food / outros']];
 const MOVS: [string, string, string][] = [['reforcos', 'Reforços (entrou troco)', 'dinheiro colocado na gaveta'], ['cancelamentos', 'Cancelamentos', 'vendas canceladas'], ['estornos', 'Estornos', 'devoluções a clientes'], ['descontos', 'Descontos concedidos', '']];
 const CAMPOS = ['fundo_troco', ...FORMAS.map((f) => f[0]), 'sangrias', ...MOVS.map((m) => m[0]), 'dinheiro_contado', 'valor_sistema'];
-export const TIPOS_DESPESA: Record<string, string> = { transporte: '🚌 Transporte', taxi: '🚕 Táxi', vale: '💵 Vale', outros: '➕ Outros' };
+export const TIPOS_DESPESA: Record<string, string> = { vale: '💵 Vale (antecipação de salário)', transporte: '🚌 Transporte', outros: '➕ Outros (especificar)', taxi: '🚕 Táxi' };
+/** opções mostradas ao lançar (táxi antigo continua aparecendo nos registros) */
+const TIPOS_LANCAR = ['vale', 'transporte', 'outros'];
 
 /** Conta igual à folha de fechamento em papel. */
 export function contaPapel(f: Record<string, any>) {
@@ -64,7 +66,7 @@ function DespesasGaveta({ fechamentoId, bloqueado, total }: { fechamentoId: stri
   return (
     <Card titulo="Despesas pagas com o dinheiro do caixa (sangria)">
       {!bloqueado && <div className="space-y-2">
-        <div className="flex flex-wrap gap-1">{Object.entries(TIPOS_DESPESA).map(([k, t]) => <button key={k} type="button" aria-pressed={d.tipo === k} onClick={() => setD({ ...d, tipo: k })} className={`rounded-full px-3 py-1.5 text-sm ${d.tipo === k ? 'bg-brand-700 text-white' : 'bg-slate-100 dark:bg-slate-800'}`}>{t}</button>)}</div>
+        <div className="flex flex-wrap gap-1">{TIPOS_LANCAR.map((k) => [k, TIPOS_DESPESA[k]]).map(([k, t]) => <button key={k} type="button" aria-pressed={d.tipo === k} onClick={() => setD({ ...d, tipo: k })} className={`rounded-full px-3 py-1.5 text-sm ${d.tipo === k ? 'bg-brand-700 text-white' : 'bg-slate-100 dark:bg-slate-800'}`}>{t}</button>)}</div>
         <div className="grid gap-2 sm:grid-cols-2">
           <Campo rotulo="Para quem"><Select value={d.quem} onChange={(e) => setD({ ...d, quem: e.target.value })}><option value="">Escolha…</option>{(equipe ?? []).map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}<option value="digitar">✏️ Digitar outro nome</option></Select></Campo>
           {d.quem === 'digitar' && <Campo rotulo="Nome"><Input value={d.pessoa} onChange={(e) => setD({ ...d, pessoa: e.target.value })} placeholder="Ex.: motorista, entregador, loja" /></Campo>}
@@ -77,7 +79,7 @@ function DespesasGaveta({ fechamentoId, bloqueado, total }: { fechamentoId: stri
         {(lista ?? []).map((x) => <div key={x.id} className="flex items-center gap-2 border-b py-1 dark:border-slate-800"><span className="flex-1">{TIPOS_DESPESA[x.tipo]} · <b>{x.rest_funcionarios?.nome ?? x.pessoa}</b>{x.descricao ? ` · ${x.descricao}` : ''}</span><span className="tabular-nums">{brl(x.valor)}</span>{!bloqueado && <button className="px-1 text-slate-400" aria-label="Remover despesa" onClick={() => remover(x.id)}>✕</button>}</div>)}
         {lista && !lista.length && <p className="text-slate-500">Nenhuma despesa lançada.</p>}
         <div className="flex justify-between pt-1 font-bold"><span>Total de despesas do dia</span><span className="tabular-nums">{brl(soma)}</span></div>
-        <p className="text-xs text-slate-500">Ao fazer o fechamento, cada despesa entra no Financeiro como paga (vale vai para “Vale a funcionário”).</p>
+        <p className="text-xs text-slate-500">Ao fazer o fechamento, cada despesa entra no Financeiro como paga (vale vai para “Vale a funcionário”). O que foi atrelado a um funcionário aparece no fechamento mensal dele (Ponto → Fechamento e no espelho).</p>
       </div>
     </Card>
   );
