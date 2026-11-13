@@ -1,5 +1,5 @@
 // ia-modelo: uma "volta" do modelo de IA, para os provedores que rodam na nuvem.
-//   acao 'chat'          { provedor: 'ollama_cloud'|'claude', modelo, mensagens, ferramentas } -> { ok, mensagem }
+//   acao 'chat'          { provedor: 'ollama_cloud'|'gemini'|'claude', modelo, mensagens, ferramentas } -> { ok, mensagem }
 //   acao 'salvar_chave'  { provedor: 'ollama_cloud', chave }  (cifrada; nunca volta para o navegador)
 //   acao 'remover_chave' { provedor }
 //   acao 'testar'        { provedor } -> { ok, modelos[] }
@@ -70,6 +70,57 @@ async function chatOllama(chave: string, modelo: string, msgs: Msg[], ferr: Ferr
   };
 }
 
+
+// ---------- Google Gemini (chave gratuita do Google AI Studio), pela API compatível com OpenAI ----------
+const GEMINI = 'https://generativelanguage.googleapis.com/v1beta';
+async function chaveDe(userId: string, provedor: string) {
+  const { data } = await admin().from('chaves_ia').select('chave_cifrada').eq('user_id', userId).eq('provedor', provedor).maybeSingle();
+  return data ? decifrar(data.chave_cifrada) : null;
+}
+/** Modelos "flash" disponíveis para a chave, do mais novo para o mais antigo. */
+async function modelosGemini(chave: string) {
+  const r = await fetch(`${GEMINI}/models?pageSize=200`, { headers: { 'x-goog-api-key': chave } });
+  if (!r.ok) return { ok: false, status: r.status, modelos: [] as string[] };
+  const d = await r.json().catch(() => ({}));
+  const nomes = (d.models ?? []).filter((m: any) => (m.supportedGenerationMethods ?? []).includes('generateContent')).map((m: any) => String(m.name).replace(/^models\//, ''))
+    .filter((n: string) => /^gemini-[\d.]+-flash(-lite)?$/.test(n));
+  const ver = (n: string) => Number((n.match(/gemini-([\d.]+)/) ?? [])[1] ?? 0);
+  nomes.sort((a: string, b: string) => ver(b) - ver(a) || (a.includes('lite') ? 1 : 0) - (b.includes('lite') ? 1 : 0));
+  return { ok: true, status: 200, modelos: nomes };
+}
+function paraOpenAI(msgs: Msg[]) {
+  return msgs.map((m) => m.role === 'tool' ? { role: 'tool', tool_call_id: m.tool_call_id, content: m.content ?? '' }
+    : m.role === 'assistant' && m.tool_calls?.length ? { role: 'assistant', content: m.content ?? '', tool_calls: m.tool_calls.map((t) => ({ id: t.id, type: 'function', function: { name: t.name, arguments: JSON.stringify(t.arguments ?? {}) } })) }
+    : { role: m.role, content: m.content ?? '' });
+}
+async function chatGemini(chave: string, modelo: string, msgs: Msg[], ferr: Ferr[]) {
+  const r = await fetch(`${GEMINI}/openai/chat/completions`, {
+    method: 'POST', headers: { Authorization: `Bearer ${chave}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: modelo, temperature: 0.1, messages: paraOpenAI(msgs), ...(ferr.length ? { tools: ferr.map((f) => ({ type: 'function', function: f })) } : {}) }),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const det = Array.isArray(d) ? d[0]?.error?.message : d?.error?.message;
+    throw new Error(r.status === 429 ? 'Limite gratuito do Gemini atingido por agora. Espere um pouco e tente de novo.' : r.status === 400 && /API key/i.test(det ?? '') ? 'Chave do Gemini inválida. Gere outra em aistudio.google.com.' : `Gemini ${r.status}: ${det ?? ''}`);
+  }
+  const msg = d.choices?.[0]?.message ?? {};
+  return {
+    role: 'assistant', content: msg.content ?? '',
+    tool_calls: (msg.tool_calls ?? []).map((t: any) => ({ id: t.id ?? crypto.randomUUID(), name: t.function?.name, arguments: typeof t.function?.arguments === 'string' ? JSON.parse(t.function.arguments || '{}') : t.function?.arguments ?? {} })),
+  };
+}
+/** Testa de verdade (uma resposta curta) e devolve o primeiro modelo gratuito que responder. */
+async function acharGemini(chave: string, evitar: string[] = []) {
+  const l = await modelosGemini(chave);
+  if (!l.ok) return { modelo: null as string | null, invalida: l.status === 400 || l.status === 401 || l.status === 403, limite: false };
+  let limite = false;
+  for (const m of l.modelos.filter((x) => !evitar.includes(x)).slice(0, 5)) {
+    try { await chatGemini(chave, m, [{ role: 'user', content: 'Responda apenas: ok' }], []); return { modelo: m, invalida: false, limite: false }; }
+    catch (e) { if (/Limite/.test(String((e as Error).message))) { limite = true; } }
+  }
+  return { modelo: null as string | null, invalida: false, limite };
+}
+
 async function chatClaude(modelo: string, msgs: Msg[], ferr: Ferr[]) {
   const KEY = Deno.env.get('ANTHROPIC_API_KEY');
   if (!KEY) throw new Error('O Claude não está ativado neste servidor (falta ANTHROPIC_API_KEY). Use o Ollama, que é gratuito.');
@@ -103,6 +154,14 @@ Deno.serve(async (req) => {
   if (!user) return json({ ok: false, erro: 'nao_autenticado' }, 401);
   try {
     const b = await req.json();
+    if (b.acao === 'salvar_chave' && b.provedor === 'gemini') {
+      const chave = String(b.chave ?? '').trim();
+      if (chave.length < 20) return json({ ok: false, mensagem: 'Essa chave parece incompleta. Copie de novo em aistudio.google.com → Get API key.' });
+      const a = await acharGemini(chave);
+      if (!a.modelo) return json({ ok: false, mensagem: a.invalida ? 'O Google recusou essa chave. Confira se copiou a chave inteira (começa com AIza).' : a.limite ? 'A chave é válida, mas o limite gratuito do Gemini está esgotado agora. Tente daqui a pouco.' : 'Não consegui uma resposta do Gemini com essa chave agora. Tente de novo em instantes.' });
+      await admin().from('chaves_ia').upsert({ user_id: user.id, provedor: 'gemini', chave_cifrada: await cifrar(chave), atualizado_em: new Date().toISOString() });
+      return json({ ok: true, modelo: a.modelo });
+    }
     if (b.acao === 'salvar_chave') {
       const chave = String(b.chave ?? '').trim();
       if (chave.length < 10) return json({ ok: false, mensagem: 'Essa chave parece incompleta. Copie de novo em ollama.com → Settings → Keys.' });
@@ -117,6 +176,12 @@ Deno.serve(async (req) => {
       await admin().from('chaves_ia').delete().eq('user_id', user.id).eq('provedor', b.provedor ?? 'ollama_cloud');
       return json({ ok: true });
     }
+    if (b.acao === 'testar' && b.provedor === 'gemini') {
+      const chave = await chaveDe(user.id, 'gemini');
+      if (!chave) return json({ ok: false, mensagem: 'Nenhuma chave do Gemini salva ainda.' });
+      const a = b.modelo ? await chatGemini(chave, b.modelo, [{ role: 'user', content: 'Responda apenas: ok' }], []).then(() => ({ modelo: b.modelo }), () => acharGemini(chave)) : await acharGemini(chave);
+      return json({ ok: !!a.modelo, modelo: a.modelo, mensagem: a.modelo ? `Funcionando ✅ (Gemini ${a.modelo})` : 'O Gemini não respondeu agora (chave recusada ou limite). Gere outra chave ou tente mais tarde.' });
+    }
     if (b.acao === 'testar') {
       if (b.provedor === 'claude') return json({ ok: !!Deno.env.get('ANTHROPIC_API_KEY'), modelos: ['claude-sonnet-5-5', 'claude-haiku-5-5', 'claude-opus-5-5'], mensagem: Deno.env.get('ANTHROPIC_API_KEY') ? 'Claude disponível.' : 'Claude não ativado no servidor.' });
       const chave = await chaveOllama(user.id);
@@ -128,6 +193,19 @@ Deno.serve(async (req) => {
     }
     if (b.acao === 'chat') {
       if (b.provedor === 'claude') return json({ ok: true, mensagem: await chatClaude(b.modelo, b.mensagens, b.ferramentas) });
+      if (b.provedor === 'gemini') {
+        const chaveG = await chaveDe(user.id, 'gemini');
+        if (!chaveG) return json({ ok: false, mensagem: 'Configure sua chave gratuita do Gemini em Configurações → Inteligência artificial.' });
+        let modelo = b.modelo || (await acharGemini(chaveG)).modelo;
+        if (!modelo) throw new Error('Nenhum modelo do Gemini respondeu agora. Tente de novo em instantes.');
+        try { return json({ ok: true, modelo_usado: modelo, mensagem: await chatGemini(chaveG, modelo, b.mensagens, b.ferramentas) }); }
+        catch (e) {
+          if (!/Gemini (404|403)/.test(String((e as Error).message))) throw e;
+          modelo = (await acharGemini(chaveG, [modelo])).modelo;
+          if (!modelo) throw e;
+          return json({ ok: true, modelo_usado: modelo, mensagem: await chatGemini(chaveG, modelo, b.mensagens, b.ferramentas) });
+        }
+      }
       const chave = await chaveOllama(user.id);
       if (!chave) return json({ ok: false, mensagem: 'Configure sua chave gratuita do Ollama em Configurações → Inteligência artificial.' });
       let modelo = b.modelo || CANDIDATOS[0];
