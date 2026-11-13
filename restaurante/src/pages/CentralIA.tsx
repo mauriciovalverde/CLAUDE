@@ -17,19 +17,21 @@ export default function CentralIA() {
   const [msgs, setMsgs] = useState<{ papel: string; texto: string; ferramentas?: any[] }[]>([]);
   const [texto, setTexto] = useState('');
   const [pensando, setPensando] = useState(false);
+  const [pendente, setPendente] = useState<any>(null);
   const fim = useRef<HTMLDivElement>(null);
   useEffect(() => { supabase.from('rest_chat').select('papel,texto,ferramentas').order('criado_em', { ascending: false }).limit(30).then(({ data }) => setMsgs((data ?? []).reverse())); }, [eu.id]);
   useEffect(() => { fim.current?.scrollIntoView({ behavior: 'smooth' }); }, [msgs, pensando]);
   const enviar = async (t = texto) => {
     if (!t.trim() || pensando) return;
     setTexto(''); setMsgs((m) => [...m, { papel: 'user', texto: t }]); setPensando(true);
-    const r = await conversar(t, msgs, rest.nome);
-    setMsgs((m) => [...m, { papel: 'assistant', texto: r.resposta, ferramentas: r.ferramentas }]); setPensando(false);
+    const r = await conversar(t, msgs, rest.nome, undefined, pendente);
+    setPendente(r.pendente ?? null);
+    setMsgs((m) => [...m, { papel: 'assistant', texto: r.resposta ?? '', ferramentas: r.ferramentas }]); setPensando(false);
     if (r.ferramentas.some((f) => /registrar|marcar/.test(f.nome) && f.ok)) avisarMudanca();
   };
   return (
     <div className="flex h-[calc(100vh-7rem)] flex-col lg:h-[calc(100vh-3rem)]">
-      <Cabecalho titulo="Central IA" sub="Escreva como falaria com uma pessoa: a IA consulta e registra no sistema" acoes={<a href="#/configuracoes" className="inline-flex items-center gap-1 text-sm text-slate-500"><Settings className="h-4 w-4" />Ligar a IA</a>} />
+      <Cabecalho titulo="Central IA" sub="Escreva como falaria com uma pessoa: a IA consulta e registra no sistema" acoes={<a href="#/configuracoes" className="inline-flex items-center gap-1 text-sm text-slate-500"><Settings className="h-4 w-4" />Tipo de IA</a>} />
       <div className="flex-1 space-y-3 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
         {!msgs.length && <div className="space-y-2"><p className="text-sm text-slate-500">Exemplos (toque para usar):</p><div className="flex flex-wrap gap-2">{EXEMPLOS.map((e) => <button key={e} onClick={() => setTexto(e)} className="rounded-full bg-slate-100 px-3 py-1.5 text-left text-xs hover:bg-slate-200 dark:bg-slate-800">{e}</button>)}</div></div>}
         {msgs.map((m, i) => (

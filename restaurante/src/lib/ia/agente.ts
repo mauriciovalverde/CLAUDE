@@ -3,11 +3,14 @@
 import { funcao, supabase } from '../supabase';
 import { FERRAMENTAS } from './ferramentas';
 import { executarFerramenta } from './executor';
+import { conversarLocal } from './local';
 
 export type Msg = { role: 'system' | 'user' | 'assistant' | 'tool'; content?: string; tool_calls?: { id: string; name: string; arguments: any }[]; tool_call_id?: string; name?: string };
 const GRAVACAO = /^(registrar|marcar)/;
 const CFG = 'rest-ia';
-export const lerCfgIA = (): { provedor: 'ollama_cloud' | 'claude'; modelo: string } => { try { return { provedor: 'ollama_cloud', modelo: '', ...JSON.parse(localStorage.getItem(CFG) ?? '{}') }; } catch { return { provedor: 'ollama_cloud', modelo: '' }; } };
+export type ProvedorIA = 'local' | 'gemini' | 'ollama_cloud' | 'claude';
+// padrão: assistente embutido (funciona sem chave, no Android, iPhone e computador)
+export const lerCfgIA = (): { provedor: ProvedorIA; modelo: string } => { try { return { provedor: 'local', modelo: '', ...JSON.parse(localStorage.getItem(CFG) ?? '{}') }; } catch { return { provedor: 'local', modelo: '' }; } };
 export const salvarCfgIA = (c: Partial<ReturnType<typeof lerCfgIA>>) => { try { localStorage.setItem(CFG, JSON.stringify({ ...lerCfgIA(), ...c })); } catch { /* ignore */ } };
 
 function hojeTexto() {
@@ -47,8 +50,29 @@ async function chamarModelo(msgs: Msg[]): Promise<Msg> {
   return r.mensagem;
 }
 
-/** Processa uma mensagem. `modelo` pode ser trocado nos testes. */
-export async function conversar(texto: string, historico: { papel: string; texto: string }[], restaurante: string, modelo: (m: Msg[]) => Promise<Msg> = chamarModelo) {
+/** Processa uma mensagem. `modelo` pode ser trocado nos testes. Sem IA externa (ou se ela falhar), usa o assistente embutido. */
+export async function conversar(texto: string, historico: { papel: string; texto: string }[], restaurante: string, modelo?: (m: Msg[]) => Promise<Msg>, pendente: any = null) {
+  const cfg = lerCfgIA();
+  if (!modelo && (cfg.provedor === 'local' || pendente)) return local(texto, pendente);
+  const r = await conversarIA(texto, historico, restaurante, modelo ?? chamarModelo);
+  // IA externa sem chave, sem modelo gratuito ou fora do ar: o assistente embutido responde (nada foi gravado pela IA)
+  if (!r.ok && !modelo && !r.ferramentas.some((f) => f.ok)) {
+    const l = await local(texto, null, true);
+    return { ...l, resposta: `${l.resposta}
+
+(A IA externa não respondeu agora; quem respondeu foi o assistente embutido.)` };
+  }
+  return { ...r, pendente: null };
+}
+
+async function local(texto: string, pendente: any, jaGravouPergunta = false) {
+  if (!jaGravouPergunta) await supabase.from('rest_chat').insert({ papel: 'user', texto });
+  const l = await conversarLocal(texto, pendente);
+  await supabase.from('rest_chat').insert({ papel: 'assistant', texto: l.resposta, ferramentas: l.ferramentas });
+  return { ok: true, resposta: l.resposta, ferramentas: l.ferramentas.map((f: any) => ({ nome: f.nome, ok: f.ok })), pendente: l.pendente };
+}
+
+async function conversarIA(texto: string, historico: { papel: string; texto: string }[], restaurante: string, modelo: (m: Msg[]) => Promise<Msg>) {
   await supabase.from('rest_chat').insert({ papel: 'user', texto });
   const msgs: Msg[] = [{ role: 'system', content: promptSistema(restaurante) }, ...historico.slice(-12).map((m) => ({ role: (m.papel === 'user' ? 'user' : 'assistant') as Msg['role'], content: m.texto })), { role: 'user', content: texto }];
   const log: { nome: string; entrada: any; saida: any }[] = [];
