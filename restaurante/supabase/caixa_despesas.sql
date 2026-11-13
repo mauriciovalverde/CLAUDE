@@ -72,3 +72,18 @@ end $$;
 create trigger rest_caixa_despesas_soma after insert or update or delete on rest_caixa_despesas for each row execute function rest_caixa_somar_despesas();
 create trigger rest_fech_despesas after insert or update of status on rest_fechamentos for each row execute function rest_caixa_lancar_despesas();
 revoke execute on function rest_caixa_somar_despesas(), rest_caixa_lancar_despesas(), rest_caixa_gerar_contas(uuid) from public, anon, authenticated;
+
+-- o que cada funcionário recebeu pelo caixa (vale/adiantamento, transporte, outros) no período: para o fechamento mensal dele.
+-- p_func nulo = todos (só administração); o funcionário vê só o próprio.
+create or replace function rest_func_recebimentos(p_func uuid, p_de date, p_ate date)
+returns table(funcionario_id uuid, data date, tipo text, descricao text, valor numeric, caixa_status text)
+language sql stable security definer set search_path = public as $$
+  select d.funcionario_id, f.data, d.tipo, d.descricao, d.valor, f.status
+    from rest_caixa_despesas d join rest_fechamentos f on f.id = d.fechamento_id
+   where d.restaurante_id = rest_meu_restaurante() and d.funcionario_id is not null
+     and f.data between p_de and p_ate
+     and ((p_func is null and rest_pode('admin')) or (p_func is not null and d.funcionario_id = p_func and (p_func = rest_meu_funcionario() or rest_pode('admin'))))
+   order by f.data, d.criado_em
+$$;
+revoke execute on function rest_func_recebimentos(uuid, date, date) from public, anon;
+grant execute on function rest_func_recebimentos(uuid, date, date) to authenticated;

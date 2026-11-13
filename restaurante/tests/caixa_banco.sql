@@ -38,4 +38,10 @@ delete from rest_caixa_despesas where tipo = 'taxi';
 -- conta como no papel: saldo anterior + total do dia − despesas do dia
 update rest_restaurantes set saldo_inicial = 187, saldo_em = '2026-11-13';
 select t_ok((select 187 + (select sum(liquido) from rest_vendas) - (select sum(valor) from rest_contas where status = 'pago')) = 3592.93, 'total final como no papel: 187 + 3.540,93 − 135 = 3.592,93');
+-- recebidos pelo funcionário no mês
+select t_como('a0000000-0000-0000-0000-000000000003');
+select t_ok((select sum(valor) from rest_func_recebimentos('f0000000-0000-0000-0000-000000000003', '2026-11-01', '2026-11-30')) = 19, 'funcionária vê o que recebeu (transporte 19)');
+select t_ok((select count(*) from rest_func_recebimentos('f0000000-0000-0000-0000-000000000001', '2026-11-01', '2026-11-30')) = 0 and (select count(*) from rest_func_recebimentos(null, '2026-11-01', '2026-11-30')) = 0, 'não vê o de outra pessoa nem de todos');
+select t_como('a0000000-0000-0000-0000-000000000001');
+select t_ok((select count(*) from rest_func_recebimentos(null, '2026-11-01', '2026-11-30')) = 1, 'administração vê de todos (só os atrelados a funcionário)');
 \echo 'CAIXA: todos os testes passaram'

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { FileSpreadsheet, FileText, UserRound } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { linkPrivado } from '../../lib/arquivos';
-import { dataBR, fimMes, inicioMes } from '../../lib/fmt';
+import { brl, dataBR, fimMes, inicioMes } from '../../lib/fmt';
 import { gerarExcel, gerarPDF, type Rel } from '../../lib/relatorios';
 import { COR_CLASSE, COR_NOME, DIAS_SEMANA, fmtHM, horaLocal, isoDow, montarDias, totais, type Cor, type Dia, type Jornada, type Marcacao } from '../../lib/ponto/dados';
 import { Btn, Input, q } from '../ui';
@@ -45,22 +45,37 @@ export const COLS_ESPELHO = [
   { t: 'Trabalhado', k: 'trab' }, { t: 'Considerado', k: 'cons' }, { t: 'Saldo', k: 'saldo' }, { t: 'Extra', k: 'extra' }, { t: 'Noturno', k: 'noturno' }, { t: 'Situação', k: 'sit' },
 ];
 
+export const TIPO_RECEBIDO: Record<string, string> = { vale: 'Vale (antecipação de salário)', transporte: 'Transporte', taxi: 'Transporte (táxi)', outros: 'Outros' };
+export type Recebido = { funcionario_id: string; data: string; tipo: string; descricao: string | null; valor: number; caixa_status: string };
+/** O que o funcionário recebeu pelo caixa no período (vale, transporte, outros). func nulo = todos (administração). */
+export const carregarRecebidos = (de: string, ate: string, func: string | null) => q<Recebido[]>(supabase.rpc('rest_func_recebimentos', { p_func: func, p_de: de, p_ate: ate }) as any);
+export const somarRecebidos = (l: Recebido[]) => {
+  const r = { vale: 0, transporte: 0, outros: 0, total: 0 };
+  for (const x of l) { const v = Number(x.valor); const k = x.tipo === 'vale' ? 'vale' : x.tipo === 'outros' ? 'outros' : 'transporte'; r[k] += v; r.total += v; }
+  return r;
+};
+
 /** Espelho de ponto mensal (Portaria 671, art. 84: empregador, empregado, período, horário contratual, marcações e horas). */
 export function Espelho({ func, nome, ficha, empregador, cnpj }: { func: string; nome: string; ficha?: any; empregador: string; cnpj?: string }) {
   const [mes, setMes] = useState(inicioMes().slice(0, 7));
   const [dias, setDias] = useState<Dia[] | null>(null);
+  const [receb, setReceb] = useState<Recebido[]>([]);
   useEffect(() => {
-    let vivo = true; setDias(null);
+    let vivo = true; setDias(null); setReceb([]);
     const de = mes + '-01', ate = fimMes(de);
     carregarPeriodo(de, ate, func).then((p) => vivo && setDias(montarDias(func, de, ate, p.jornadas, p.folgas, p.marcacoes, p.ausencias))).catch(() => vivo && setDias([]));
+    carregarRecebidos(de, ate, func).then((l) => vivo && setReceb(l)).catch(() => {});
     return () => { vivo = false; };
   }, [func, mes]);
   const t = dias ? totais(dias) : null;
+  const sr = somarRecebidos(receb);
   const rel = (): Rel => ({
     titulo: `Espelho de ponto — ${nome}`, periodo: `${dataBR(mes + '-01')} a ${dataBR(fimMes(mes + '-01'))}`, restaurante: `${empregador}${cnpj ? ' · CNPJ ' + cnpj : ''}`,
     resumo: [['Empregado', ficha?.nome_completo || nome], ['CPF', ficha?.cpf || '—'], ['Admissão', dataBR(ficha?.data_admissao)], ['Cargo', ficha?.cargo || '—'],
       ['Previsto', fmtHM(t!.previsto)], ['Trabalhado', fmtHM(t!.trabalhado)], ['Saldo', fmtHM(t!.saldo)], ['Extras', fmtHM(t!.extra)], ['Faltas', String(t!.faltas)], ['Atrasos', fmtHM(t!.atraso)], ['Noturno (ficto)', fmtHM(t!.noturnoFicto)], ['Intervalo suprimido', fmtHM(t!.intervaloSuprimido)]],
-    tabelas: [{ titulo: 'Marcações e apuração', colunas: COLS_ESPELHO, linhas: linhasEspelho(dias!) }],
+    tabelas: [{ titulo: 'Marcações e apuração', colunas: COLS_ESPELHO, linhas: linhasEspelho(dias!) },
+      ...(receb.length ? [{ titulo: `Valores já recebidos no mês pelo caixa — total ${brl(sr.total)}`, colunas: [{ t: 'Data', k: 'data', tipo: 'data' as const }, { t: 'Tipo', k: 'tipo' }, { t: 'Detalhe', k: 'descricao' }, { t: 'Valor', k: 'valor', tipo: 'moeda' as const }],
+        linhas: receb.map((x) => ({ data: x.data, tipo: TIPO_RECEBIDO[x.tipo] ?? x.tipo, descricao: x.descricao ?? '', valor: Number(x.valor) })) }] : [])],
   });
   return (
     <div className="space-y-3">
@@ -85,6 +100,13 @@ export function Espelho({ func, nome, ficha, empregador, cnpj }: { func: string;
             </tr>)}</tbody>
           </table>
         </div>)}
+      <div className="rounded-xl border border-slate-200 p-3 text-sm dark:border-slate-800">
+        <div className="mb-1 font-semibold">Valores já recebidos no mês (pelo caixa)</div>
+        {!receb.length ? <p className="text-slate-500">Nenhum vale, transporte ou outro valor recebido neste mês.</p> : <>
+          {receb.map((x, i) => <div key={i} className="flex justify-between gap-2 border-b py-1 dark:border-slate-800"><span>{dataBR(x.data).slice(0, 5)} · {TIPO_RECEBIDO[x.tipo] ?? x.tipo}{x.descricao ? ` · ${x.descricao}` : ''}</span><span className="tabular-nums">{brl(x.valor)}</span></div>)}
+          <div className="mt-1 grid grid-cols-2 gap-x-3 text-xs sm:grid-cols-4"><span>Vales: <b>{brl(sr.vale)}</b></span><span>Transporte: <b>{brl(sr.transporte)}</b></span><span>Outros: <b>{brl(sr.outros)}</b></span><span>Total: <b>{brl(sr.total)}</b></span></div>
+        </>}
+      </div>
       <p className="text-xs text-slate-500">Tolerância legal: variações de até 5 minutos por marcação, no máximo 10 minutos por dia, não são descontadas nem pagas (CLT art. 58 §1º). Passando disso, conta o tempo todo. Marcações em análise ainda podem mudar.</p>
     </div>
   );
