@@ -3,7 +3,7 @@ import { Home, LogOut, Menu, Moon, Sun, X } from 'lucide-react';
 import { MODULOS, podeVer } from '../lib/modulos';
 import { sair, useEu, PAPEIS } from '../lib/sessao';
 import { contadores, meusComunicados } from '../lib/comunicados';
-import { AtivarNotificacoes } from '../pages/Comunicados';
+import { AvisoPendentes } from '../pages/Comunicados';
 
 export default function Layout({ children, rota }: { children: ReactNode; rota: string }) {
   const { eu, rest, pode } = useEu();
@@ -59,7 +59,8 @@ export default function Layout({ children, rota }: { children: ReactNode; rota: 
           <span className="truncate font-semibold">{titulo}</span>
           <span className="ml-auto truncate text-xs text-slate-500">{eu.nome.split(' ')[0]}</span>
         </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-3 pb-10 pt-4 sm:px-5">{rota === 'inicio' && <div className="mb-3"><AtivarNotificacoes compacto /></div>}{children}</main>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-3 pb-10 pt-4 sm:px-5">{children}</main>
+        <AvisoPendentes />
       </div>
     </div>
   );

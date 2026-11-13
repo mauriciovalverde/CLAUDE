@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, BellRing, CheckCircle2, Clock, FileText, Megaphone, Paperclip, RefreshCw } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Clock, FileText, Megaphone, Paperclip, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useEu } from '../lib/sessao';
-import { linkPrivado } from '../lib/arquivos';
+import { abrirPrivado } from '../lib/arquivos';
 import { contadores, COR_PRIORIDADE, dispositivo, meusComunicados, pendente, PRIORIDADES, quando, SITUACOES, tempoRestante, type Situacao } from '../lib/comunicados';
-import { ativarPush, estadoPush, testarPush, type EstadoPush } from '../lib/push';
 import { Abas, Aviso, avisarMudanca, Btn, Cabecalho, Card, Modal, q, toast, useDados } from '../components/ui';
 
 const idDaRota = () => new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('id');
@@ -17,26 +16,48 @@ export function SituacaoTag({ s, funcionario }: { s: string; funcionario?: boole
   return <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${c}`}>{funcionario && s === 'prazo_expirado' ? 'PRAZO EXPIRADO - LEITURA PENDENTE' : t}</span>;
 }
 
-/** Cartão para ativar as notificações (pedido no primeiro acesso). */
-export function AtivarNotificacoes({ compacto }: { compacto?: boolean }) {
-  const [e, setE] = useState<EstadoPush | null>(null);
-  const [rodando, setRodando] = useState(false);
-  useEffect(() => { estadoPush().then(setE).catch(() => {}); }, []);
-  if (!e || e.ativo) return compacto || !e ? null : (
-    <div className="flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-400"><BellRing className="h-4 w-4" />Notificações ativas neste aparelho.
-      <button className="underline" onClick={async () => { const r = await testarPush(); toast(r.ok ? 'Notificação de teste enviada' : r.mensagem ?? 'Não foi possível enviar o teste', r.ok ? 'ok' : 'erro'); }}>Enviar teste</button></div>
-  );
+/**
+ * Aviso em destaque ao abrir o app: lista os comunicados pendentes (obrigatórios e urgentes primeiro).
+ * Aparece uma vez por sessão e de novo quando chega comunicado novo. Pode ser fechado: nunca impede o uso do app
+ * nem o registro do ponto (Portaria MTP 671/2021, art. 74, proíbe restringir a marcação).
+ */
+export function AvisoPendentes() {
+  const { eu } = useEu();
+  const [lista, setLista] = useState<Situacao[]>([]);
+  const [aberto, setAberto] = useState(false);
+  useEffect(() => {
+    const ver = async () => {
+      if (/^#\/?comunicados/.test(window.location.hash)) return;
+      const l = (await meusComunicados(eu.id).catch(() => [])).filter(pendente);
+      const chave = 'rest-com-aviso-' + eu.id;
+      const vistos = (() => { try { return JSON.parse(sessionStorage.getItem(chave) ?? '[]') as string[]; } catch { return []; } })();
+      const novos = l.filter((s) => !vistos.includes(s.comunicado_id + ':' + s.versao));
+      if (!novos.length) return;
+      setLista(l); setAberto(true);
+      try { sessionStorage.setItem(chave, JSON.stringify(l.map((s) => s.comunicado_id + ':' + s.versao))); } catch { /* sem armazenamento */ }
+      supabase.rpc('rest_com_avisado', { p_ids: l.map((s) => s.comunicado_id) }).then(() => {});
+    };
+    ver(); const t = setInterval(ver, 5 * 60000);
+    const voltar = () => { if (document.visibilityState === 'visible') ver(); };
+    document.addEventListener('visibilitychange', voltar);
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', voltar); };
+  }, [eu.id]);
+  if (!aberto) return null;
+  const urg = lista.filter((s) => s.prioridade === 'urgente').length;
   return (
-    <div className="rounded-2xl border border-brand-200 bg-brand-50 p-3 text-sm dark:border-brand-900 dark:bg-brand-950/30">
-      <div className="flex items-start gap-2"><BellRing className="mt-0.5 h-5 w-5 shrink-0 text-brand-700" />
-        <div className="flex-1">
-          <b>Receba os comunicados no celular, mesmo com o app fechado.</b>
-          {e.suporte === 'nenhum' ? <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{e.motivo}</p>
-            : e.permissao === 'denied' ? <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">As notificações estão bloqueadas. Libere nas configurações do navegador/celular (Notificações → permitir) e volte aqui.</p>
-            : <Btn className="mt-2" carregando={rodando} onClick={async () => { setRodando(true); try { const r = await ativarPush(); setE(r); if (r.ativo) { toast('Notificações ativadas'); testarPush().catch(() => {}); } } catch (x: any) { toast(x.message, 'erro'); } finally { setRodando(false); } }}>Ativar notificações</Btn>}
-        </div>
+    <Modal aberto fechar={() => setAberto(false)} titulo="Comunicados e avisos">
+      <div className="space-y-3">
+        <div className={`flex items-center gap-3 rounded-2xl p-3 text-white ${urg ? 'bg-red-600' : 'bg-brand-700'}`}><Megaphone className="h-7 w-7 shrink-0" /><div><b>COMUNICADOS PENDENTES: {lista.length}</b>{urg > 0 && <div className="text-sm">{urg} urgente(s)</div>}</div></div>
+        <div className="space-y-2">{lista.slice(0, 5).map((s) => { const t = tempoRestante(s.prazo); return (
+          <a key={s.id} href={`#/comunicados?id=${s.comunicado_id}`} onClick={() => setAberto(false)} className={`block rounded-xl border p-2 ${s.prioridade === 'urgente' ? 'border-red-400 bg-red-50 dark:bg-red-950/30' : 'border-slate-200 dark:border-slate-700'}`}>
+            <div className="flex flex-wrap items-center gap-1"><Prioridade p={s.prioridade} />{s.obrigatoria && <span className="text-xs font-semibold">Leitura obrigatória</span>}{s.atualizada && <span className="text-xs font-bold text-violet-700">ATUALIZADA</span>}</div>
+            <div className="mt-1 font-semibold">{s.titulo}</div>
+            {s.prazo && <div className={`text-xs ${t?.vencido ? 'text-red-600' : t?.proximo ? 'font-semibold text-amber-700' : 'text-slate-500'}`}>Prazo {quando(s.prazo)} · {t?.texto}</div>}
+          </a>); })}</div>
+        {lista.length > 5 && <p className="text-xs text-slate-500">e mais {lista.length - 5}…</p>}
+        <div className="flex gap-2"><Btn variante="secundario" className="flex-1" onClick={() => setAberto(false)}>Ver depois</Btn><Btn className="flex-1" onClick={() => { setAberto(false); window.location.hash = '/comunicados'; }}>Abrir comunicados</Btn></div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -56,7 +77,6 @@ export default function Comunicados() {
   return (
     <div className="space-y-3">
       <Cabecalho titulo="Comunicados e avisos" sub="Mensagens da administração para você" />
-      <AtivarNotificacoes />
       {c && <>
         <div className={`flex items-center gap-3 rounded-2xl p-4 text-white shadow ${c.pendentes ? (c.urgentes ? 'bg-red-600' : 'bg-brand-700') : 'bg-emerald-600'}`}>
           <Megaphone className="h-8 w-8 shrink-0" />
@@ -123,7 +143,7 @@ function LerComunicado({ id, situacao, fechar }: { id: string; situacao?: Situac
           {c.prazo && <div className={`rounded-xl p-2 text-sm ${t?.vencido ? 'bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-300' : t?.proximo ? 'bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300' : 'bg-slate-50 dark:bg-slate-800'}`}><Clock className="mr-1 inline h-4 w-4" />Prazo para confirmação: <b>{quando(c.prazo)}</b> — {t?.texto}</div>}
           <div className="whitespace-pre-wrap rounded-xl border border-slate-200 p-3 text-[15px] leading-relaxed dark:border-slate-800">{c.conteudo}</div>
           {c.anexos?.length > 0 && <div className="space-y-1.5"><div className="text-sm font-semibold"><Paperclip className="mr-1 inline h-4 w-4" />Anexos</div>
-            {c.anexos.map((a: any) => <button key={a.path} onClick={async () => { try { window.open(await linkPrivado(a.path), '_blank'); } catch (e: any) { toast(e.message, 'erro'); } }} className="flex w-full items-center gap-2 rounded-xl border border-slate-200 p-2 text-left text-sm dark:border-slate-700"><FileText className="h-4 w-4 text-brand-700" />{a.nome}</button>)}</div>}
+            {c.anexos.map((a: any) => <button key={a.path} onClick={async () => { try { await abrirPrivado(a.path); } catch (e: any) { toast(e.message, 'erro'); } }} className="flex w-full items-center gap-2 rounded-xl border border-slate-200 p-2 text-left text-sm dark:border-slate-700"><FileText className="h-4 w-4 text-brand-700" />{a.nome}</button>)}</div>}
           <div ref={fim} />
           {c.obrigatoria && c.status === 'enviado' && (ok || jaConfirmado ? (
             <div className="rounded-2xl bg-emerald-50 p-4 text-center text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"><CheckCircle2 className="mx-auto mb-1 h-8 w-8" /><b>Leitura confirmada com sucesso.</b><div className="text-xs">{quando(ok ?? situacao?.confirmado_em)}</div></div>

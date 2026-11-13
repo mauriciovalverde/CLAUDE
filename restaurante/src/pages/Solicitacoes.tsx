@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, Image as Img, Plus, ShoppingBasket, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useEu } from '../lib/sessao';
-import { linkArquivo } from '../lib/arquivos';
+import { abrirArquivo } from '../lib/arquivos';
 // @ts-ignore módulo JS testado
 import { UNIDADES } from '../lib/catalogo.js';
 import { dataHora, lerNum, qtd } from '../lib/fmt';
@@ -83,7 +83,7 @@ function Detalhe({ id, fechar }: { id: string; fechar: () => void }) {
                   <div className={`font-medium ${i.removido ? 'line-through' : ''}`}>{i.rest_produtos?.nome ?? i.nome_livre}{i.rest_produtos?.status === 'pendente' && <span className="ml-1 text-xs text-amber-600">(produto novo)</span>}{i.adicionado_pelo_responsavel && <span className="ml-1 text-xs text-sky-600">(adicionado por você)</span>}</div>
                   <div className="text-xs text-slate-500">Pediu {qtd(i.quantidade)} {i.unidade}{i.obs ? ` · ${i.obs}` : ''}{c.length ? ` · comprado ${qtd(qc)} · recebido ${qtd(qr)}` : ''}</div>
                 </div>
-                {i.foto_path && <button className="rounded-lg p-1.5 text-sky-700" onClick={async () => { try { window.open(await linkArquivo(i.foto_path), '_blank'); } catch (e: any) { toast(e.message, 'erro'); } }} aria-label="Ver foto"><Img className="h-5 w-5" /></button>}
+                {i.foto_path && <button className="rounded-lg p-1.5 text-sky-700" onClick={async () => { try { await abrirArquivo(i.foto_path); } catch (e: any) { toast(e.message, 'erro'); } }} aria-label="Ver foto"><Img className="h-5 w-5" /></button>}
                 {editavel && !i.removido && <div className="flex items-center gap-1"><span className="text-xs text-slate-500">Aprovar</span><Input className="!w-20 !py-1 text-right" inputMode="decimal" defaultValue={String(i.qtd_aprovada ?? i.quantidade).replace('.', ',')} onBlur={(e) => { const v = lerNum(e.target.value); if (v > 0 && v !== Number(i.qtd_aprovada ?? i.quantidade)) item(i.id, { qtd_aprovada: v }); }} /><span className="text-xs">{i.unidade}</span></div>}
                 {editavel && <button className={`rounded-lg p-1.5 ${i.removido ? 'text-emerald-600' : 'text-rose-600'}`} onClick={() => item(i.id, { removido: !i.removido })} aria-label={i.removido ? 'Voltar item' : 'Remover item'}>{i.removido ? <Plus className="h-4 w-4" /> : <X className="h-4 w-4" />}</button>}
               </div>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Check, Crosshair, ExternalLink, FileSpreadsheet, FileText, Lock, LockOpen, Plus, Sheet, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useEu } from '../lib/sessao';
-import { linkPrivado } from '../lib/arquivos';
+import { abrirPrivado } from '../lib/arquivos';
 import { addDias, dataBR, dataHora, fimMes, inicioMes } from '../lib/fmt';
 import { gerarExcel, gerarPDF, type Rel } from '../lib/relatorios';
 import { salvarTexto } from '../lib/nativo';
@@ -236,7 +236,7 @@ function EditarAtestado({ a, nome, fechar }: { a: any; nome: string; fechar: () 
       <div className="space-y-3 text-sm">
         <div>{dataBR(a.data_inicio)} a {dataBR(a.data_fim)} · enviado em {dataHora(a.enviado_em)}</div>
         {a.observacao && <div className="rounded-lg bg-slate-50 p-2 dark:bg-slate-800">{a.observacao}</div>}
-        {a.arquivo_path ? <Btn variante="secundario" onClick={async () => window.open(await linkPrivado(a.arquivo_path), '_blank')}><ExternalLink className="h-4 w-4" />Abrir atestado</Btn> : <Aviso tipo="alerta">Sem arquivo anexado.</Aviso>}
+        {a.arquivo_path ? <Btn variante="secundario" onClick={() => abrirPrivado(a.arquivo_path).catch((e) => toast(e.message, 'erro'))}><ExternalLink className="h-4 w-4" />Abrir atestado</Btn> : <Aviso tipo="alerta">Sem arquivo anexado.</Aviso>}
         <Campo rotulo="Conferência do documento"><Select value={d.status} onChange={(e) => setD({ ...d, status: e.target.value })}>{Object.entries(ROTULO_AUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select></Campo>
         <div className="grid grid-cols-2 gap-2">
           <Campo rotulo="Entrega física"><Select value={d.entrega_fisica} onChange={(e) => setD({ ...d, entrega_fisica: e.target.value, entregue_em: e.target.value !== 'aguardando' && !d.entregue_em ? hojeLocal() : d.entregue_em })}>{Object.entries(ROTULO_ENTREGA).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select></Campo>

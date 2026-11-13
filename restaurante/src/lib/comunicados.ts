@@ -9,8 +9,8 @@ export const COR_PRIORIDADE: Record<string, string> = {
 };
 export const SITUACOES: Record<string, [string, string]> = {
   aguardando_envio: ['Aguardando envio', 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'],
-  notificacao_enviada: ['Notificação enviada', 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300'],
-  entregue: ['Entregue ao dispositivo', 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300'],
+  enviada: ['Enviada (disponível no app)', 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300'],
+  entregue: ['Recebida no app', 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300'],
   nao_lida: ['Não lida', 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'],
   visualizada: ['Visualizada, aguardando confirmação', 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'],
   lida: ['Lida', 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'],
@@ -19,8 +19,8 @@ export const SITUACOES: Record<string, [string, string]> = {
   cancelada: ['Cancelada', 'bg-slate-200 text-slate-500 line-through dark:bg-slate-800'],
 };
 export type Situacao = { id: string; comunicado_id: string; funcionario_id: string; funcionario_nome: string; setor: string | null; titulo: string; prioridade: string; obrigatoria: boolean; prazo: string | null;
-  status_comunicado: string; versao: number; enviar_em: string; enviado_em: string | null; push_enviado_em: string | null; entregue_em: string | null; aberto_em: string | null;
-  confirmado_em: string | null; confirmado_fora_prazo: boolean | null; precisa_reconfirmar: boolean; situacao: string; atualizada: boolean; incluido_em: string; lembretes: number };
+  status_comunicado: string; versao: number; enviar_em: string; enviado_em: string | null; disponivel_em: string | null; avisos: number; entregue_em: string | null; aberto_em: string | null;
+  confirmado_em: string | null; confirmado_fora_prazo: boolean | null; precisa_reconfirmar: boolean; situacao: string; atualizada: boolean; incluido_em: string };
 
 /** pendente = precisa de ação do funcionário */
 export const pendente = (s: Situacao) => s.status_comunicado === 'enviado' && (s.obrigatoria ? s.situacao !== 'confirmada' : !s.aberto_em);
@@ -37,6 +37,7 @@ export function tempoRestante(prazo: string | null, agora = Date.now()) {
 }
 
 export async function meusComunicados(funcId: string) {
+  await supabase.rpc('rest_com_sincronizar'); // libera agendados no horário e registra o recebimento no app
   const { data, error } = await supabase.from('rest_comunicado_situacao').select('*').eq('funcionario_id', funcId).neq('status_comunicado', 'agendado');
   if (error) throw new Error(error.message);
   return (data as Situacao[]).sort(ordenar);

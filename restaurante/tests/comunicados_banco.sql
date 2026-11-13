@@ -37,9 +37,11 @@ select t_ok((rest_com_confirmar((select v from t_v where k = 'c1'), 1))->>'ok' =
 select t_erro($$insert into rest_comunicado_confirmacoes(comunicado_id, restaurante_id, funcionario_id, user_id, versao) values ((select v from t_v where k = 'c1'), '10000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000003', 1)$$, 'row-level security', 'não grava confirmação em nome de outro');
 
 -- cozinheira: entrega técnica não é leitura; confirma só depois de abrir
-reset role; update rest_comunicado_dest set push_enviado_em = now(), entregue_em = now() where funcionario_id = 'f0000000-0000-0000-0000-000000000002';
 select t_como('a0000000-0000-0000-0000-000000000002');
-select t_ok((select situacao from rest_comunicado_situacao where funcionario_id = rest_meu_funcionario()) = 'entregue', 'notificação entregue NÃO conta como leitura');
+select t_ok((select situacao from rest_comunicado_situacao where funcionario_id = rest_meu_funcionario()) = 'enviada', 'disponível no app, ainda não recebido');
+select rest_com_sincronizar();
+select rest_com_avisado(array[(select v from t_v where k = 'c1')]);
+select t_ok((select situacao = 'entregue' and avisos = 1 from rest_comunicado_situacao where funcionario_id = rest_meu_funcionario()), 'recebido no app e aviso exibido NÃO contam como leitura');
 select t_erro($$select rest_com_confirmar((select v from t_v where k = 'c1'), 1)$$, 'Abra e leia', 'confirmar exige abrir antes');
 select rest_com_abrir((select v from t_v where k = 'c1'), 'Teste/Android');
 select t_ok((select situacao from rest_comunicado_situacao where funcionario_id = rest_meu_funcionario()) = 'visualizada', 'aberta: visualizada, aguardando confirmação');
@@ -65,11 +67,14 @@ alter table rest_comunicados disable trigger user; update rest_comunicados set e
 select t_ok((select situacao from rest_comunicado_situacao where funcionario_id = 'f0000000-0000-0000-0000-000000000004') = 'prazo_expirado', 'prazo vencido: PRAZO EXPIRADO, sem confirmação automática');
 select t_ok((select situacao from rest_comunicado_situacao where funcionario_id = 'f0000000-0000-0000-0000-000000000002') = 'confirmada', 'quem confirmou continua confirmado');
 
--- robô: libera agendado e calcula lembretes
-alter table rest_comunicados disable trigger user; update rest_comunicados set enviar_em = now() - interval '1 minute' where id = (select v from t_v where k = 'c2'); update rest_comunicados set prazo = now() + interval '1 hour' where id = (select v from t_v where k = 'c1'); alter table rest_comunicados enable trigger user;
-update rest_comunicado_dest set push_enviado_em = now() - interval '5 hours' where funcionario_id = 'f0000000-0000-0000-0000-000000000004';
-select t_ok((select jsonb_array_length(t->'liberar') = 4 and (t->'lembretes'->0->>'motivo') in ('aviso_final', 'lembrete') from (select rest_com_tarefas() t) x), 'robô libera o agendado (4 pessoas) e lembra o Barman pendente');
-select t_ok((select count(*) from rest_comunicado_dest where comunicado_id = (select v from t_v where k = 'c2')) = 4, 'agendado enviado para toda a equipe');
+-- agendado: liberado pelo horário do servidor quando alguém abre o app
+alter table rest_comunicados disable trigger user; update rest_comunicados set enviar_em = now() - interval '1 minute' where id = (select v from t_v where k = 'c2'); alter table rest_comunicados enable trigger user;
+select t_como('a0000000-0000-0000-0000-000000000004');
+select t_ok((select count(*) from rest_comunicados where id = (select v from t_v where k = 'c2')) = 0, 'antes da liberação o Barman não vê o agendado');
+select rest_com_sincronizar();
+reset role;
+select t_ok((select count(*) from rest_comunicado_dest where comunicado_id = (select v from t_v where k = 'c2')) = 3, 'agendado enviado para toda a equipe (3)');
+select t_ok(not exists (select 1 from rest_comunicado_dest where comunicado_id = (select v from t_v where k = 'c2') and funcionario_id = 'f0000000-0000-0000-0000-000000000001'), 'quem escreveu não recebe o próprio comunicado');
 
 -- cancelamento preserva histórico; nada é apagado
 select t_como('a0000000-0000-0000-0000-000000000001');
@@ -83,10 +88,6 @@ select t_erro($$update rest_comunicado_confirmacoes set versao = 9$$, 'COMUNICAD
 select t_ok((select count(*) from rest_auditoria where tabela = 'rest_comunicados' and acao = 'update') >= 3, 'edições e cancelamento na auditoria');
 select t_ok((select count(*) from rest_comunicado_acessos where not ok) >= 2, 'tentativas negadas registradas');
 
--- push: aparelho do próprio funcionário; outro restaurante não vê nada
-select t_como('a0000000-0000-0000-0000-000000000003');
-select rest_push_registrar('webpush', 'https://push.exemplo/abc', '{"p256dh":"x","auth":"y"}', 'Android', 'Chrome');
-select t_ok((select count(*) from rest_push_dispositivos) = 1, 'aparelho registrado');
 select t_como('b0000000-0000-0000-0000-000000000001');
-select t_ok((select count(*) from rest_comunicados) + (select count(*) from rest_comunicado_dest) + (select count(*) from rest_push_dispositivos) = 0, 'outro restaurante não vê nada');
+select t_ok((select count(*) from rest_comunicados) + (select count(*) from rest_comunicado_dest) + (select count(*) from rest_comunicado_confirmacoes) = 0, 'outro restaurante não vê nada');
 \echo 'COMUNICADOS: todos os testes passaram'

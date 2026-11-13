@@ -1,5 +1,6 @@
--- COMUNICAÇÃO INTERNA: comunicados com push, leitura obrigatória, prazo, versões, cancelamento e auditoria.
--- Regras: horário do servidor; a entrega do push NUNCA conta como leitura; confirmação só pela conta do próprio funcionário;
+-- COMUNICAÇÃO INTERNA: comunicados dentro do app (aparecem em destaque sempre que o funcionário abre o app),
+-- leitura obrigatória, prazo, versões, cancelamento e auditoria.
+-- Regras: horário do servidor; aparecer no app NUNCA conta como leitura; confirmação só pela conta do próprio funcionário;
 -- nada é apagado (edição guarda a versão anterior, cancelamento preserva o histórico).
 
 create table if not exists rest_grupos (
@@ -22,8 +23,6 @@ create table if not exists rest_comunicados (
   destino jsonb not null default '{"todos": true}',   -- {todos, funcionarios[], setores[], grupos[]}
   permitir_anexos boolean not null default false,
   anexos jsonb not null default '[]',                -- [{path, nome, tipo, tamanho}]
-  lembrete_horas int not null default 24 check (lembrete_horas between 0 and 168),  -- 0 = sem lembretes automáticos
-  aviso_final_horas int not null default 2 check (aviso_final_horas between 0 and 48),
   status text not null default 'agendado' check (status in ('agendado','enviado','cancelado')),
   versao int not null default 1,
   criado_por uuid references rest_funcionarios(id), criado_em timestamptz not null default now(),
@@ -50,11 +49,12 @@ create table if not exists rest_comunicado_dest (
   restaurante_id uuid not null references rest_restaurantes(id) on delete cascade,
   funcionario_id uuid not null references rest_funcionarios(id) on delete cascade,
   incluido_em timestamptz not null default now(),
-  push_enviado_em timestamptz, entregue_em timestamptz,
+  disponivel_em timestamptz,                         -- liberado no app
+  entregue_em timestamptz,                           -- o app do funcionário recebeu (apareceu na lista dele)
   aberto_em timestamptz, versao_vista int,
   confirmado_em timestamptz, confirmado_versao int, confirmado_fora_prazo boolean,
   precisa_reconfirmar boolean not null default false,
-  ultimo_lembrete_em timestamptz, lembretes int not null default 0, aviso_final_em timestamptz,
+  ultimo_aviso_em timestamptz, avisos int not null default 0,   -- quantas vezes o aviso em destaque foi exibido ao abrir o app
   unique (comunicado_id, funcionario_id)
 );
 create index if not exists rest_com_dest_func on rest_comunicado_dest(funcionario_id);
@@ -70,34 +70,6 @@ create table if not exists rest_comunicado_confirmacoes (
   unique (comunicado_id, funcionario_id, versao)              -- proteção contra confirmação duplicada
 );
 
--- aparelhos que recebem push (Web Push no navegador/iPhone; FCM no app Android)
-create table if not exists rest_push_dispositivos (
-  id uuid primary key default gen_random_uuid(),
-  restaurante_id uuid not null default rest_meu_restaurante() references rest_restaurantes(id) on delete cascade,
-  funcionario_id uuid not null default rest_meu_funcionario() references rest_funcionarios(id) on delete cascade,
-  tipo text not null check (tipo in ('webpush','fcm')),
-  endpoint text not null unique,                    -- endpoint Web Push ou token FCM
-  chaves jsonb,                                     -- p256dh e auth (Web Push)
-  plataforma text, aparelho text,
-  ativo boolean not null default true,
-  criado_em timestamptz not null default now(), visto_em timestamptz not null default now(),
-  ultimo_envio_em timestamptz, ultima_entrega_em timestamptz, ultimo_erro text, ultimo_erro_em timestamptz, falhas int not null default 0
-);
-
--- cada notificação disparada (envio, lembrete, atualização, cancelamento, teste) e a confirmação técnica de entrega
-create table if not exists rest_push_envios (
-  id uuid primary key default gen_random_uuid(),
-  restaurante_id uuid not null references rest_restaurantes(id) on delete cascade,
-  comunicado_id uuid references rest_comunicados(id) on delete cascade,
-  funcionario_id uuid not null references rest_funcionarios(id) on delete cascade,
-  dispositivo_id uuid references rest_push_dispositivos(id) on delete set null,
-  motivo text not null check (motivo in ('envio','lembrete','aviso_final','atualizacao','cancelamento','reenvio','teste')),
-  status text not null default 'enviado' check (status in ('enviado','erro','entregue','sem_dispositivo')),
-  token text not null default replace(gen_random_uuid()::text, '-', ''),
-  erro text, criado_em timestamptz not null default now(), entregue_em timestamptz
-);
-create index if not exists rest_push_envios_com on rest_push_envios(comunicado_id, funcionario_id);
-
 -- tentativas de acesso a comunicados (abrir, confirmar, negado)
 create table if not exists rest_comunicado_acessos (
   id bigint generated always as identity primary key,
@@ -111,8 +83,6 @@ alter table rest_comunicados enable row level security;
 alter table rest_comunicado_versoes enable row level security;
 alter table rest_comunicado_dest enable row level security;
 alter table rest_comunicado_confirmacoes enable row level security;
-alter table rest_push_dispositivos enable row level security;
-alter table rest_push_envios enable row level security;
 alter table rest_comunicado_acessos enable row level security;
 
 create policy gr_sel on rest_grupos for select using (restaurante_id = rest_meu_restaurante() and rest_pode('admin'));
@@ -124,8 +94,6 @@ create policy cv_sel on rest_comunicado_versoes for select using (restaurante_id
   or exists (select 1 from rest_comunicado_dest d where d.comunicado_id = rest_comunicado_versoes.comunicado_id and d.funcionario_id = rest_meu_funcionario())));
 create policy cd_sel on rest_comunicado_dest for select using (restaurante_id = rest_meu_restaurante() and (funcionario_id = rest_meu_funcionario() or rest_pode('admin')));
 create policy cc_sel on rest_comunicado_confirmacoes for select using (restaurante_id = rest_meu_restaurante() and (funcionario_id = rest_meu_funcionario() or rest_pode('admin')));
-create policy pd_sel on rest_push_dispositivos for select using (restaurante_id = rest_meu_restaurante() and (funcionario_id = rest_meu_funcionario() or rest_pode('admin')));
-create policy pe_sel on rest_push_envios for select using (restaurante_id = rest_meu_restaurante() and rest_pode('admin'));
 create policy ca_sel on rest_comunicado_acessos for select using (restaurante_id = rest_meu_restaurante() and rest_pode('admin'));
 -- gravações só pelas funções abaixo (security definer)
 
@@ -154,7 +122,7 @@ select d.*, c.titulo, c.prioridade, c.obrigatoria, c.prazo, c.status as status_c
     when d.aberto_em is not null and c.obrigatoria then 'visualizada'
     when d.aberto_em is not null then 'lida'
     when d.entregue_em is not null then 'entregue'
-    when d.push_enviado_em is not null then 'notificacao_enviada'
+    when d.disponivel_em is not null then 'enviada'
     else 'nao_lida'
   end as situacao,
   (d.versao_vista is not null and d.versao_vista < c.versao) as atualizada
@@ -173,13 +141,16 @@ begin
   if c.id is null or c.status <> 'agendado' then return 0; end if;
   insert into rest_comunicado_dest(comunicado_id, restaurante_id, funcionario_id)
   select c.id, c.restaurante_id, f.id from rest_funcionarios f
-   where f.restaurante_id = c.restaurante_id and f.ativo and (
+   where f.restaurante_id = c.restaurante_id and f.ativo
+     -- quem escreveu não recebe de volta, a não ser que tenha se escolhido pelo nome
+     and (f.id is distinct from c.criado_por or f.id::text in (select jsonb_array_elements_text(coalesce(c.destino->'funcionarios', '[]')))) and (
      coalesce((c.destino->>'todos')::boolean, false)
      or f.id::text in (select jsonb_array_elements_text(coalesce(c.destino->'funcionarios', '[]')))
      or f.setor in (select jsonb_array_elements_text(coalesce(c.destino->'setores', '[]')))
      or f.id = any(coalesce((select array_agg(m) from rest_grupos g, unnest(g.membros) m where g.restaurante_id = c.restaurante_id and g.id::text in (select jsonb_array_elements_text(coalesce(c.destino->'grupos', '[]')))), '{}')))
   on conflict (comunicado_id, funcionario_id) do nothing;
   get diagnostics n = row_count;
+  update rest_comunicado_dest set disponivel_em = now() where comunicado_id = c.id and disponivel_em is null;
   update rest_comunicados set status = 'enviado', enviado_em = now() where id = c.id;
   return n;
 end $$;
@@ -201,9 +172,9 @@ begin
     raise exception 'Escolha os destinatários'; end if;
   v_env := greatest(coalesce(nullif(p->>'enviar_em', '')::timestamptz, now()), now());
   if nullif(p->>'prazo', '') is not null and (p->>'prazo')::timestamptz <= v_env then raise exception 'O prazo para leitura precisa ser depois do envio'; end if;
-  insert into rest_comunicados(id, restaurante_id, titulo, conteudo, prioridade, obrigatoria, prazo, enviar_em, destino, permitir_anexos, anexos, lembrete_horas, aviso_final_horas, criado_por)
+  insert into rest_comunicados(id, restaurante_id, titulo, conteudo, prioridade, obrigatoria, prazo, enviar_em, destino, permitir_anexos, anexos, criado_por)
   values (coalesce(nullif(p->>'id', '')::uuid, gen_random_uuid()), v_rest, trim(p->>'titulo'), trim(p->>'conteudo'), coalesce(p->>'prioridade', 'normal'), coalesce((p->>'obrigatoria')::boolean, false), nullif(p->>'prazo', '')::timestamptz,
-          v_env, d, coalesce((p->>'permitir_anexos')::boolean, false), coalesce(p->'anexos', '[]'), coalesce((p->>'lembrete_horas')::int, 24), coalesce((p->>'aviso_final_horas')::int, 2), v_eu)
+          v_env, d, coalesce((p->>'permitir_anexos')::boolean, false), coalesce(p->'anexos', '[]'), v_eu)
   returning * into v;
   insert into rest_comunicado_versoes(comunicado_id, restaurante_id, versao, titulo, conteudo, prioridade, obrigatoria, prazo, anexos, editado_por, alteracoes)
   values (v.id, v_rest, 1, v.titulo, v.conteudo, v.prioridade, v.obrigatoria, v.prazo, v.anexos, v_eu, '{criação}');
@@ -235,7 +206,6 @@ begin
   update rest_comunicados set titulo = trim(p->>'titulo'), conteudo = trim(p->>'conteudo'), prioridade = coalesce(p->>'prioridade', prioridade),
     obrigatoria = coalesce((p->>'obrigatoria')::boolean, obrigatoria), prazo = v_novo_prazo, anexos = coalesce(p->'anexos', anexos),
     permitir_anexos = coalesce((p->>'permitir_anexos')::boolean, permitir_anexos),
-    lembrete_horas = coalesce((p->>'lembrete_horas')::int, lembrete_horas), aviso_final_horas = coalesce((p->>'aviso_final_horas')::int, aviso_final_horas),
     destino = case when status = 'agendado' and p ? 'destino' then p->'destino' else destino end,
     enviar_em = case when status = 'agendado' and p ? 'enviar_em' then greatest((p->>'enviar_em')::timestamptz, now()) else enviar_em end,
     versao = versao + 1, editado_por = v_eu, editado_em = now()
@@ -243,13 +213,9 @@ begin
   insert into rest_comunicado_versoes(comunicado_id, restaurante_id, versao, titulo, conteudo, prioridade, obrigatoria, prazo, anexos, relevante, alteracoes, editado_por)
   values (c.id, c.restaurante_id, c.versao, c.titulo, c.conteudo, c.prioridade, c.obrigatoria, c.prazo, c.anexos, coalesce(p_relevante, false), v_alt, v_eu);
   if coalesce(p_relevante, false) and c.obrigatoria then
-    update rest_comunicado_dest set precisa_reconfirmar = true, lembretes = 0, ultimo_lembrete_em = null, aviso_final_em = null
+    update rest_comunicado_dest set precisa_reconfirmar = true, avisos = 0, ultimo_aviso_em = null
      where comunicado_id = c.id and confirmado_em is not null;
     get diagnostics v_reconf = row_count;
-  end if;
-  -- prazo novo: lembretes recomeçam
-  if v_novo_prazo is distinct from (select prazo from rest_comunicado_versoes where comunicado_id = c.id and versao = c.versao - 1) then
-    update rest_comunicado_dest set aviso_final_em = null where comunicado_id = c.id;
   end if;
   return jsonb_build_object('alterado', true, 'versao', c.versao, 'alteracoes', v_alt, 'reconfirmar', v_reconf, 'status', c.status);
 end $$;
@@ -309,23 +275,6 @@ begin
   return jsonb_build_object('ok', true, 'confirmado_em', now(), 'fora_prazo', v_fora);
 end $$;
 
--- aparelho do funcionário para receber push
-create or replace function rest_push_registrar(p_tipo text, p_endpoint text, p_chaves jsonb, p_plataforma text, p_aparelho text) returns uuid language plpgsql security definer set search_path = public as $$
-declare v_eu uuid := rest_meu_funcionario(); v_id uuid;
-begin
-  if v_eu is null then raise exception 'Faça login'; end if;
-  if p_tipo not in ('webpush','fcm') or coalesce(p_endpoint, '') = '' then raise exception 'Inscrição inválida'; end if;
-  insert into rest_push_dispositivos(restaurante_id, funcionario_id, tipo, endpoint, chaves, plataforma, aparelho)
-  values (rest_meu_restaurante(), v_eu, p_tipo, p_endpoint, p_chaves, left(p_plataforma, 60), left(p_aparelho, 200))
-  on conflict (endpoint) do update set funcionario_id = excluded.funcionario_id, restaurante_id = excluded.restaurante_id, chaves = excluded.chaves,
-     plataforma = excluded.plataforma, aparelho = excluded.aparelho, ativo = true, visto_em = now(), falhas = 0, ultimo_erro = null
-  returning id into v_id;
-  return v_id;
-end $$;
-create or replace function rest_push_desativar(p_endpoint text) returns void language sql security definer set search_path = public as $$
-  update rest_push_dispositivos set ativo = false where endpoint = p_endpoint and funcionario_id = rest_meu_funcionario()
-$$;
-
 -- grupos (administração)
 create or replace function rest_com_grupo_salvar(p_id uuid, p_nome text, p_membros uuid[]) returns uuid language plpgsql security definer set search_path = public as $$
 declare v_id uuid;
@@ -336,32 +285,25 @@ begin
   return v_id;
 end $$;
 
--- o que o robô de envio precisa fazer agora (chamado pela função rest-push com a chave de serviço)
-create or replace function rest_com_tarefas() returns jsonb language plpgsql security definer set search_path = public as $$
-declare v_lib jsonb; v_lemb jsonb; r record; agora_local time := (now() at time zone 'America/Sao_Paulo')::time; silencio boolean;
+-- chamado pelo app ao abrir: libera os agendados que chegaram na hora (horário do servidor) e marca como recebidos no app os do funcionário
+create or replace function rest_com_sincronizar() returns jsonb language plpgsql security definer set search_path = public as $$
+declare r record; v_eu uuid := rest_meu_funcionario();
 begin
-  -- 1) agendados que chegaram na hora
-  for r in select id from rest_comunicados where status = 'agendado' and enviar_em <= now() loop perform rest_com_liberar(r.id); end loop;
-  select coalesce(jsonb_agg(jsonb_build_object('comunicado_id', c.id, 'funcionario_id', d.funcionario_id)), '[]') into v_lib
-    from rest_comunicado_dest d join rest_comunicados c on c.id = d.comunicado_id
-   where c.status = 'enviado' and d.push_enviado_em is null;
-  -- 2) lembretes de leitura obrigatória (não durante o descanso noturno, 22h–7h, exceto urgentes; máximo 6 por comunicado)
-  silencio := agora_local >= '22:00' or agora_local < '07:00';
-  select coalesce(jsonb_agg(jsonb_build_object('comunicado_id', c.id, 'funcionario_id', d.funcionario_id, 'motivo', x.motivo)), '[]') into v_lemb
-    from rest_comunicado_dest d join rest_comunicados c on c.id = d.comunicado_id
-    cross join lateral (select case
-        when c.prazo is not null and d.aviso_final_em is null and c.aviso_final_horas > 0 and now() >= c.prazo - make_interval(hours => c.aviso_final_horas) and now() < c.prazo then 'aviso_final'
-        when c.lembrete_horas > 0 and d.lembretes < 6 and now() >= coalesce(d.ultimo_lembrete_em, d.push_enviado_em, d.incluido_em) + make_interval(hours => c.lembrete_horas) and (c.prazo is null or now() < c.prazo) then 'lembrete'
-      end as motivo) x
-   where c.status = 'enviado' and c.obrigatoria and d.push_enviado_em is not null
-     and (d.confirmado_em is null or d.precisa_reconfirmar)
-     and x.motivo is not null and (not silencio or c.prioridade = 'urgente');
-  return jsonb_build_object('liberar', v_lib, 'lembretes', v_lemb);
+  if v_eu is null then return jsonb_build_object('ok', false); end if;
+  for r in select id from rest_comunicados where restaurante_id = rest_meu_restaurante() and status = 'agendado' and enviar_em <= now() loop perform rest_com_liberar(r.id); end loop;
+  update rest_comunicado_dest d set entregue_em = now() from rest_comunicados c
+   where c.id = d.comunicado_id and c.status = 'enviado' and d.funcionario_id = v_eu and d.entregue_em is null;
+  return jsonb_build_object('ok', true);
 end $$;
 
-revoke all on function rest_com_liberar(uuid), rest_com_tarefas() from public, anon, authenticated;
+-- o aviso em destaque (ao abrir o app) foi exibido: conta para o painel; NÃO é leitura
+create or replace function rest_com_avisado(p_ids uuid[]) returns void language sql security definer set search_path = public as $$
+  update rest_comunicado_dest set avisos = avisos + 1, ultimo_aviso_em = now() where funcionario_id = rest_meu_funcionario() and comunicado_id = any(p_ids)
+$$;
+
+revoke all on function rest_com_liberar(uuid) from public, anon, authenticated;
 grant execute on function rest_com_criar(jsonb), rest_com_editar(uuid, jsonb, boolean), rest_com_cancelar(uuid, text), rest_com_abrir(uuid, text), rest_com_confirmar(uuid, int, text),
-  rest_push_registrar(text, text, jsonb, text, text), rest_push_desativar(text), rest_com_grupo_salvar(uuid, text, uuid[]) to authenticated;
+  rest_com_sincronizar(), rest_com_avisado(uuid[]), rest_com_grupo_salvar(uuid, text, uuid[]) to authenticated;
 grant select on rest_comunicado_situacao to authenticated;
 
 -- anexos dos comunicados: pasta {restaurante}/comunicados/{id}/ no balde privado; só destinatários e administração leem
@@ -372,3 +314,9 @@ create or replace function rest_com_pode_ler_anexo(p_nome text) returns boolean 
 $$;
 
 -- (Supabase) política do balde privado para os anexos — aplicada à parte em comunicados_arquivos.sql
+
+-- endurecimento (verificador de segurança do Supabase): sem execução por visitante não logado; search_path fixo
+revoke execute on function rest_com_criar(jsonb), rest_com_editar(uuid, jsonb, boolean), rest_com_cancelar(uuid, text), rest_com_abrir(uuid, text), rest_com_confirmar(uuid, int, text),
+  rest_com_sincronizar(), rest_com_avisado(uuid[]), rest_com_grupo_salvar(uuid, text, uuid[]), rest_com_pode_ler_anexo(text) from public, anon;
+alter function rest_com_dispositivo() set search_path = public;
+alter function rest_com_validar(jsonb) set search_path = public;

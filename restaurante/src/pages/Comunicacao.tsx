@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Ban, BellRing, FileSpreadsheet, FileText, History, Paperclip, Pencil, Plus, Send, Smartphone, Trash2, Users } from 'lucide-react';
-import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Ban, FileSpreadsheet, FileText, History, Paperclip, Pencil, Plus, Send, Trash2, Users } from 'lucide-react';
+import { Bar, BarChart, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { supabase } from '../lib/supabase';
 import { useEu } from '../lib/sessao';
 import { enviarPrivado } from '../lib/arquivos';
 import { gerarExcel, gerarPDF, type Rel } from '../lib/relatorios';
 import { quando, SITUACOES, tempoRestante, type Situacao } from '../lib/comunicados';
-import { chamarPush } from '../lib/push';
 import { Prioridade, SituacaoTag } from './Comunicados';
 import { Abas, Aviso, avisarMudanca, Btn, Cabecalho, Campo, Card, Input, Modal, q, Select, Stat, Tabela, Textarea, toast, useDados } from '../components/ui';
 
@@ -26,12 +25,11 @@ export default function Comunicacao() {
   const [novo, setNovo] = useState(false);
   return (
     <div className="space-y-3">
-      <Cabecalho titulo="Comunicação interna" sub="Comunicados por notificação push, com leitura obrigatória, prazo e acompanhamento" acoes={<Btn onClick={() => setNovo(true)}><Plus className="h-4 w-4" />Novo comunicado</Btn>} />
-      <Abas abas={[{ id: 'painel', t: 'Comunicados' }, { id: 'relatorio', t: 'Relatório' }, { id: 'grupos', t: 'Grupos' }, { id: 'aparelhos', t: 'Aparelhos' }]} ativa={aba} mudar={setAba} />
+      <Cabecalho titulo="Comunicação interna" sub="Comunicados no app, com leitura obrigatória, prazo e acompanhamento" acoes={<Btn onClick={() => setNovo(true)}><Plus className="h-4 w-4" />Novo comunicado</Btn>} />
+      <Abas abas={[{ id: 'painel', t: 'Comunicados' }, { id: 'relatorio', t: 'Relatório' }, { id: 'grupos', t: 'Grupos' }]} ativa={aba} mudar={setAba} />
       {aba === 'painel' && <Painel />}
       {aba === 'relatorio' && <Relatorio />}
       {aba === 'grupos' && <Grupos />}
-      {aba === 'aparelhos' && <Aparelhos />}
       {novo && <Editor fechar={() => setNovo(false)} />}
     </div>
   );
@@ -39,7 +37,7 @@ export default function Comunicacao() {
 
 function resumo(l: Situacao[]) {
   return {
-    total: l.length, enviadas: l.filter((s) => s.push_enviado_em).length, entregues: l.filter((s) => s.entregue_em).length, abertas: l.filter((s) => s.aberto_em).length,
+    total: l.length, enviadas: l.filter((s) => s.disponivel_em).length, entregues: l.filter((s) => s.entregue_em).length, abertas: l.filter((s) => s.aberto_em).length,
     confirmadas: l.filter((s) => s.situacao === 'confirmada').length, expiradas: l.filter((s) => s.situacao === 'prazo_expirado').length,
     pendentes: l.filter((s) => s.status_comunicado === 'enviado' && s.obrigatoria && !['confirmada', 'prazo_expirado'].includes(s.situacao)).length,
   };
@@ -96,22 +94,18 @@ function Detalhe({ id, fechar }: { id: string; fechar: () => void }) {
   const [f, setF] = useState({ setor: '', status: '', nome: '' });
   const [modal, setModal] = useState<'' | 'editar' | 'cancelar' | 'versoes'>('');
   const [hist, setHist] = useState<any>(null);
-  const [enviando, setEnviando] = useState(false);
   const { dados } = useDados(async () => {
-    const [c, sit, envios] = await Promise.all([q<any>(supabase.from('rest_comunicados').select('*').eq('id', id).single()), q<Situacao[]>(supabase.from('rest_comunicado_situacao').select('*').eq('comunicado_id', id).order('funcionario_nome')),
-      q<any[]>(supabase.from('rest_push_envios').select('funcionario_id, status, criado_em, motivo').eq('comunicado_id', id))]);
-    return { c, sit, envios };
+    const [c, sit] = await Promise.all([q<any>(supabase.from('rest_comunicados').select('*').eq('id', id).single()), q<Situacao[]>(supabase.from('rest_comunicado_situacao').select('*').eq('comunicado_id', id).order('funcionario_nome'))]);
+    return { c, sit };
   }, [id]);
   if (!dados) return <Modal aberto largo fechar={fechar} titulo="Comunicado"><div className="p-6 text-center text-sm text-slate-500">Carregando…</div></Modal>;
   const { c, sit } = dados; const r = resumo(sit);
   const linhas = sit.filter((s) => (!f.setor || s.setor === f.setor) && (!f.status || s.situacao === f.status) && (!f.nome || s.funcionario_nome.toLowerCase().includes(f.nome.toLowerCase())));
   const graf = Object.entries(sit.reduce((a: Record<string, number>, s) => { a[s.situacao] = (a[s.situacao] ?? 0) + 1; return a; }, {})).map(([k, v]) => ({ k, nome: SITUACOES[k]?.[0] ?? k, v }));
-  const semAparelho = new Set(dados.envios.filter((e) => e.status === 'sem_dispositivo' && e.motivo === 'envio').map((e) => e.funcionario_id));
-  const reenviar = async () => { setEnviando(true); const x = await chamarPush({ acao: 'enviar', comunicado_id: id, motivo: 'reenvio' }).catch((e) => ({ ok: false, mensagem: e.message })); setEnviando(false); toast(x.ok ? `Lembrete para ${x.pessoas} pessoa(s): ${x.enviados} notificação(ões) enviada(s)${x.sem_aparelho ? `, ${x.sem_aparelho} sem aparelho cadastrado` : ''}` : x.mensagem, x.ok ? 'ok' : 'erro'); avisarMudanca(); };
   const rel = (): Rel => ({ titulo: `Comunicado: ${c.titulo}`, periodo: `Enviado ${quando(c.enviado_em)}${c.prazo ? ` · prazo ${quando(c.prazo)}` : ''}`, restaurante: rest.nome,
-    resumo: [['Destinatários', String(r.total)], ['Notificações enviadas', String(r.enviadas)], ['Entregues', String(r.entregues)], ['Abertas', String(r.abertas)], ['Confirmações', String(r.confirmadas)], ['Pendentes', String(r.pendentes)], ['Prazo expirado', String(r.expiradas)]],
+    resumo: [['Destinatários', String(r.total)], ['Enviadas', String(r.enviadas)], ['Recebidas no app', String(r.entregues)], ['Abertas', String(r.abertas)], ['Confirmações', String(r.confirmadas)], ['Pendentes', String(r.pendentes)], ['Prazo expirado', String(r.expiradas)]],
     tabelas: [{ titulo: 'Destinatários', colunas: [{ t: 'Funcionário', k: 'f' }, { t: 'Setor', k: 's' }, { t: 'Envio', k: 'e' }, { t: 'Abertura', k: 'a' }, { t: 'Confirmação', k: 'c' }, { t: 'Status', k: 'st' }],
-      linhas: linhas.map((s) => ({ f: s.funcionario_nome, s: s.setor ?? '—', e: quando(s.push_enviado_em ?? s.incluido_em), a: quando(s.aberto_em), c: s.confirmado_em ? quando(s.confirmado_em) + (s.confirmado_fora_prazo ? ' (fora do prazo)' : '') : '—', st: SITUACOES[s.situacao]?.[0] })) }] });
+      linhas: linhas.map((s) => ({ f: s.funcionario_nome, s: s.setor ?? '—', e: quando(s.disponivel_em ?? s.incluido_em), a: quando(s.aberto_em), c: s.confirmado_em ? quando(s.confirmado_em) + (s.confirmado_fora_prazo ? ' (fora do prazo)' : '') : '—', st: SITUACOES[s.situacao]?.[0] })) }] });
   return (
     <Modal aberto largo fechar={fechar} titulo="Acompanhamento do comunicado">
       <div className="space-y-3">
@@ -120,15 +114,14 @@ function Detalhe({ id, fechar }: { id: string; fechar: () => void }) {
         {c.status === 'cancelado' && <Aviso tipo="alerta">CANCELADO em {quando(c.cancelado_em)} · motivo: {c.motivo_cancelamento}</Aviso>}
         <details className="rounded-xl border border-slate-200 p-2 text-sm dark:border-slate-800"><summary className="cursor-pointer text-slate-500">Ver mensagem</summary><div className="mt-2 whitespace-pre-wrap">{c.conteudo}</div>{c.anexos?.length > 0 && <div className="mt-2 text-xs text-slate-500"><Paperclip className="mr-1 inline h-3 w-3" />{c.anexos.map((a: any) => a.nome).join(', ')}</div>}</details>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {[['Destinatários', r.total], ['Notificações enviadas', r.enviadas], ['Entregues ao aparelho', r.entregues], ['Abertas', r.abertas], ['Confirmações', r.confirmadas], ['Pendentes', r.pendentes], ['Prazo expirado', r.expiradas], ['Sem aparelho', semAparelho.size]].map(([k, v]) => <div key={k as string} className="rounded-xl bg-slate-50 p-2 dark:bg-slate-800/60"><div className="text-xs text-slate-500">{k}</div><div className="text-xl font-bold tabular-nums">{v}</div></div>)}
+          {[['Destinatários', r.total], ['Enviadas', r.enviadas], ['Recebidas no app', r.entregues], ['Abertas', r.abertas], ['Confirmações', r.confirmadas], ['Pendentes', r.pendentes], ['Prazo expirado', r.expiradas], ['Ainda não abriram o app', r.total - r.entregues]].map(([k, v]) => <div key={k as string} className="rounded-xl bg-slate-50 p-2 dark:bg-slate-800/60"><div className="text-xs text-slate-500">{k}</div><div className="text-xl font-bold tabular-nums">{v}</div></div>)}
         </div>
         {graf.length > 0 && <div className="grid gap-3 sm:grid-cols-2">
-          <div className="h-48"><ResponsiveContainer><PieChart><Pie data={graf} dataKey="v" nameKey="nome" innerRadius={40} outerRadius={70} isAnimationActive={false}>{graf.map((g) => <Cell key={g.k} fill={CORES_SIT[g.k] ?? '#94a3b8'} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
-          <div className="h-48"><ResponsiveContainer><BarChart data={[{ n: 'Enviadas', v: r.enviadas }, { n: 'Entregues', v: r.entregues }, { n: 'Abertas', v: r.abertas }, { n: 'Confirmadas', v: r.confirmadas }]}><XAxis dataKey="n" fontSize={11} /><YAxis allowDecimals={false} fontSize={11} width={28} /><Tooltip /><Bar dataKey="v" fill="#A3141B" maxBarSize={48} isAnimationActive={false} /></BarChart></ResponsiveContainer></div>
+          <div className="h-48"><ResponsiveContainer><PieChart><Pie data={graf} dataKey="v" nameKey="nome" innerRadius={40} outerRadius={70} isAnimationActive={false}>{graf.map((g) => <Cell key={g.k} fill={CORES_SIT[g.k] ?? '#94a3b8'} />)}</Pie><Tooltip /><Legend iconSize={8} wrapperStyle={{ fontSize: 11 }} /></PieChart></ResponsiveContainer></div>
+          <div className="h-48"><ResponsiveContainer><BarChart data={[{ n: 'Enviadas', v: r.enviadas }, { n: 'Recebidas', v: r.entregues }, { n: 'Abertas', v: r.abertas }, { n: 'Confirmadas', v: r.confirmadas }]}><XAxis dataKey="n" fontSize={11} /><YAxis allowDecimals={false} fontSize={11} width={28} /><Tooltip /><Bar dataKey="v" fill="#A3141B" maxBarSize={48} isAnimationActive={false} /></BarChart></ResponsiveContainer></div>
         </div>}
         <div className="flex flex-wrap gap-2">
           {c.status !== 'cancelado' && <Btn variante="secundario" onClick={() => setModal('editar')}><Pencil className="h-4 w-4" />Editar</Btn>}
-          {c.status === 'enviado' && <Btn variante="secundario" carregando={enviando} onClick={reenviar}><BellRing className="h-4 w-4" />Reenviar aos pendentes</Btn>}
           <Btn variante="secundario" onClick={() => setModal('versoes')}><History className="h-4 w-4" />Versões</Btn>
           <Btn variante="secundario" onClick={() => gerarPDF(rel())}><FileText className="h-4 w-4" />PDF</Btn>
           <Btn variante="secundario" onClick={() => gerarExcel(rel())}><FileSpreadsheet className="h-4 w-4" />Excel</Btn>
@@ -140,12 +133,12 @@ function Detalhe({ id, fechar }: { id: string; fechar: () => void }) {
           <Select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })}><option value="">Todos os status</option>{Object.entries(SITUACOES).map(([k, [t]]) => <option key={k} value={k}>{t}</option>)}</Select>
         </div>
         <Tabela linhas={linhas} aoClicar={(s) => setHist({ id: s.funcionario_id, nome: s.funcionario_nome })} colunas={[
-          { k: 'f', t: 'Funcionário', r: (s) => <span>{s.funcionario_nome}{semAparelho.has(s.funcionario_id) && <Smartphone className="ml-1 inline h-3.5 w-3.5 text-red-500" />}</span> },
-          { k: 's', t: 'Setor', r: (s) => s.setor ?? '—' }, { k: 'e', t: 'Envio', r: (s) => quando(s.push_enviado_em ?? s.incluido_em) },
+          { k: 'f', t: 'Funcionário', r: (s) => <span>{s.funcionario_nome}{s.avisos > 0 && !s.aberto_em && <span className="ml-1 text-xs text-slate-500">(aviso exibido {s.avisos}×)</span>}</span> },
+          { k: 's', t: 'Setor', r: (s) => s.setor ?? '—' }, { k: 'e', t: 'Envio', r: (s) => quando(s.disponivel_em ?? s.incluido_em) },
           { k: 'a', t: 'Abertura', r: (s) => quando(s.aberto_em) }, { k: 'c', t: 'Confirmação', r: (s) => (s.confirmado_em ? `${quando(s.confirmado_em)}${s.confirmado_fora_prazo ? ' (fora do prazo)' : ''}${s.precisa_reconfirmar ? ' (versão anterior)' : ''}` : '—') },
           { k: 'st', t: 'Status', r: (s) => <SituacaoTag s={s.situacao} /> },
         ]} />
-        <p className="text-xs text-slate-500">Toque no funcionário para ver o histórico de comunicados dele. Ícone vermelho de celular: sem aparelho com notificações ativas. “Entregue” é a confirmação técnica do celular; não é leitura.</p>
+        <p className="text-xs text-slate-500">Toque no funcionário para ver o histórico de comunicados dele. “Recebida no app” significa que o comunicado apareceu no app da pessoa (e o aviso em destaque foi exibido ao abrir); não é leitura. Leitura só conta com a abertura e, quando obrigatória, com a confirmação.</p>
       </div>
       {modal === 'editar' && <Editor existente={c} lidos={r.abertas} confirmados={r.confirmadas} fechar={() => setModal('')} />}
       {modal === 'cancelar' && <Cancelar c={c} fechar={() => setModal('')} />}
@@ -156,14 +149,13 @@ function Detalhe({ id, fechar }: { id: string; fechar: () => void }) {
 }
 
 function Editor({ existente, lidos = 0, confirmados = 0, fechar }: { existente?: any; lidos?: number; confirmados?: number; fechar: () => void }) {
-  const { rest } = useEu();
+  const { rest, eu } = useEu();
   const { dados: base } = useBase();
   const [id] = useState(() => existente?.id ?? crypto.randomUUID());
   const dest0 = existente?.destino ?? { todos: true };
   const [d, setD] = useState({
     titulo: existente?.titulo ?? '', conteudo: existente?.conteudo ?? '', prioridade: existente?.prioridade ?? 'normal', obrigatoria: existente?.obrigatoria ?? true,
     prazo: paraLocal(existente?.prazo), agendar: existente?.status === 'agendado', enviar_em: paraLocal(existente?.enviar_em), permitir_anexos: existente?.permitir_anexos ?? false, anexos: (existente?.anexos ?? []) as any[],
-    lembrete_horas: existente?.lembrete_horas ?? 24, aviso_final_horas: existente?.aviso_final_horas ?? 2,
     modo: dest0.todos ? 'todos' : 'escolher', funcionarios: (dest0.funcionarios ?? []) as string[], setores: (dest0.setores ?? []) as string[], grupos: (dest0.grupos ?? []) as string[],
   });
   const [relevante, setRelevante] = useState(confirmados > 0);
@@ -171,7 +163,7 @@ function Editor({ existente, lidos = 0, confirmados = 0, fechar }: { existente?:
   const [subindo, setSubindo] = useState(false);
   const enviado = existente && existente.status !== 'agendado';
   const alt = (k: 'funcionarios' | 'setores' | 'grupos', v: string) => setD({ ...d, [k]: d[k].includes(v) ? d[k].filter((x) => x !== v) : [...d[k], v] });
-  const alcance = !base ? 0 : d.modo === 'todos' ? base.equipe.length : new Set(base.equipe.filter((f) => d.funcionarios.includes(f.id) || d.setores.includes(f.setor) || base.grupos.some((g) => d.grupos.includes(g.id) && g.membros.includes(f.id))).map((f) => f.id)).size;
+  const alcance = !base ? 0 : d.modo === 'todos' ? base.equipe.filter((f) => f.id !== eu.id).length : new Set(base.equipe.filter((f) => (f.id !== eu.id || d.funcionarios.includes(f.id)) && d.funcionarios.includes(f.id) || d.setores.includes(f.setor) || base.grupos.some((g) => d.grupos.includes(g.id) && g.membros.includes(f.id))).map((f) => f.id)).size;
   const anexar = async (arqs: FileList | null) => {
     if (!arqs?.length) return; setSubindo(true);
     try { const novos: any[] = []; for (const a of Array.from(arqs)) { if (a.size > 10 * 1024 * 1024) { toast(`${a.name}: máximo 10 MB`, 'erro'); continue; } novos.push({ path: await enviarPrivado(rest.id, 'comunicados', id, a, a.name), nome: a.name, tipo: a.type, tamanho: a.size }); } setD((x) => ({ ...x, anexos: [...x.anexos, ...novos] })); }
@@ -179,25 +171,25 @@ function Editor({ existente, lidos = 0, confirmados = 0, fechar }: { existente?:
   };
   const salvar = async () => {
     const destino = d.modo === 'todos' ? { todos: true } : { funcionarios: d.funcionarios, setores: d.setores, grupos: d.grupos };
-    const p: any = { id, titulo: d.titulo, conteudo: d.conteudo, prioridade: d.prioridade, obrigatoria: d.obrigatoria, prazo: deLocal(d.prazo), permitir_anexos: d.permitir_anexos, anexos: d.permitir_anexos ? d.anexos : [],
-      lembrete_horas: Number(d.lembrete_horas), aviso_final_horas: Number(d.aviso_final_horas) };
+    const p: any = { id, titulo: d.titulo, conteudo: d.conteudo, prioridade: d.prioridade, obrigatoria: d.obrigatoria, prazo: deLocal(d.prazo), permitir_anexos: d.permitir_anexos, anexos: d.permitir_anexos ? d.anexos : [] };
     if (!enviado) { p.destino = destino; p.enviar_em = d.agendar ? deLocal(d.enviar_em) : new Date().toISOString(); }
     if (d.agendar && !d.enviar_em) return toast('Escolha a data e a hora do envio', 'erro');
     setSalvando(true);
     try {
       if (!existente) {
         const { data, error } = await supabase.rpc('rest_com_criar', { p }); if (error) throw error;
-        if (!data.agendado) { const x = await chamarPush({ acao: 'enviar', comunicado_id: data.id, motivo: 'envio' }).catch(() => null); toast(`Comunicado enviado para ${data.destinatarios} pessoa(s)${x?.ok ? ` · ${x.enviados} notificação(ões)${x.sem_aparelho ? `, ${x.sem_aparelho} sem aparelho` : ''}` : ''}`); }
+        if (!data.agendado) toast(`Comunicado enviado para ${data.destinatarios} pessoa(s). Aparece em destaque quando abrirem o app.`);
         else toast(`Comunicado agendado para ${new Date(p.enviar_em).toLocaleString('pt-BR')}`);
       } else {
         const { data, error } = await supabase.rpc('rest_com_editar', { p_id: existente.id, p, p_relevante: relevante }); if (error) throw error;
         if (!data.alterado) toast('Nada foi alterado', 'info');
-        else { if (relevante && data.status === 'enviado') await chamarPush({ acao: 'enviar', comunicado_id: existente.id, motivo: 'atualizacao' }).catch(() => null); toast(`Atualizado para a versão ${data.versao} (${data.alteracoes.join(', ')})${data.reconfirmar ? ` · ${data.reconfirmar} pessoa(s) precisam confirmar de novo` : ''}`); }
+        else { toast(`Atualizado para a versão ${data.versao} (${data.alteracoes.join(', ')})${data.reconfirmar ? ` · ${data.reconfirmar} pessoa(s) precisam confirmar de novo` : ''}`); }
       }
       avisarMudanca(); fechar();
     } catch (e: any) { toast(e.message, 'erro'); } finally { setSalvando(false); }
   };
-  const Chip = ({ ativo, onClick, children }: any) => <button type="button" onClick={onClick} className={`rounded-full px-3 py-1 text-sm ${ativo ? 'bg-brand-700 text-white' : 'bg-slate-100 dark:bg-slate-800'}`}>{children}</button>;
+  const Opcoes = ({ rotulo, children }: any) => <div className="text-sm" role="group" aria-label={rotulo}><span className="mb-1 block font-medium text-slate-700 dark:text-slate-300">{rotulo}</span>{children}</div>;
+  const Chip = ({ ativo, onClick, children }: any) => <button type="button" aria-pressed={!!ativo} onClick={onClick} className={`rounded-full px-3 py-1 text-sm ${ativo ? 'bg-brand-700 text-white' : 'bg-slate-100 dark:bg-slate-800'}`}>{children}</button>;
   return (
     <Modal aberto largo fechar={fechar} titulo={existente ? 'Editar comunicado' : 'Novo comunicado'}>
       <div className="space-y-3">
@@ -205,9 +197,9 @@ function Editor({ existente, lidos = 0, confirmados = 0, fechar }: { existente?:
         <Campo rotulo="Título"><Input value={d.titulo} maxLength={140} onChange={(e) => setD({ ...d, titulo: e.target.value })} placeholder="Ex.: Novo horário de limpeza" /></Campo>
         <Campo rotulo="Mensagem"><Textarea rows={6} value={d.conteudo} onChange={(e) => setD({ ...d, conteudo: e.target.value })} /></Campo>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <Campo rotulo="Prioridade"><div className="flex gap-1">{(['normal', 'importante', 'urgente'] as const).map((p) => <Chip key={p} ativo={d.prioridade === p} onClick={() => setD({ ...d, prioridade: p })}>{p[0].toUpperCase() + p.slice(1)}</Chip>)}</div></Campo>
-          <Campo rotulo="Exigir confirmação de leitura"><div className="flex gap-1"><Chip ativo={d.obrigatoria} onClick={() => setD({ ...d, obrigatoria: true })}>SIM</Chip><Chip ativo={!d.obrigatoria} onClick={() => setD({ ...d, obrigatoria: false })}>NÃO</Chip></div></Campo>
-          <Campo rotulo="Permitir anexos"><div className="flex gap-1"><Chip ativo={d.permitir_anexos} onClick={() => setD({ ...d, permitir_anexos: true })}>SIM</Chip><Chip ativo={!d.permitir_anexos} onClick={() => setD({ ...d, permitir_anexos: false })}>NÃO</Chip></div></Campo>
+          <Opcoes rotulo="Prioridade"><div className="flex gap-1">{(['normal', 'importante', 'urgente'] as const).map((p) => <Chip key={p} ativo={d.prioridade === p} onClick={() => setD({ ...d, prioridade: p })}>{p[0].toUpperCase() + p.slice(1)}</Chip>)}</div></Opcoes>
+          <Opcoes rotulo="Exigir confirmação de leitura"><div className="flex gap-1"><Chip ativo={d.obrigatoria} onClick={() => setD({ ...d, obrigatoria: true })}>SIM</Chip><Chip ativo={!d.obrigatoria} onClick={() => setD({ ...d, obrigatoria: false })}>NÃO</Chip></div></Opcoes>
+          <Opcoes rotulo="Permitir anexos"><div className="flex gap-1"><Chip ativo={d.permitir_anexos} onClick={() => setD({ ...d, permitir_anexos: true })}>SIM</Chip><Chip ativo={!d.permitir_anexos} onClick={() => setD({ ...d, permitir_anexos: false })}>NÃO</Chip></div></Opcoes>
         </div>
         {d.permitir_anexos && <div className="rounded-xl border border-slate-200 p-3 dark:border-slate-800">
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium dark:bg-slate-800"><Paperclip className="h-4 w-4" />{subindo ? 'Enviando…' : 'Anexar PDF, imagem ou documento'}<input type="file" multiple className="hidden" accept="application/pdf,image/*,.doc,.docx,.xls,.xlsx,.txt" onChange={(e) => { anexar(e.target.files); e.target.value = ''; }} /></label>
@@ -223,14 +215,11 @@ function Editor({ existente, lidos = 0, confirmados = 0, fechar }: { existente?:
           </div>}
         </div>}
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {!enviado && <Campo rotulo="Envio"><div className="flex gap-1"><Chip ativo={!d.agendar} onClick={() => setD({ ...d, agendar: false })}>Agora</Chip><Chip ativo={d.agendar} onClick={() => setD({ ...d, agendar: true })}>Agendar</Chip></div>{d.agendar && <Input className="mt-2" type="datetime-local" value={d.enviar_em} onChange={(e) => setD({ ...d, enviar_em: e.target.value })} />}</Campo>}
+          {!enviado && <Opcoes rotulo="Envio"><div className="flex gap-1"><Chip ativo={!d.agendar} onClick={() => setD({ ...d, agendar: false })}>Agora</Chip><Chip ativo={d.agendar} onClick={() => setD({ ...d, agendar: true })}>Agendar</Chip></div>{d.agendar && <Input className="mt-2" type="datetime-local" value={d.enviar_em} onChange={(e) => setD({ ...d, enviar_em: e.target.value })} />}</Opcoes>}
           <Campo rotulo="Prazo para leitura (opcional)"><Input type="datetime-local" value={d.prazo} onChange={(e) => setD({ ...d, prazo: e.target.value })} /></Campo>
         </div>
-        {d.obrigatoria && <div className="grid grid-cols-2 gap-2">
-          <Campo rotulo="Lembrete automático" dica="Para quem ainda não confirmou. Máximo 6 lembretes; sem lembretes das 22h às 7h (exceto urgentes)."><Select value={d.lembrete_horas} onChange={(e) => setD({ ...d, lembrete_horas: Number(e.target.value) })}>{[[0, 'Sem lembretes'], [2, 'A cada 2 h'], [4, 'A cada 4 h'], [8, 'A cada 8 h'], [12, 'A cada 12 h'], [24, 'Uma vez por dia'], [48, 'A cada 2 dias']].map(([v, t]) => <option key={v} value={v}>{t}</option>)}</Select></Campo>
-          <Campo rotulo="Último aviso antes do prazo"><Select value={d.aviso_final_horas} onChange={(e) => setD({ ...d, aviso_final_horas: Number(e.target.value) })}>{[[0, 'Não avisar'], [1, '1 h antes'], [2, '2 h antes'], [6, '6 h antes'], [24, '1 dia antes']].map(([v, t]) => <option key={v} value={v}>{t}</option>)}</Select></Campo>
-        </div>}
-        {existente && enviado && existente.obrigatoria && <label className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-sm dark:bg-amber-950/30"><input type="checkbox" checked={relevante} onChange={(e) => setRelevante(e.target.checked)} className="mt-0.5" /><span><b>Alteração relevante</b>: pedir nova confirmação de leitura{confirmados ? ` às ${confirmados} pessoa(s) que já confirmaram` : ''} e notificar. Desmarque para correções pequenas (ex.: erro de digitação).</span></label>}
+        {d.obrigatoria && <p className="text-xs text-slate-500">Enquanto não confirmar, o comunicado aparece em destaque toda vez que a pessoa abrir o app (por exemplo, para bater o ponto), sem impedir o registro do ponto.</p>}
+        {existente && enviado && existente.obrigatoria && <label className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-sm dark:bg-amber-950/30"><input type="checkbox" checked={relevante} onChange={(e) => setRelevante(e.target.checked)} className="mt-0.5" /><span><b>Alteração relevante</b>: pedir nova confirmação de leitura{confirmados ? ` às ${confirmados} pessoa(s) que já confirmaram` : ''} (volta a aparecer em destaque). Desmarque para correções pequenas (ex.: erro de digitação).</span></label>}
         <Btn className="w-full" carregando={salvando} onClick={salvar}><Send className="h-4 w-4" />{existente ? 'Salvar alterações' : d.agendar ? 'Agendar comunicado' : 'Enviar agora'}</Btn>
       </div>
     </Modal>
@@ -244,13 +233,12 @@ function Cancelar({ c, fechar }: { c: any; fechar: () => void }) {
     setRodando(true);
     const { data, error } = await supabase.rpc('rest_com_cancelar', { p_id: c.id, p_motivo: motivo });
     if (error) { setRodando(false); return toast(error.message, 'erro'); }
-    if (data.ja_enviado) await chamarPush({ acao: 'enviar', comunicado_id: c.id, motivo: 'cancelamento' }).catch(() => null);
     setRodando(false); toast('Comunicado cancelado (o histórico fica guardado)'); avisarMudanca(); fechar();
   };
   return (
     <Modal aberto fechar={fechar} titulo="Cancelar comunicado">
       <div className="space-y-3">
-        <Aviso tipo="alerta">Ao cancelar: param as notificações e lembretes, o comunicado sai das pendências{c.status === 'enviado' ? ' e os destinatários recebem um aviso de cancelamento' : ''}. Nada é apagado: o histórico, as leituras e as confirmações continuam no painel.</Aviso>
+        <Aviso tipo="alerta">Ao cancelar: o comunicado sai das pendências e do aviso em destaque{c.status === 'enviado' ? ' e os destinatários passam a ver a marca CANCELADO com o motivo' : ''}. Nada é apagado: o histórico, as leituras e as confirmações continuam no painel.</Aviso>
         <Campo rotulo="Motivo (obrigatório)"><Textarea rows={2} value={motivo} onChange={(e) => setMotivo(e.target.value)} /></Campo>
         <Btn variante="perigo" className="w-full" carregando={rodando} disabled={!motivo.trim()} onClick={ir}><Ban className="h-4 w-4" />CANCELAR COMUNICADO</Btn>
       </div>
@@ -280,7 +268,7 @@ function HistoricoFuncionario({ f, fechar }: { f: { id: string; nome: string }; 
   return (
     <Modal aberto largo fechar={fechar} titulo={`Comunicados de ${f.nome}`}>
       <Tabela linhas={dados} vazio="Nenhum comunicado." colunas={[
-        { k: 't', t: 'Comunicado', r: (s) => <span>{s.titulo} {s.prioridade !== 'normal' && <Prioridade p={s.prioridade} />}</span> }, { k: 'e', t: 'Recebido', r: (s) => quando(s.push_enviado_em ?? s.incluido_em) },
+        { k: 't', t: 'Comunicado', r: (s) => <span>{s.titulo} {s.prioridade !== 'normal' && <Prioridade p={s.prioridade} />}</span> }, { k: 'e', t: 'Recebido', r: (s) => quando(s.disponivel_em ?? s.incluido_em) },
         { k: 'a', t: 'Abertura', r: (s) => quando(s.aberto_em) }, { k: 'c', t: 'Confirmação', r: (s) => quando(s.confirmado_em) }, { k: 's', t: 'Status', r: (s) => <SituacaoTag s={s.situacao} /> },
       ]} />
     </Modal>
@@ -338,25 +326,3 @@ function Grupos() {
     </div>
   );
 }
-
-function Aparelhos() {
-  const { dados } = useDados(async () => {
-    const [eq, ap] = await Promise.all([q<any[]>(supabase.from('rest_funcionarios').select('id, nome, setor').eq('ativo', true).order('nome')), q<any[]>(supabase.from('rest_push_dispositivos').select('*').order('visto_em', { ascending: false }))]);
-    return eq.map((f) => { const meus = ap.filter((a) => a.funcionario_id === f.id); const ativos = meus.filter((a) => a.ativo);
-      const ruim = !ativos.length ? 'Sem aparelho com notificações ativas' : ativos.every((a) => a.ultimo_erro) ? 'Envios falhando' : ativos.some((a) => a.ultimo_envio_em && (!a.ultima_entrega_em || a.ultima_entrega_em < a.ultimo_envio_em) && Date.now() - Date.parse(a.ultimo_envio_em) > 3600000) ? 'Último envio sem confirmação de entrega' : '';
-      return { ...f, ativos, meus, ruim }; });
-  }, []);
-  const ruins = dados?.filter((f) => f.ruim).length ?? 0;
-  return (
-    <div className="space-y-3">
-      <Aviso tipo={ruins ? 'alerta' : 'ok'}>{ruins ? `${ruins} funcionário(s) podem não estar recebendo as notificações. Peça para abrirem “Comunicados e avisos” e tocarem em “Ativar notificações”. No iPhone, o app precisa estar na Tela de Início.` : 'Todos têm aparelho com notificações ativas.'}</Aviso>
-      <Tabela linhas={dados} colunas={[
-        { k: 'nome', t: 'Funcionário', r: (f) => <span className={f.ruim ? 'font-semibold text-red-600' : ''}>{f.nome}</span> }, { k: 'setor', t: 'Setor', r: (f) => f.setor ?? '—', esconderCelular: true },
-        { k: 'ap', t: 'Aparelhos', r: (f) => f.ativos.map((a: any) => a.plataforma).join(', ') || '—' },
-        { k: 'ent', t: 'Última entrega', r: (f) => quando(f.ativos.map((a: any) => a.ultima_entrega_em).filter(Boolean).sort().pop()) },
-        { k: 'st', t: 'Situação', r: (f) => (f.ruim ? <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-800">{f.ruim}</span> : <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800">Recebendo</span>) },
-      ]} />
-    </div>
-  );
-}
-
