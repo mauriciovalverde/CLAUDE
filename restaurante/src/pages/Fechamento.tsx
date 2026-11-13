@@ -20,11 +20,11 @@ export function calcular(f: Record<string, any>) {
 
 export default function Fechamento() {
   const { pode } = useEu();
-  const [aba, setAba] = useState(pode('admin') ? 'conferir' : 'meu');
+  const [aba, setAba] = useState('meu');
   return (
     <div>
       <Cabecalho titulo="Caixa" sub="1) Abra o caixa com o valor inicial  2) No fim do dia, faça o fechamento" />
-      <Abas abas={[...(pode('admin') ? [{ id: 'conferir', t: '🔍 Conferir' }] : []), { id: 'meu', t: '🧮 Meu caixa' }, { id: 'historico', t: 'Histórico' }]} ativa={aba} mudar={setAba} />
+      <Abas abas={[{ id: 'meu', t: '🧮 Abrir e fechar' }, ...(pode('admin') ? [{ id: 'conferir', t: '🔍 Conferir' }] : []), { id: 'historico', t: 'Histórico' }]} ativa={aba} mudar={setAba} />
       {aba === 'meu' && <MeuCaixa />}
       {aba === 'conferir' && <Lista status={['encerrado']} />}
       {aba === 'historico' && <Lista />}
@@ -72,26 +72,45 @@ function MeuCaixa() {
   };
   const campo = (k: string, rot: string, dica?: string) => <Campo rotulo={rot} dica={dica}><Dinheiro valor={f[k] ?? ''} mudar={(v) => setF({ ...f, [k]: v })} disabled={!!bloqueado} className="!py-3 text-lg" placeholder="0,00" /></Campo>;
   if (reg === undefined) return null;
+  const diaSemana = new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+  const seletorDia = (
+    <div className="grid grid-cols-2 gap-2">
+      <Campo rotulo="Data"><Input type="date" value={data} max={hoje()} onChange={(e) => setData(e.target.value || hoje())} /></Campo>
+      <Campo rotulo="Turno"><Select value={turno} onChange={(e) => setTurno(e.target.value)}>{Object.entries(TURNOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select></Campo>
+    </div>
+  );
   return (
     <div className="space-y-3">
-      <Card>
-        <div className="grid grid-cols-2 gap-2">
-          <Campo rotulo="Data"><Input type="date" value={data} max={hoje()} onChange={(e) => setData(e.target.value)} /></Campo>
-          <Campo rotulo="Turno"><Select value={turno} onChange={(e) => setTurno(e.target.value)}>{Object.entries(TURNOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select></Campo>
-        </div>
-        {reg && <div className="mt-2 flex items-center gap-2 text-sm"><Badge s={reg.status} />{reg.status === 'devolvido' && reg.obs_conferencia && <span className="text-rose-700">Administrador: {reg.obs_conferencia}</span>}</div>}
-        {bloqueado && <div className="mt-2"><Aviso tipo="info"><Lock className="mr-1 inline h-4 w-4" />Caixa fechado. Para corrigir, peça ao administrador para devolver.</Aviso></div>}
-        {reg && <div className="mt-3 rounded-xl bg-emerald-50 p-3 dark:bg-emerald-950/30">
-          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-800 dark:text-emerald-300"><Unlock className="h-4 w-4" />Caixa aberto em {dataHora(reg.criado_em)}</div>
-          {campo('fundo_troco', 'Saldo inicial', 'dinheiro que o dono deixou no caixa para começar o dia')}
-        </div>}
-      </Card>
-      {!reg && <Card titulo="Abrir caixa">
-        <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">Antes de começar a vender, informe quanto dinheiro tem no caixa para o dia (o valor que o dono disponibilizou para troco).</p>
-        <Campo rotulo="Saldo inicial"><Dinheiro valor={f.fundo_troco ?? ''} mudar={(v) => setF({ ...f, fundo_troco: v })} className="!py-4 text-2xl font-bold" placeholder="0,00" autoFocus /></Campo>
-        <Btn className="mt-3 w-full !py-3.5 text-base" carregando={abrindo} disabled={f.fundo_troco === '' || f.fundo_troco == null || !(lerNum(f.fundo_troco) >= 0)} onClick={abrir}><Unlock className="h-5 w-5" />Abrir caixa de {TURNOS[turno].toLowerCase()} · {dataBR(data)}</Btn>
-        <p className="mt-2 text-xs text-slate-500">Se não deixaram dinheiro, digite 0.</p>
-      </Card>}
+      {!reg ? (
+        // caixa ainda não aberto: destaque para ABRIR O CAIXA no dia de hoje
+        <section className="rounded-3xl border-2 border-brand-700 bg-white p-5 text-center shadow-lg dark:bg-slate-900">
+          <Unlock className="mx-auto h-10 w-10 text-brand-700" />
+          <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-brand-700">ABRIR O CAIXA</h2>
+          <div className="mt-1 text-lg font-semibold first-letter:uppercase">{diaSemana}</div>
+          <div className="text-sm text-slate-500">{data === hoje() ? 'Hoje' : 'Outro dia'} · {TURNOS[turno]}</div>
+          <div className="mx-auto mt-4 max-w-xs text-left">
+            <Campo rotulo="Valor inicial no caixa" dica="O dinheiro que o dono deixou para troco. Se não deixaram, digite 0."><Dinheiro valor={f.fundo_troco ?? ''} mudar={(v) => setF({ ...f, fundo_troco: v })} className="!py-4 text-center text-3xl font-bold" placeholder="0,00" autoFocus /></Campo>
+          </div>
+          <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-700 py-5 text-xl font-extrabold text-white shadow-lg transition active:scale-[.99] disabled:opacity-40" disabled={abrindo || f.fundo_troco === '' || f.fundo_troco == null || !(lerNum(f.fundo_troco) >= 0)} onClick={abrir}>
+            <Unlock className="h-6 w-6" />{abrindo ? 'Abrindo…' : 'ABRIR O CAIXA'}
+          </button>
+          <details className="mt-4 text-left text-sm"><summary className="cursor-pointer text-center text-slate-500">Abrir em outro dia ou turno</summary><div className="mt-2">{seletorDia}</div></details>
+        </section>
+      ) : (
+        <Card>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div><div className="text-lg font-bold first-letter:uppercase">{diaSemana}</div><div className="text-sm text-slate-500">{TURNOS[turno]}</div></div>
+            <Badge s={reg.status} />
+          </div>
+          {reg.status === 'devolvido' && reg.obs_conferencia && <div className="mt-2 text-sm text-rose-700">Administrador: {reg.obs_conferencia}</div>}
+          {bloqueado && <div className="mt-2"><Aviso tipo="info"><Lock className="mr-1 inline h-4 w-4" />Caixa fechado. Para corrigir, peça ao administrador para devolver.</Aviso></div>}
+          <div className="mt-3 rounded-xl bg-emerald-50 p-3 dark:bg-emerald-950/30">
+            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-800 dark:text-emerald-300"><Unlock className="h-4 w-4" />Caixa aberto em {dataHora(reg.criado_em)}</div>
+            {campo('fundo_troco', 'Valor inicial', 'dinheiro que o dono deixou no caixa para começar o dia')}
+          </div>
+          <details className="mt-3 text-sm"><summary className="cursor-pointer text-slate-500">Ver outro dia ou turno</summary><div className="mt-2">{seletorDia}</div></details>
+        </Card>
+      )}
       {reg && <>
       <Card titulo="Recebido em cada forma de pagamento">
         <div className="grid gap-3 sm:grid-cols-2">{FORMAS.map(([k, t]) => <div key={k}>{campo(k, t)}{k === 'outros' && n(f.outros) > 0 && <Input className="mt-1" placeholder="Quais? (ex.: iFood)" value={f.outros_desc} onChange={(e) => setF({ ...f, outros_desc: e.target.value })} disabled={!!bloqueado} />}</div>)}</div>
