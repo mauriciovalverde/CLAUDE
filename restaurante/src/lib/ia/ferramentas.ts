@@ -10,7 +10,7 @@ export const FERRAMENTAS = [
     desconto: { type: 'number' }, mercadoria_chegou: { type: 'boolean', description: 'true para dar entrada no estoque agora' }, confirmar_duplicada: { type: 'boolean' },
   }, required: ['data', 'fornecedor', 'itens', 'pago'] } },
   { name: 'registrar_despesa', description: 'Lança uma despesa que não é compra de mercadoria (energia, gás, aluguel, salários, manutenção, impostos...).', parameters: { type: 'object', properties: {
-    descricao: { type: 'string' }, categoria: { type: 'string', enum: ['Funcionários', 'Energia', 'Água', 'Gás', 'Internet/Telefone', 'Aluguel', 'Manutenção', 'Equipamentos', 'Impostos', 'Taxas de cartões', 'Despesas administrativas', 'Outras despesas'] },
+    descricao: { type: 'string' }, categoria: { type: 'string', enum: ['Funcionários', 'Vale a funcionário', 'Transporte', 'Energia', 'Água', 'Gás', 'Internet/Telefone', 'Aluguel', 'Manutenção', 'Equipamentos', 'Impostos', 'Taxas de cartões', 'Despesas administrativas', 'Outras despesas'] },
     valor: { type: 'number' }, vencimento: data, pago: { type: 'boolean' }, fornecedor: { type: 'string' }, confirmar_duplicada: { type: 'boolean' },
   }, required: ['descricao', 'categoria', 'valor', 'vencimento', 'pago'] } },
   { name: 'marcar_compra_recebida', description: 'Marca como recebida (dá entrada no estoque) a compra em aberto de um fornecedor.', parameters: { type: 'object', properties: { fornecedor: { type: 'string' }, data } , required: ['fornecedor'] } },
@@ -18,7 +18,7 @@ export const FERRAMENTAS = [
     de: data, ate: data, categoria: { type: 'string', enum: ['hortalicas', 'frutas', 'acougue', 'aves', 'peixes', 'cereais', 'mercearia', 'laticinios', 'bebidas', 'padaria', 'embalagens', 'limpeza', 'outros'], description: 'carnes = acougue; frango = aves' },
     fornecedor: { type: 'string' }, produto: { type: 'string' }, agrupar_por: { type: 'string', enum: ['categoria', 'fornecedor', 'produto', 'mes', 'nenhum'] },
   }, required: ['de', 'ate'] } },
-  { name: 'faturamento', description: 'Faturamento (vendas) de um período: bruto, líquido, nº de vendas, ticket médio, formas de pagamento, margem e resultado estimados.', parameters: { type: 'object', properties: { de: data, ate: data }, required: ['de', 'ate'] } },
+  { name: 'faturamento', description: 'Faturamento (vendas) de um período: bruto, líquido, nº de pratos vendidos, ticket médio por prato, formas de pagamento, margem e resultado estimados.', parameters: { type: 'object', properties: { de: data, ate: data }, required: ['de', 'ate'] } },
   { name: 'comparar_periodos', description: 'Compara dois períodos (ex.: outubro × novembro): faturamento, despesas, compras, custo de mercadorias, resultado, por categoria.', parameters: { type: 'object', properties: { a_de: data, a_ate: data, b_de: data, b_ate: data }, required: ['a_de', 'a_ate', 'b_de', 'b_ate'] } },
   { name: 'preco_produto', description: 'Histórico de preço de um produto: por fornecedor, menor, maior, último, variação no período.', parameters: { type: 'object', properties: { produto: { type: 'string' }, de: data, ate: data }, required: ['produto'] } },
   { name: 'maiores_aumentos', description: 'Produtos que mais subiram de preço entre dois períodos (padrão: mês passado × este mês).', parameters: { type: 'object', properties: { a_de: data, a_ate: data, b_de: data, b_ate: data } } },

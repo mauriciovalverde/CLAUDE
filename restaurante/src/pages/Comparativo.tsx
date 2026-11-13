@@ -5,6 +5,7 @@ import { agrupar, carregarPeriodo, indicadores, variacao, variacaoPrecos } from 
 import { nomeCategoria } from '../lib/catalogo.js';
 import { addMeses, brl, compacto, fimMes, inicioMes, mesLongo, pct } from '../lib/fmt';
 import { Card, Carregando, Input, Tabela, useDados } from '../components/ui';
+import GraficoEvolucao from '../components/GraficoEvolucao';
 
 export default function Comparativo() {
   const [a, setA] = useState(addMeses(inicioMes(), -1).slice(0, 7));
@@ -19,14 +20,22 @@ export default function Comparativo() {
     const linhas = [
       ['Faturamento líquido', ia.liquido, ib.liquido], ['Faturamento bruto', ia.bruto, ib.bruto], ['Despesas lançadas', ia.despesasLancadas, ib.despesasLancadas],
       ['Compras', ia.compras, ib.compras], ['Custo de mercadorias', ia.cmv, ib.cmv], ['Margem bruta', ia.margemBruta, ib.margemBruta],
-      ['Resultado operacional (estimado)', ia.resultado, ib.resultado], ['Ticket médio', ia.ticket ?? 0, ib.ticket ?? 0], ['Quantidade de vendas', ia.qtdVendas, ib.qtdVendas],
-    ].map(([nome, x, y]) => ({ nome: nome as string, a: x as number, b: y as number, pct: variacao(x as number, y as number), qtd: nome === 'Quantidade de vendas' }));
+      ['Resultado operacional (estimado)', ia.resultado, ib.resultado], ['Ticket médio por prato', ia.ticket ?? 0, ib.ticket ?? 0], ['Pratos vendidos', ia.qtdVendas, ib.qtdVendas],
+    ].map(([nome, x, y]) => ({ nome: nome as string, a: x as number, b: y as number, pct: variacao(x as number, y as number), qtd: nome === 'Pratos vendidos' }));
     const juntar = (fa: any[], fb: any[]) => { const m = new Map<string, { nome: string; a: number; b: number }>(); for (const x of fa) m.set(x.nome, { nome: x.nome, a: x.total, b: 0 }); for (const x of fb) m.set(x.nome, { ...(m.get(x.nome) ?? { nome: x.nome, a: 0 }), b: x.total }); return [...m.values()].map((x) => ({ ...x, pct: variacao(x.a, x.b) })).sort((p, q) => q.b - p.b); };
     const cat = juntar(agrupar(dados.pa.itens, (i) => nomeCategoria(i.categoria), (i) => +i.valor_total), agrupar(dados.pb.itens, (i) => nomeCategoria(i.categoria), (i) => +i.valor_total));
     const forn = juntar(agrupar(dados.pa.itens, (i) => i.fornecedor ?? '—', (i) => +i.valor_total), agrupar(dados.pb.itens, (i) => i.fornecedor ?? '—', (i) => +i.valor_total));
     const precos = variacaoPrecos(dados.pa.itens, dados.pb.itens);
     const catPreco = agrupar(precos, (x) => x.categoria, (x) => x.pct).map((c) => ({ ...c, media: Math.round((c.total / precos.filter((x) => x.categoria === c.nome).length) * 10) / 10 })).sort((p, q) => q.media - p.media);
-    return { linhas, cat, forn, precos, catPreco };
+    // dia a dia: mês A × mês B no mesmo dia do mês
+    const porDia = (lista: any[], data: (x: any) => string | null, valor: (x: any) => number) => { const v = Array(31).fill(0); for (const x of lista) { const d = data(x); if (d) v[Number(d.slice(8, 10)) - 1] += valor(x) || 0; } return v.map((n) => Math.round(n * 100) / 100); };
+    const nA = mesLongo(a + '-01'), nB = mesLongo(b + '-01');
+    const rot = Array.from({ length: 31 }, (_, k) => String(k + 1));
+    const diaFat = { titulo: 'Faturamento dia a dia', moeda: true, rotulos: rot, series: [{ nome: nA, valores: porDia(dados.pa.vendas, (v) => v.data, (v) => +v.liquido) }, { nome: nB, valores: porDia(dados.pb.vendas, (v) => v.data, (v) => +v.liquido) }] };
+    const despA = dados.pa.contas.filter((c: any) => c.tipo === 'pagar'), despB = dados.pb.contas.filter((c: any) => c.tipo === 'pagar');
+    const diaDesp = { titulo: 'Despesas dia a dia', moeda: true, rotulos: rot, series: [{ nome: nA, valores: porDia(despA, (c) => c.emissao ?? c.vencimento, (c) => +c.valor) }, { nome: nB, valores: porDia(despB, (c) => c.emissao ?? c.vencimento, (c) => +c.valor) }] };
+    const diaPratos = { titulo: 'Pratos vendidos dia a dia', moeda: false, rotulos: rot, series: [{ nome: nA, valores: porDia(dados.pa.vendas, (v) => v.data, (v) => +(v.qtd_vendas ?? 0)) }, { nome: nB, valores: porDia(dados.pb.vendas, (v) => v.data, (v) => +(v.qtd_vendas ?? 0)) }] };
+    return { linhas, cat, forn, precos, catPreco, diaFat, diaDesp, diaPratos };
   }, [dados]);
   const Var = ({ v, inverso }: { v: number | null; inverso?: boolean }) => <span className={v == null ? 'text-slate-400' : (v > 0) !== !!inverso ? 'text-emerald-700' : v === 0 ? '' : 'text-rose-600'}>{pct(v)}</span>;
   const custo = (n: string) => /Despesas|Compras|Custo/.test(n);
@@ -41,6 +50,9 @@ export default function Comparativo() {
             { k: 'pct', t: 'Variação', num: true, r: (x) => <Var v={x.pct} inverso={custo(x.nome)} /> },
           ]} />
           <div className="mt-3 h-60"><ResponsiveContainer><BarChart data={r.linhas.filter((x) => !x.qtd && !/Ticket/.test(x.nome))} margin={{ left: -10 }}><CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} /><XAxis dataKey="nome" tick={{ fontSize: 10 }} interval={0} angle={-15} textAnchor="end" height={50} /><YAxis tickFormatter={compacto} width={48} /><Tooltip formatter={(v: any) => brl(v)} /><Legend /><Bar isAnimationActive={false} maxBarSize={56} dataKey="a" name={mesLongo(a + '-01')} fill="#94a3b8" /><Bar isAnimationActive={false} maxBarSize={56} dataKey="b" name={mesLongo(b + '-01')} fill="#a3141b" /></BarChart></ResponsiveContainer></div>
+        </Card>
+        <Card titulo="Evolução dia a dia (dia do mês)">
+          <div className="grid gap-4 lg:grid-cols-2"><GraficoEvolucao ev={r.diaFat} /><GraficoEvolucao ev={r.diaDesp} /><GraficoEvolucao ev={r.diaPratos} /></div>
         </Card>
         <div className="grid gap-3 lg:grid-cols-2">
           <Card titulo="Gastos por categoria"><Tabela linhas={r.cat} chave="nome" colunas={[{ k: 'nome', t: 'Categoria' }, { k: 'a', t: 'A', num: true, r: (x) => brl(x.a) }, { k: 'b', t: 'B', num: true, r: (x) => brl(x.b) }, { k: 'pct', t: 'Var.', num: true, r: (x) => <Var v={x.pct} inverso /> }]} /></Card>

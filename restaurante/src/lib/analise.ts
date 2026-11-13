@@ -79,3 +79,24 @@ export function variacaoPrecos(itensA: any[], itensB: any[]) {
   return out.sort((p1, p2) => p2.pct - p1.pct);
 }
 export const variacao = (a: number, b: number) => (a ? r2(((b - a) / Math.abs(a)) * 100) : null);
+
+/** Evolução no tempo para gráficos: um ponto por dia (ou por mês, se o período passar de 62 dias), com zeros nos dias sem movimento. */
+export type Evolucao = { titulo: string; rotulos: string[]; series: { nome: string; valores: number[] }[]; moeda?: boolean };
+export function evolucao(titulo: string, de: string, ate: string, series: { nome: string; itens: any[]; data: (x: any) => string | null | undefined; valor: (x: any) => number }[], moeda = true): Evolucao {
+  const dias = Math.round((Date.parse(ate + 'T12:00:00Z') - Date.parse(de + 'T12:00:00Z')) / 86400000) + 1;
+  const porMes = dias > 62;
+  const chaves: string[] = [];
+  if (porMes) { for (let d = de.slice(0, 7); d <= ate.slice(0, 7); d = addMesIso(d)) chaves.push(d); }
+  else { for (let k = 0; k < dias; k++) chaves.push(new Date(Date.parse(de + 'T12:00:00Z') + k * 86400000).toISOString().slice(0, 10)); }
+  const idx = new Map(chaves.map((c, k) => [c, k]));
+  return {
+    titulo, moeda,
+    rotulos: chaves.map((c) => (porMes ? `${c.slice(5, 7)}/${c.slice(2, 4)}` : `${c.slice(8, 10)}/${c.slice(5, 7)}`)),
+    series: series.map((s) => {
+      const v = chaves.map(() => 0);
+      for (const x of s.itens) { const d = s.data(x); if (!d) continue; const k = idx.get(porMes ? d.slice(0, 7) : d.slice(0, 10)); if (k != null) v[k] += s.valor(x) || 0; }
+      return { nome: s.nome, valores: v.map((n) => Math.round(n * 100) / 100) };
+    }),
+  };
+}
+const addMesIso = (am: string) => { const [a, m] = am.split('-').map(Number); return m === 12 ? `${a + 1}-01` : `${a}-${String(m + 1).padStart(2, '0')}`; };

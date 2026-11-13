@@ -188,7 +188,7 @@ function MeuCaixa() {
       {reg && <>
       <Card titulo="Recebido em cada forma de pagamento">
         <div className="grid gap-3 sm:grid-cols-2">{FORMAS.map(([k, t]) => <div key={k}>{campo(k, t)}{k === 'outros' && n(f.outros) > 0 && <Input className="mt-1" placeholder="Quais? (ex.: iFood)" value={f.outros_desc} onChange={(e) => setF({ ...f, outros_desc: e.target.value })} disabled={!!bloqueado} />}</div>)}</div>
-        <div className="mt-3 grid grid-cols-2 gap-3"><Campo rotulo="Número de vendas"><Input inputMode="numeric" value={f.num_vendas} onChange={(e) => setF({ ...f, num_vendas: e.target.value.replace(/\D/g, '') })} disabled={!!bloqueado} className="!py-3 text-lg" /></Campo>
+        <div className="mt-3 grid grid-cols-2 gap-3"><Campo rotulo="Pratos vendidos"><Input inputMode="numeric" value={f.num_vendas} onChange={(e) => setF({ ...f, num_vendas: e.target.value.replace(/\D/g, '') })} disabled={!!bloqueado} className="!py-3 text-lg" /></Campo>
           <div className="rounded-xl bg-brand-50 p-3 text-right dark:bg-brand-950/40"><div className="text-xs uppercase text-slate-500">Total geral</div><div className="text-2xl font-bold tabular-nums text-brand-700">{brl(c.total)}</div></div></div>
       </Card>
       <DespesasGaveta fechamentoId={reg.id} bloqueado={!!bloqueado} total={(v) => setF((x) => ({ ...x, sangrias: String(v) }))} />
@@ -252,7 +252,7 @@ function Conferir({ r, admin, fechar }: { r: any; admin: boolean; fechar: () => 
         <div className="grid gap-x-6 sm:grid-cols-2">
           {FORMAS.map(([k, t]) => <div key={k} className="flex justify-between border-b py-1 dark:border-slate-800"><span>{t}{k === 'outros' && r.outros_desc ? ` (${r.outros_desc})` : ''}</span><span className="tabular-nums">{brl(r[k])}</span></div>)}
           <div className="flex justify-between border-b py-1 font-bold dark:border-slate-800"><span>Total geral</span><span className="tabular-nums">{brl(c.total)}</span></div>
-          <div className="flex justify-between border-b py-1 dark:border-slate-800"><span>Nº de vendas</span><span>{r.num_vendas ?? '—'}{r.num_vendas ? ` · ticket ${brl(c.total / r.num_vendas)}` : ''}</span></div>
+          <div className="flex justify-between border-b py-1 dark:border-slate-800"><span>Pratos vendidos</span><span>{r.num_vendas ?? '—'}{r.num_vendas ? ` · ticket ${brl(c.total / r.num_vendas)}` : ''}</span></div>
           {[['fundo_troco', 'Valor inicial'], ['sangrias', 'Despesas do dia (sangria)'], ...MOVS.map(([k, t]) => [k, t])].map(([k, t]) => <div key={k} className="flex justify-between border-b py-1 dark:border-slate-800"><span>{t}</span><span className="tabular-nums">{brl(r[k])}</span></div>)}
         </div>
         <ResumoPapel f={r} />

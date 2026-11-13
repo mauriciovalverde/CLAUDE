@@ -62,3 +62,32 @@ test('registros', () => {
   assert.deepEqual([r.args.itens[0].produto, r.args.itens[0].valor_total, r.args.pago], ['Tomate', 59.9, true]);
   assert.equal(i('bom dia').tipo, 'ajuda');
 });
+
+test('lançamentos em qualquer ordem, vários itens e despesas', () => {
+  let r = i('comprei 2 kg tomate 10 reais, 3 kg de cebola a 5 o quilo e 2 alface 6 reais na hortfrut paguei no pix');
+  assert.equal(r.nome, 'registrar_compra');
+  assert.deepEqual(r.args.itens.map((x) => [x.produto, x.quantidade, x.unidade, x.valor_total ?? x.valor_unitario]), [['Tomate', 2, 'kg', 10], ['Cebola', 3, 'kg', 5], ['alface', 2, 'un', 6]]);
+  assert.deepEqual([r.args.fornecedor, r.args.forma_pagamento], ['Hortfrut', 'PIX']);
+  r = i('tomate 2kg 12,00 hortfrut pix');
+  assert.deepEqual([r.nome, r.args.itens[0].valor_total, r.args.fornecedor], ['registrar_compra', 12, 'Hortfrut']);
+  r = i('comprei 3 caixas de leite a 6,50 cada e 2 pacotes de arroz por 40 no atacadão no débito');
+  assert.deepEqual(r.args.itens.map((x) => [x.quantidade, x.unidade, x.valor_unitario ?? x.valor_total]), [[3, 'cx', 6.5], [2, 'pct', 40]]);
+  r = i('paguei 30 de taxi pra adriana');
+  assert.deepEqual([r.nome, r.args.categoria, r.args.valor, r.args.pago], ['registrar_despesa', 'Transporte', 30, true]);
+  r = i('vale de 100 pra maria no pix');
+  assert.deepEqual([r.nome, r.args.categoria, r.args.descricao], ['registrar_despesa', 'Vale a funcionário', 'Vale pra maria']);
+  r = i('gastei 45,50 com uber ontem');
+  assert.deepEqual([r.args.valor, r.args.vencimento], [45.5, '2026-11-12']);
+  r = i('conta de agua 230 vence 25/11');
+  assert.deepEqual([r.nome, r.args.categoria, r.args.vencimento, r.args.pago], ['registrar_despesa', 'Água', '2026-11-25', false]);
+  // não entendeu o tipo: pergunta e completa
+  r = i('paguei 80 no atacadão');
+  assert.equal(r.pendente.falta, 'tipo');
+  r = i('compra', { pendente: r.pendente });
+  assert.deepEqual([r.nome, r.args.itens[0].valor_total, r.args.fornecedor], ['registrar_compra', 80, 'Atacadão']);
+  // um valor para dois itens: pergunta o de cada um
+  r = i('comprei 2 kg de tomate e 3 kg de batata na hortfrut paguei');
+  assert.equal(r.pendente.falta, 'precos');
+  r = i('tomate 12 batata 15', { pendente: r.pendente });
+  assert.deepEqual([r.nome, r.args.itens[0].valor_total, r.args.itens[1].valor_total], ['registrar_compra', 12, 15]);
+});

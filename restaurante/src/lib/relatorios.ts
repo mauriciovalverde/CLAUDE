@@ -4,7 +4,32 @@ import { brl, dataBR } from './fmt';
 
 export type Col = { t: string; k: string; tipo?: 'moeda' | 'num' | 'data' | 'texto'; total?: boolean };
 export type Tab = { titulo: string; colunas: Col[]; linhas: Record<string, any>[] };
-export type Rel = { titulo: string; periodo: string; restaurante: string; resumo?: [string, string][]; tabelas: Tab[]; grafico?: { titulo: string; dados: { nome: string; total: number }[] } };
+import type { Evolucao } from './analise';
+export type Rel = { titulo: string; periodo: string; restaurante: string; resumo?: [string, string][]; tabelas: Tab[]; grafico?: { titulo: string; dados: { nome: string; total: number }[] }; evolucoes?: Evolucao[] };
+
+const CORES: [number, number, number][] = [[163, 20, 27], [247, 159, 49], [37, 99, 235], [5, 150, 105], [124, 58, 237], [100, 116, 139]];
+const curto = (v: number, moeda?: boolean) => { const a = Math.abs(v); const t = a >= 1e6 ? `${(v / 1e6).toFixed(1)}mi` : a >= 1e3 ? `${(v / 1e3).toFixed(1)}k` : v.toFixed(a < 10 && v % 1 ? 1 : 0); return (moeda ? 'R$ ' : '') + t.replace('.', ','); };
+/** Gráfico de linhas (evolução no tempo) desenhado direto no PDF. Retorna a altura usada. */
+function desenharEvolucao(doc: any, ev: Evolucao, x: number, y: number, w: number) {
+  const h = 150, esq = 46, base = y + 18 + h, larg = w - esq - 6;
+  doc.setFontSize(11); doc.setTextColor(20); doc.text(pdfTxt(ev.titulo), x, y + 8);
+  const todos = ev.series.flatMap((s) => s.valores); const max = Math.max(1, ...todos); const min = Math.min(0, ...todos);
+  const py = (v: number) => base - ((v - min) / (max - min || 1)) * h;
+  const n = ev.rotulos.length; const px = (k: number) => x + esq + (n <= 1 ? larg / 2 : (k * larg) / (n - 1));
+  doc.setDrawColor(226, 232, 240); doc.setLineWidth(0.5); doc.setFontSize(7); doc.setTextColor(120);
+  for (let g = 0; g <= 4; g++) { const v = min + ((max - min) * g) / 4; const yy = py(v); doc.line(x + esq, yy, x + esq + larg, yy); doc.text(pdfTxt(curto(v, ev.moeda)), x + esq - 4, yy + 2, { align: 'right' }); }
+  const passo = Math.max(1, Math.ceil(n / 12));
+  ev.rotulos.forEach((r, k) => { if (k % passo === 0 || k === n - 1) doc.text(r, px(k), base + 10, { align: 'center' }); });
+  ev.series.forEach((s, i) => {
+    const [r, g, b] = CORES[i % CORES.length]; doc.setDrawColor(r, g, b); doc.setFillColor(r, g, b); doc.setLineWidth(1.4);
+    for (let k = 1; k < n; k++) doc.line(px(k - 1), py(s.valores[k - 1]), px(k), py(s.valores[k]));
+    if (n <= 40) s.valores.forEach((v, k) => doc.circle(px(k), py(v), 1.6, 'F'));
+    // legenda
+    const lx = x + esq + i * 120; doc.rect(lx, base + 16, 8, 3, 'F'); doc.setTextColor(60); doc.text(pdfTxt(s.nome).slice(0, 26), lx + 11, base + 19);
+  });
+  doc.setTextColor(20);
+  return h + 56;
+}
 
 // a fonte padrão do PDF não tem alguns símbolos (− “ ” …)
 const pdfTxt = (t: string) => t.replace(/[\u2212\u2013\u2014]/g, '-').replace(/[\u201c\u201d]/g, '"').replace(/[\u2018\u2019]/g, "'").replace(/\u2026/g, '...').replace(/[\u2705\u274c]/g, '');
@@ -23,6 +48,11 @@ export async function gerarPDF(r: Rel) {
     const largura = (W - 72) / Math.min(4, r.resumo.length);
     r.resumo.forEach(([k, v], i) => { const x = 36 + (i % 4) * largura; if (i > 0 && i % 4 === 0) y += 44; doc.setFontSize(8); doc.setTextColor(100); doc.text(pdfTxt(k.toUpperCase()), x, y); doc.setFontSize(12); doc.setTextColor(20); doc.text(pdfTxt(v), x, y + 16); });
     y += 40;
+  }
+  for (const ev of r.evolucoes ?? []) {
+    if (!ev.rotulos.length || !ev.series.some((s) => s.valores.some((v) => v))) continue;
+    if (y > 600) { doc.addPage(); y = 40; }
+    y += desenharEvolucao(doc, ev, 36, y, W - 72);
   }
   if (r.grafico?.dados.length) {
     const d = r.grafico.dados.slice(0, 10); const max = Math.max(...d.map((x) => x.total), 1);
@@ -78,6 +108,14 @@ export async function gerarExcel(r: Rel) {
     let nome = t.titulo.replace(/[\\/?*[\]:]/g, ' ').slice(0, 31); let k = 2; while (usados.has(nome)) nome = `${t.titulo.slice(0, 28)} ${k++}`; usados.add(nome);
     XLSX.utils.book_append_sheet(wb, ws, nome);
   }
+  // dados da evolução (o Excel monta o gráfico: selecione a tabela → Inserir → Gráfico de linhas)
+  (r.evolucoes ?? []).forEach((ev, k) => {
+    if (!ev.rotulos.length) return;
+    const ws = XLSX.utils.aoa_to_sheet([[ev.titulo], ['Período', ...ev.series.map((s) => s.nome)], ...ev.rotulos.map((rot, i) => [rot, ...ev.series.map((s) => s.valores[i])])]);
+    ws['!cols'] = [{ wch: 12 }, ...ev.series.map(() => ({ wch: 18 }))];
+    if (ev.moeda) for (let i = 0; i < ev.rotulos.length; i++) ev.series.forEach((_, j) => { const c = ws[XLSX.utils.encode_cell({ r: i + 2, c: j + 1 })]; if (c) c.z = '"R$" #,##0.00'; });
+    XLSX.utils.book_append_sheet(wb, ws, `Evolução${k ? ' ' + (k + 1) : ''}`.slice(0, 31));
+  });
   const b64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
   await salvarArquivo(nomeArq(r, 'xlsx'), b64, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 }
