@@ -159,4 +159,9 @@ select t_como('');
 select t_ok((select count(*) from rest_restaurantes) = 0, 'sem login não vê nada');
 reset role;
 select t_ok((select count(*) from rest_pins) = 0, 'tabela de PIN existe e fica fechada');
+-- compra cancelada: contas dela (inclusive pagas) saem do caixa
+reset role;
+create temp table t_cc as select c.compra_id from rest_contas c join rest_compras p on p.id = c.compra_id where c.status = 'pago' and p.status <> 'cancelada' limit 1;
+update rest_compras set status = 'cancelada' where id = (select compra_id from t_cc);
+select t_ok((select bool_and(status = 'cancelado') from rest_contas where compra_id = (select compra_id from t_cc)), 'compra cancelada cancela também a conta já paga');
 \echo TODOS OS TESTES DO BANCO PASSARAM

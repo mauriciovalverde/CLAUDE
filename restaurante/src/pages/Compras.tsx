@@ -99,10 +99,10 @@ export function DetalheCompra({ compra, fechar, receber }: { compra: any; fechar
         <div className="flex flex-wrap gap-2">
           {compra.status === 'comprada' && receber && <Btn onClick={receber}><PackageCheck className="h-4 w-4" />Receber mercadoria</Btn>}
           {pode('admin') && compra.status !== 'cancelada' && <Btn variante="perigo" onClick={async () => {
-            if (!confirm('Cancelar esta compra? As contas em aberto dela também serão canceladas. Se a mercadoria já entrou no estoque, faça um ajuste no Estoque.')) return;
+            if (!confirm('Cancelar esta compra? As contas dela (em aberto e já pagas) também serão canceladas e deixam de contar no caixa. Se a mercadoria já entrou no estoque, faça um ajuste no Estoque.')) return;
             const e1 = (await supabase.from('rest_compras').update({ status: 'cancelada' }).eq('id', compra.id)).error;
-            const e2 = (await supabase.from('rest_contas').update({ status: 'cancelado' }).eq('compra_id', compra.id).eq('status', 'pendente')).error;
-            if (e1 || e2) toast((e1 ?? e2)!.message, 'erro'); else { toast('Compra cancelada'); avisarMudanca(); fechar(); }
+            // as contas da compra são canceladas pelo banco (gatilho rest_compras_cancela_contas)
+            if (e1) toast(e1.message, 'erro'); else { toast('Compra cancelada'); avisarMudanca(); fechar(); }
           }}>Cancelar compra</Btn>}
         </div>
       </div>
