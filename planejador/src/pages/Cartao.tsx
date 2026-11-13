@@ -13,6 +13,7 @@ import { Aviso, avisarMudanca, Btn, Cabecalho, Campo, Card, Input, Modal, Tabela
 const CORES = ['#0F766E', '#0EA5E9', '#F59E0B', '#8B5CF6', '#EF4444', '#10B981', '#64748B', '#EC4899', '#84CC16', '#F97316', '#14B8A6'];
 const valorBR = (s: string) => (String(s).includes(',') ? Number(String(s).replace(/\./g, '').replace(',', '.')) : Number(s));
 type Item = { data: string; descricao: string; valor: number; parcela_num: number | null; parcela_total: number | null; categoria: string; usar: boolean; portador?: string | null };
+type Restante = { id: string; descricao: string; valor: number; vencimento: string; cartao: string | null; ja_incluso: boolean };
 type CartaoSec = { id: string; nome: string; total: number; qtd: number; adicional: boolean; apelido: string; incluir: boolean };
 const rotulo = (c: CartaoSec) => c.apelido || c.nome || (c.id === 'principal' ? 'Cartão principal' : `Final ${c.id}`);
 
@@ -51,7 +52,7 @@ export default function Cartao() {
   const [erro, setErro] = useState('');
   const [precisaSenha, setPrecisaSenha] = useState<File | null>(null);
   const [senha, setSenha] = useState('');
-  const [rev, setRev] = useState<null | { cartao: string; vencimento: string; total: string; totalCabecalho: number | null; itens: Item[]; cartoes: CartaoSec[]; arquivo: string; texto: string; viaIA?: boolean; viaFoto?: boolean }>(null);
+  const [rev, setRev] = useState<null | { cartao: string; vencimento: string; total: string; totalCabecalho: number | null; itens: Item[]; cartoes: CartaoSec[]; restantes: Restante[]; arquivo: string; texto: string; viaIA?: boolean; viaFoto?: boolean }>(null);
   const fotoRef = useRef<HTMLInputElement>(null);
   const [progresso, setProgresso] = useState<{ p: number; msg: string } | null>(null);
   const [importando, setImportando] = useState(false);
@@ -66,7 +67,11 @@ export default function Cartao() {
     const itens = f.itens.map((i: any) => ({ ...i, usar: !fora.has(i.portador ?? 'principal') }));
     const totalCab = f.total ?? null;
     const soma = Math.round(itens.filter((i: Item) => i.usar).reduce((t: number, i: Item) => t + i.valor, 0) * 100) / 100;
-    setRev({ cartao: f.banco ?? 'Cartão', vencimento: f.vencimento ?? '', total: String(fora.size ? soma : (totalCab ?? soma)), totalCabecalho: totalCab, itens, cartoes, arquivo, texto: f.linhas.join('\n'), viaFoto: !!f.viaFoto });
+    // restantes de pagamentos parciais de faturas anteriores: a nova fatura normalmente já os inclui
+    const { data: rs } = await supabase.from('plan_contas').select('id,descricao,valor,vencimento,cartao').is('excluido_em', null).eq('status', 'pendente').eq('tipo', 'pagar').like('descricao', 'Restante · Fatura%');
+    const banco = f.banco ?? 'Cartão';
+    const restantes: Restante[] = (rs ?? []).filter((r: any) => !f.vencimento || r.vencimento <= f.vencimento).map((r: any) => ({ ...r, valor: Number(r.valor), ja_incluso: !r.cartao || r.cartao === banco }));
+    setRev({ cartao: banco, vencimento: f.vencimento ?? '', total: String(fora.size ? soma : (totalCab ?? soma)), totalCabecalho: totalCab, itens, cartoes, restantes, arquivo, texto: f.linhas.join('\n'), viaFoto: !!f.viaFoto });
   }
 
   async function lerFotos(arqs: File[]) {
@@ -139,6 +144,8 @@ export default function Cartao() {
       if (!temMaisNova) for (const p of futuras(rev.itens, venc)) linhas.push({ tipo: 'pagar', descricao: `Parcelas já compradas no ${cartao}${sufixo} (${p.qtd})`, categoria: 'Cartão de crédito', valor: p.total, vencimento: p.venc, origem: 'fatura_parcela', fatura_id: fat.id, cartao });
       const { error: e2 } = await supabase.from('plan_contas').insert(linhas.map((l) => ({ ...l, user_id: user!.id })));
       if (e2) throw e2;
+      const incluidos = rev.restantes.filter((r) => r.ja_incluso).map((r) => r.id);
+      if (incluidos.length) await supabase.from('plan_contas').update({ excluido_em: new Date().toISOString() }).in('id', incluidos);
       toast(`Fatura importada: ${brl(total)}${linhas.length > 1 ? ` + parcelas previstas em ${linhas.length - 1} mês(es)` : ''}.`);
       setRev(null); avisarMudanca();
     } catch (e: any) { setErro(e.message); } finally { setImportando(false); }
@@ -203,6 +210,14 @@ export default function Cartao() {
             <Campo rotulo="Vencimento"><Input type="date" value={rev.vencimento} onChange={(e) => setRev({ ...rev, vencimento: e.target.value })} /></Campo>
             <Campo rotulo="Total da fatura (R$)" dica={rev.itens.length ? `soma das compras marcadas: ${brl(somaItens)}` : undefined}><Input inputMode="decimal" value={rev.total} onChange={(e) => setRev({ ...rev, total: e.target.value })} /></Campo>
           </div>
+          {!!rev.restantes.length && <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950/30">
+            <p className="font-semibold">Você pagou parte de uma fatura anterior. O restante já está nesta fatura?</p>
+            {rev.restantes.map((r) => (
+              <label key={r.id} className="mt-2 flex items-start gap-2">
+                <input type="checkbox" className="mt-0.5 h-5 w-5" checked={r.ja_incluso} onChange={(e) => setRev({ ...rev, restantes: rev.restantes.map((x) => x.id === r.id ? { ...x, ja_incluso: e.target.checked } : x) })} />
+                <span>Sim, <b>{brl(r.valor)}</b> ({r.descricao.replace('Restante · ', '')}, previsto para {dataBR(r.vencimento)}) já vem nesta fatura. <span className="text-xs text-slate-500">Marcado: o lançamento separado é removido para não contar duas vezes.</span></span>
+              </label>))}
+          </div>}
           {!rev.itens.length && <Aviso tipo="alerta">Não reconheci as compras deste modelo de fatura. Você ainda pode importar só o total, ou <button className="font-semibold underline" onClick={tentarIA}>tentar ler com a IA</button> (precisa da chave grátis do Ollama em Configurações).</Aviso>}
           {!!rev.itens.length && <div className="max-h-72 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700">
             <table className="w-full text-sm"><tbody>{rev.itens.map((i, k) => (

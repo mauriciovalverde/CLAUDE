@@ -37,3 +37,10 @@ fatura(__dirname + '/dois-cartoes.pdf', ['Banco Bradesco - Cartão Elo Grafite',
   ['07/11', 'DROGARIA RAIA', '80,10'],
   ['12/11', 'MAGALU 2/5', '670,00'],
 ]);
+fatura(__dirname + '/nubank-jan.pdf', ['Nu Pagamentos S.A.', 'Esta é a sua fatura de dezembro', 'Data de vencimento: 15/01/2027', 'Total a pagar R$ 1.737,30'], [
+  ['15 DEZ', 'Saldo anterior', 'R$ 637,40'],
+  ['15 DEZ', 'Juros do rotativo', 'R$ 50,00'],
+  ['03 DEZ', 'Supermercado Extra', 'R$ 100,00'],
+  ['07 DEZ', 'Magazine Luiza - Parcela 4/10', 'R$ 249,90'],
+  ['20 DEZ', 'Mercadolivre*Celular 02/12', 'R$ 700,00'],
+]);
