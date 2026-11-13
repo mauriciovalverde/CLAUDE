@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Camera, FileText, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useEu } from '../lib/sessao';
-import { enviarArquivo, linkArquivo } from '../lib/arquivos';
+import { abrirArquivo, enviarArquivo } from '../lib/arquivos';
 import { lerFotoNota } from '../lib/ocr';
 // @ts-ignore módulo JS testado
 import { chaveFornecedor } from '../lib/catalogo.js';
@@ -126,7 +126,7 @@ function VerNota({ nota, fechar, lancar }: { nota: any; fechar: () => void; lanc
         <div className="flex flex-wrap gap-2"><Badge s={nota.status} />{nota.cnpj && <span>CNPJ {cnpjFmt(nota.cnpj)}</span>}<span>· emissão {dataBR(nota.data_emissao)}</span><span>· <b>{brl(nota.valor_total)}</b></span></div>
         {(nota.divergencias ?? []).map((a: string) => <Aviso key={a} tipo="alerta">{a}</Aviso>)}
         {nota.rest_compras && <Aviso tipo={Math.abs(Number(nota.rest_compras.total) - Number(nota.valor_total)) > 0.05 ? 'alerta' : 'ok'}>Ligada à compra #{nota.rest_compras.numero} ({brl(nota.rest_compras.total)}){Math.abs(Number(nota.rest_compras.total) - Number(nota.valor_total)) > 0.05 ? ' — valores diferentes, confira.' : ''}</Aviso>}
-        {nota.arquivo_path && <Btn variante="secundario" onClick={async () => { try { window.open(await linkArquivo(nota.arquivo_path), '_blank'); } catch (e: any) { toast(e.message, 'erro'); } }}>Ver foto da nota</Btn>}
+        {nota.arquivo_path && <Btn variante="secundario" onClick={async () => { try { await abrirArquivo(nota.arquivo_path); } catch (e: any) { toast(e.message, 'erro'); } }}>Ver foto da nota</Btn>}
         {nota.status === 'pendente' && <>
           <Btn onClick={() => lancar(paraForm(nota, nota.dados?.itens ?? []))}>Conferir e lançar a compra</Btn>
           {parecidas.length > 0 && <div><h4 className="mt-2 font-semibold">Ligar a uma compra já lançada (sem nota)</h4>{parecidas.slice(0, 8).map((c) => <button key={c.id} onClick={() => ligar(c)} className="mt-1 flex w-full justify-between rounded-lg border p-2 text-left hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800"><span>#{c.numero} · {c.rest_fornecedores?.nome} · {dataBR(c.data)}</span><b>{brl(c.total)}</b></button>)}</div>}

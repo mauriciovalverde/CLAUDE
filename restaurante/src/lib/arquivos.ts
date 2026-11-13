@@ -49,3 +49,14 @@ export async function linkPrivado(caminho: string) {
   cacheLinks.set(caminho, { url: data.signedUrl, ate: Date.now() + 50 * 60000 });
   return data.signedUrl;
 }
+
+/** Abre um arquivo privado em nova aba sem ser barrado pelo bloqueador de pop-up (a aba abre no toque; o link chega depois). */
+export async function abrirLink(pegar: () => Promise<string>) {
+  const aba = window.open('', '_blank');
+  try {
+    const url = await pegar();
+    if (aba) aba.location.href = url; else window.location.href = url;
+  } catch (e) { aba?.close(); throw e; }
+}
+export const abrirPrivado = (caminho: string) => abrirLink(() => linkPrivado(caminho));
+export const abrirArquivo = (caminho: string) => abrirLink(() => linkArquivo(caminho));

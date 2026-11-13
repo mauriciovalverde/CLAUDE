@@ -399,3 +399,10 @@ create trigger rest_ponto_aju_guarda before insert on rest_ponto_ajustes for eac
 grant execute on function rest_ponto_registrar(jsonb), rest_ponto_cadastrar_rosto(uuid, float8[], text, text), rest_ponto_analisar(uuid, text, text),
   rest_ponto_ajuste_decidir(uuid, boolean, text), rest_ponto_fechar_mes(date, jsonb), rest_ponto_reabrir_mes(date, text) to authenticated;
 revoke all on function rest_ponto_jornada_dia(uuid, date), rest_ponto_mes_fechado(uuid, date) from public, anon, authenticated;
+
+-- endurecimento (verificador de segurança do Supabase)
+revoke execute on function rest_ponto_registrar(jsonb), rest_ponto_cadastrar_rosto(uuid, float8[], text, text), rest_ponto_analisar(uuid, text, text),
+  rest_ponto_ajuste_decidir(uuid, boolean, text), rest_ponto_fechar_mes(date, jsonb), rest_ponto_reabrir_mes(date, text) from public, anon;
+revoke execute on function rest_ponto_avisar(), rest_ponto_guarda_ajuste() from public, anon, authenticated;
+alter function rest_ponto_fuso() set search_path = public;
+alter function rest_ponto_distancia(float8, float8, float8, float8) set search_path = public;

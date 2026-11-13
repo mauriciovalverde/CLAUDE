@@ -2,6 +2,8 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Home, LogOut, Menu, Moon, Sun, X } from 'lucide-react';
 import { MODULOS, podeVer } from '../lib/modulos';
 import { sair, useEu, PAPEIS } from '../lib/sessao';
+import { contadores, meusComunicados } from '../lib/comunicados';
+import { AvisoPendentes } from '../pages/Comunicados';
 
 export default function Layout({ children, rota }: { children: ReactNode; rota: string }) {
   const { eu, rest, pode } = useEu();
@@ -9,13 +11,20 @@ export default function Layout({ children, rota }: { children: ReactNode; rota: 
   const [escuro, setEscuro] = useState(() => document.documentElement.classList.contains('dark'));
   const alternarTema = () => { const n = !escuro; setEscuro(n); document.documentElement.classList.toggle('dark', n); try { localStorage.setItem('rest-tema', n ? 'escuro' : 'claro'); } catch { /* ignore */ } };
   useEffect(() => setMenu(false), [rota]);
+  // contador de comunicados pendentes no menu
+  const [pend, setPend] = useState(0);
+  useEffect(() => {
+    const ler = () => meusComunicados(eu.id).then((l) => setPend(contadores(l).pendentes)).catch(() => {});
+    ler(); const t = setInterval(ler, 60000); window.addEventListener('gfi:mudou', ler);
+    return () => { clearInterval(t); window.removeEventListener('gfi:mudou', ler); };
+  }, [eu.id]);
   const itens = MODULOS.filter((m) => podeVer(m.id, pode));
   const funcoes = eu.papeis.map((p) => PAPEIS.find((x) => x.id === p)?.nome).join(', ');
   const Nav = () => (
     <nav className="space-y-0.5">
       <a href="#/inicio" className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium ${rota === 'inicio' ? 'bg-brand-700 text-white' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}><Home className="h-4 w-4" />Início</a>
       {itens.map((m) => (
-        <a key={m.id} href={`#/${m.id}`} className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium ${rota === m.id ? 'bg-brand-700 text-white' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}><m.i className="h-4 w-4" />{m.t}</a>
+        <a key={m.id} href={`#/${m.id}`} className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium ${rota === m.id ? 'bg-brand-700 text-white' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}><m.i className="h-4 w-4" />{m.t}{m.id === 'comunicados' && pend > 0 && <span className="ml-auto rounded-full bg-red-600 px-1.5 text-xs font-bold text-white">{pend}</span>}</a>
       ))}
     </nav>
   );
@@ -45,12 +54,13 @@ export default function Layout({ children, rota }: { children: ReactNode; rota: 
       </div>}
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-slate-200 bg-white/90 px-3 py-2 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90 sm:px-5 lg:hidden">
-          <button className="rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => setMenu(true)} aria-label="Menu"><Menu className="h-5 w-5" /></button>
+          <button className="relative rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => setMenu(true)} aria-label="Menu"><Menu className="h-5 w-5" />{pend > 0 && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-red-600" />}</button>
           {rota !== 'inicio' && <a href="#/inicio" className="rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Início"><Home className="h-5 w-5" /></a>}
           <span className="truncate font-semibold">{titulo}</span>
           <span className="ml-auto truncate text-xs text-slate-500">{eu.nome.split(' ')[0]}</span>
         </header>
         <main className="mx-auto w-full max-w-6xl flex-1 px-3 pb-10 pt-4 sm:px-5">{children}</main>
+        <AvisoPendentes />
       </div>
     </div>
   );
