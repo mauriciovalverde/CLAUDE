@@ -18,8 +18,10 @@ async function nomes() {
 const pct = (v: number | null | undefined) => (v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(1).replace('.', ',')}%`);
 const per = (de?: string, ate?: string) => (de && ate ? (de === ate ? dataBR(de) : `${dataBR(de)} a ${dataBR(ate)}`) : '');
 
-export const AJUDA = `Posso registrar e consultar. Exemplos:
+export const AJUDA = `Posso registrar e consultar. Escreva do seu jeito; se faltar algo, eu pergunto. Exemplos:
 • Comprei 15 kg de carne moída a R$ 32 o quilo no Açougue Ventura Master, paguei no PIX
+• 2 kg tomate 10 reais, 3 kg cebola a 5 o quilo e 2 alface 6 reais na Hortfrut, pix
+• Paguei 30 de táxi pra Adriana · Vale de 100 pra Maria · Gasolina 50 reais
 • Hoje gastamos R$ 280 com hortaliças na Hortfrut
 • O fornecedor Centro Sul entregou a compra de hoje
 • Conta de luz de R$ 450 vence dia 20
@@ -49,7 +51,7 @@ export function responder(nome: string, a: any, s: any): string {
       if (s.aviso) r += `\n${s.aviso}`;
       return r;
     }
-    case 'faturamento': return s.aviso ? `📊 ${per(a.de, a.ate)}: ${s.aviso}` : `📊 Faturamento ${per(a.de, a.ate)}\nLíquido: ${brl(s.faturamento_liquido)} (bruto ${brl(s.faturamento_bruto)})\nVendas: ${s.vendas || '—'}${s.ticket_medio ? ` · ticket médio ${brl(s.ticket_medio)}` : ''}`;
+    case 'faturamento': return s.aviso ? `📊 ${per(a.de, a.ate)}: ${s.aviso}` : `📊 Faturamento ${per(a.de, a.ate)}\nLíquido: ${brl(s.faturamento_liquido)} (bruto ${brl(s.faturamento_bruto)})\nPratos vendidos: ${s.vendas || '—'}${s.ticket_medio ? ` · ticket médio por prato ${brl(s.ticket_medio)}` : ''}`;
     case 'comparar_periodos': {
       const l = (t: string, x: any) => `• ${t}: ${brl(x.a ?? 0)} → ${brl(x.b ?? 0)} (${pct(x.variacao_pct)})`;
       return `📈 ${per(a.a_de, a.a_ate)} × ${per(a.b_de, a.b_ate)}\n${l('Faturamento', s.faturamento)}\n${l('Despesas', s.despesas)}\n${l('Compras', s.compras)}\n${l('Custo de mercadorias', s.custo_mercadorias)}\n${l('Resultado estimado', s.resultado)}` +

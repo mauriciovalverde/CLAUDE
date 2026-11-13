@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Camera, FileText, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useEu } from '../lib/sessao';
@@ -69,6 +69,21 @@ const paraForm = (n: any, itens: any[]): any => ({
 function Revisar({ dados, fechar, lancar }: { dados: any; fechar: () => void; lancar: (n: any) => void }) {
   const [n, setN] = useState({ razao_social: dados.razao_social ?? '', cnpj: dados.cnpj ?? '', numero: dados.numero ?? '', serie: dados.serie ?? '', data_emissao: dados.data_emissao ?? hoje(), valor_total: dados.valor_total != null ? String(dados.valor_total).replace('.', ',') : '', vencimento: '', chave_acesso: dados.chave_acesso ?? '', forma_pagamento: dados.forma_pagamento ?? '' });
   const [salvando, setSalvando] = useState(false);
+  // itens lidos: lista editável; o total acompanha a soma até a pessoa digitar outro valor
+  const fmtN = (v: any) => (v == null || v === '' ? '' : String(v).replace('.', ','));
+  const din = (v: any) => (v == null || v === '' || isNaN(Number(v)) ? '' : Number(v).toFixed(2).replace('.', ','));
+  const [itens, setItens] = useState<any[]>(() => (dados.itens ?? []).map((i: any) => ({ descricao: i.descricao ?? '', quantidade: fmtN(i.quantidade ?? 1), unidade: i.unidade ?? 'un', unit: din(i.unit), total: din(i.total), conferir: !!i.conferir })));
+  const [totalManual, setTotalManual] = useState(!dados.total_pela_soma && dados.valor_total != null);
+  const somaItens = Math.round(itens.reduce((t, i) => t + (lerNum(i.total) || 0), 0) * 100) / 100;
+  useEffect(() => { if (!totalManual) setN((x) => ({ ...x, valor_total: somaItens ? String(somaItens.toFixed(2)).replace('.', ',') : x.valor_total })); }, [somaItens, totalManual]);
+  const mudarItem = (k: number, campo: string, v: string) => setItens((l) => l.map((i, j) => {
+    if (j !== k) return i;
+    const novo = { ...i, [campo]: v, conferir: false };
+    // quantidade × unitário recalcula o total da linha
+    if (campo === 'quantidade' || campo === 'unit') { const q = lerNum(novo.quantidade), u = lerNum(novo.unit); if (q > 0 && u > 0) novo.total = (Math.round(q * u * 100) / 100).toFixed(2).replace('.', ','); }
+    return novo;
+  }));
+  const itensFinais = () => itens.filter((i) => i.descricao.trim() && lerNum(i.total) > 0).map((i) => ({ descricao: i.descricao.trim(), quantidade: lerNum(i.quantidade) || 1, unidade: i.unidade || 'un', unit: lerNum(i.unit) || (lerNum(i.total) / (lerNum(i.quantidade) || 1)), total: lerNum(i.total) }));
   const { dados: forns } = useDados(() => q<any[]>(supabase.from('rest_fornecedores').select('id,nome,cnpj,chave')), []);
   const fornCnpj = (forns ?? []).find((f) => f.cnpj && f.cnpj === n.cnpj.replace(/\D/g, ''));
   const salvar = async (e_lancar: boolean) => {
@@ -79,11 +94,11 @@ function Revisar({ dados, fechar, lancar }: { dados: any; fechar: () => void; la
       const { data: nota, error } = await supabase.from('rest_notas').insert({
         fornecedor_id: forn?.id ?? null, cnpj, razao_social: n.razao_social || null, numero: n.numero || null, serie: n.serie || null, chave_acesso: n.chave_acesso.replace(/\D/g, '') || null,
         data_emissao: n.data_emissao || null, valor_total: lerNum(n.valor_total) || null, forma_pagamento: n.forma_pagamento || null, vencimento: n.vencimento || null,
-        arquivo_path: dados.arquivo_path ?? null, texto_ocr: dados.texto ?? null, dados: { itens: dados.itens, qr: dados.qr ?? null }, divergencias: dados.avisos?.length ? dados.avisos : null, status: 'pendente',
+        arquivo_path: dados.arquivo_path ?? null, texto_ocr: dados.texto ?? null, dados: { itens: itensFinais(), itens_lidos: dados.itens, qr: dados.qr ?? null }, divergencias: dados.avisos?.length ? dados.avisos : null, status: 'pendente',
       }).select('*').single();
       if (error) throw new Error(error.message.includes('duplicate') ? 'Esta nota já foi cadastrada antes (mesmo número/CNPJ ou mesma chave). Procure na lista.' : error.message);
       toast('Nota guardada. Falta conferir e lançar a compra.'); avisarMudanca();
-      if (e_lancar) lancar(paraForm({ ...nota, fornecedor_nome: forn?.nome ?? n.razao_social }, dados.itens ?? [])); else fechar();
+      if (e_lancar) lancar(paraForm({ ...nota, fornecedor_nome: forn?.nome ?? n.razao_social }, itensFinais())); else fechar();
     } catch (e: any) { toast(e.message, 'erro'); } finally { setSalvando(false); }
   };
   return (
@@ -97,11 +112,27 @@ function Revisar({ dados, fechar, lancar }: { dados: any; fechar: () => void; la
           <Campo rotulo="Número"><Input value={n.numero} onChange={(e) => setN({ ...n, numero: e.target.value })} /></Campo>
           <Campo rotulo="Série"><Input value={n.serie} onChange={(e) => setN({ ...n, serie: e.target.value })} /></Campo>
           <Campo rotulo="Data de emissão"><Input type="date" value={n.data_emissao} onChange={(e) => setN({ ...n, data_emissao: e.target.value })} /></Campo>
-          <Campo rotulo="Valor total"><Dinheiro valor={n.valor_total} mudar={(v) => setN({ ...n, valor_total: v })} /></Campo>
+          <Campo rotulo="Valor total" dica={totalManual ? 'digitado/lido da nota' : 'somado automaticamente dos itens'}><Dinheiro valor={n.valor_total} mudar={(v) => { setTotalManual(true); setN({ ...n, valor_total: v }); }} /></Campo>
           <Campo rotulo="Vencimento (se for a prazo)"><Input type="date" value={n.vencimento} onChange={(e) => setN({ ...n, vencimento: e.target.value })} /></Campo>
           <Campo rotulo="Chave de acesso"><Input value={n.chave_acesso} onChange={(e) => setN({ ...n, chave_acesso: e.target.value })} className="font-mono text-xs" /></Campo>
         </div>
-        {(dados.itens ?? []).length > 0 && <div className="rounded-xl bg-slate-50 p-2 text-sm dark:bg-slate-800/50"><b>{dados.itens.length} itens lidos</b> (você confere e corrige na próxima tela){dados.itens.slice(0, 6).map((i: any, k: number) => <div key={k} className={`flex justify-between ${i.conferir ? 'text-amber-600' : ''}`}><span className="truncate">{i.descricao}</span><span className="tabular-nums">{brl(i.total)}</span></div>)}{dados.itens.length > 6 && <div className="text-slate-500">…</div>}</div>}
+        <div className="rounded-xl border border-slate-200 p-2 dark:border-slate-700">
+          <div className="mb-2 flex items-center justify-between"><b className="text-sm">Itens da nota ({itens.length})</b><span className="text-xs text-slate-500">confira e corrija; em amarelo, os que a leitura teve dúvida</span></div>
+          <div className="space-y-2">{itens.map((i, k) => (
+            <div key={k} className={`grid grid-cols-12 gap-1 rounded-lg p-1 ${i.conferir ? 'bg-amber-50 dark:bg-amber-950/30' : ''}`}>
+              <Input className="col-span-12 sm:col-span-5" value={i.descricao} onChange={(e) => mudarItem(k, 'descricao', e.target.value)} placeholder="Produto" aria-label="Produto" />
+              <Input className="col-span-3 sm:col-span-1" inputMode="decimal" value={i.quantidade} onChange={(e) => mudarItem(k, 'quantidade', e.target.value)} placeholder="Qtd" aria-label="Quantidade" />
+              <Input className="col-span-2 sm:col-span-1" value={i.unidade} onChange={(e) => mudarItem(k, 'unidade', e.target.value)} placeholder="un" aria-label="Unidade" />
+              <Input className="col-span-3 sm:col-span-2" inputMode="decimal" value={i.unit} onChange={(e) => mudarItem(k, 'unit', e.target.value)} placeholder="Unitário" aria-label="Valor unitário" />
+              <Input className="col-span-3 sm:col-span-2 font-semibold" inputMode="decimal" value={i.total} onChange={(e) => mudarItem(k, 'total', e.target.value)} placeholder="Total" aria-label="Total do item" />
+              <button className="col-span-1 text-slate-400" aria-label="Remover item" onClick={() => setItens((l) => l.filter((_, j) => j !== k))}>✕</button>
+            </div>))}</div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Btn variante="secundario" onClick={() => setItens((l) => [...l, { descricao: '', quantidade: '1', unidade: 'un', unit: '', total: '' }])}>+ Adicionar item</Btn>
+            <span className="ml-auto text-sm">Soma dos itens: <b className="tabular-nums">{brl(somaItens)}</b></span>
+          </div>
+          {totalManual && somaItens > 0 && Math.abs(somaItens - (lerNum(n.valor_total) || 0)) > 0.05 && <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-amber-700"><span>O total da nota ({brl(lerNum(n.valor_total))}) é diferente da soma dos itens. Pode ser desconto ou item faltando.</span><Btn variante="secundario" onClick={() => setTotalManual(false)}>Usar a soma</Btn></div>}
+        </div>
         <div className="flex flex-wrap gap-2">
           <Btn carregando={salvando} onClick={() => salvar(true)}>Guardar e lançar a compra</Btn>
           <Btn variante="secundario" carregando={salvando} onClick={() => salvar(false)}>Só guardar (lançar depois)</Btn>

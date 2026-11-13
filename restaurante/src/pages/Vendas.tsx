@@ -25,7 +25,7 @@ export default function Vendas() {
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         <Stat rotulo="Faturamento bruto" valor={brl(t.bruto)} />
         <Stat rotulo="Faturamento líquido" valor={brl(t.liquido)} tom="bom" sub="bruto − descontos − cancelamentos − estornos" />
-        <Stat rotulo="Vendas" valor={t.qtd || '—'} sub={t.qtd ? `ticket médio ${brl(t.liquido / t.qtd)}` : 'informe o nº de vendas no caixa'} />
+        <Stat rotulo="Pratos vendidos" valor={t.qtd || '—'} sub={t.qtd ? `ticket médio por prato ${brl(t.liquido / t.qtd)}` : 'informe os pratos vendidos no caixa'} />
         <Stat rotulo="Descontos + cancel. + estornos" valor={brl(t.descontos + t.cancelamentos + t.estornos)} tom="alerta" />
       </div>
       <div className="grid gap-3 lg:grid-cols-[2fr_1fr]">
@@ -36,7 +36,7 @@ export default function Vendas() {
       <Tabela linhas={dados} vazio="Sem vendas no período." colunas={[
         { k: 'd', t: 'Data', r: (v) => `${dataBR(v.data)} · ${TURNOS[v.turno] ?? v.turno}` }, { k: 'o', t: 'Origem', r: (v) => <span className="flex gap-1">{v.origem === 'fechamento' ? 'Caixa' : v.origem === 'pdv' ? 'PDV' : 'Manual'}{v.origem === 'fechamento' && <Badge s={v.conferida ? 'conferido' : 'encerrado'} />}</span>, esconderCelular: true },
         { k: 'b', t: 'Bruto', num: true, r: (v) => brl(v.bruto), esconderCelular: true }, { k: 'x', t: 'Desc./canc./estornos', num: true, r: (v) => brl(+v.descontos + +v.cancelamentos + +v.estornos), esconderCelular: true },
-        { k: 'q', t: 'Vendas', num: true, r: (v) => v.qtd_vendas ?? '—' }, { k: 'l', t: 'Líquido', num: true, r: (v) => <b>{brl(v.liquido)}</b> },
+        { k: 'q', t: 'Pratos', num: true, r: (v) => v.qtd_vendas ?? '—' }, { k: 'l', t: 'Líquido', num: true, r: (v) => <b>{brl(v.liquido)}</b> },
       ]} />
       {nova && <NovaVenda fechar={() => setNova(false)} />}
       {importar && <ImportarPdv fechar={() => setImportar(false)} />}
@@ -56,7 +56,7 @@ function NovaVenda({ fechar }: { fechar: () => void }) {
         <Campo rotulo="Descontos"><Dinheiro valor={f.descontos} mudar={(v) => setF({ ...f, descontos: v })} /></Campo>
         <Campo rotulo="Cancelamentos"><Dinheiro valor={f.cancelamentos} mudar={(v) => setF({ ...f, cancelamentos: v })} /></Campo>
         <Campo rotulo="Estornos"><Dinheiro valor={f.estornos} mudar={(v) => setF({ ...f, estornos: v })} /></Campo>
-        <Campo rotulo="Nº de vendas"><Input inputMode="numeric" value={f.qtd} onChange={(e) => setF({ ...f, qtd: e.target.value })} /></Campo>
+        <Campo rotulo="Pratos vendidos"><Input inputMode="numeric" value={f.qtd} onChange={(e) => setF({ ...f, qtd: e.target.value })} /></Campo>
       </div>
       <Btn className="mt-4 w-full" onClick={async () => {
         const formas = Object.fromEntries(FORMAS_VENDA.map(([k]) => [k, lerNum(f[k]) || 0]));

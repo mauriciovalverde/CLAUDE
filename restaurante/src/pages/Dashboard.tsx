@@ -39,7 +39,7 @@ export default function Dashboard() {
       {carregando || !ind ? <Carregando /> : <>
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           <Stat rotulo="Faturamento líquido" valor={brl(ind.liquido)} tom="bom" sub={`bruto ${brl(ind.bruto)}`} />
-          <Stat rotulo="Vendas / ticket médio" valor={ind.qtdVendas || '—'} sub={ind.ticket ? `ticket ${brl(ind.ticket)}` : 'informe o nº de vendas no caixa'} />
+          <Stat rotulo="Pratos vendidos / ticket médio" valor={ind.qtdVendas || '—'} sub={ind.ticket ? `ticket por prato ${brl(ind.ticket)}` : 'informe os pratos vendidos no caixa'} />
           <Stat rotulo="Compras do período" valor={brl(ind.compras)} />
           <Stat rotulo="Custo de mercadorias" valor={brl(ind.cmv)} sub="compras de alimentos e bebidas" />
           <Stat rotulo="Margem bruta" valor={brl(ind.margemBruta)} tom={ind.margemBruta >= 0 ? 'bom' : 'ruim'} sub={`${pct(ind.margemPct).replace('+', '')} do faturamento`} />

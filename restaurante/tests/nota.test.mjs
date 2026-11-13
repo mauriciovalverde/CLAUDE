@@ -57,3 +57,24 @@ test('remove nº do item e código de barras lido com erro', () => {
   assert.equal(limparDescricao('ARROZ PARBOILIZADO 5KG'), 'ARROZ PARBOILIZADO 5KG');
   assert.equal(limparDescricao('LEITE CONDENSADO 395G'), 'LEITE CONDENSADO 395G');
 });
+
+import { lerItens, normalizarLinha } from '../src/lib/nota.js';
+test('itens em outros formatos (sem "x", DANFE, sem unidade) e erros do OCR', () => {
+  const l = ['FEIJAO CARIOCA 1KG 2 UN 8,50 17,00', '0001 CARNE MOIDA 02023500 060 5102 KG 1,500 32,90 49,35', 'TOMATE 3 x 4,99 14,97', 'ALFACE 1 UN X 2,5O 2,5O', 'LIMAO 1 UN X 3.20 3.20'].map(normalizarLinha);
+  const it = lerItens(l);
+  assert.deepEqual(it.map((i) => [i.descricao, i.quantidade, i.unidade, i.total]), [
+    ['FEIJAO CARIOCA 1KG', 2, 'un', 17], ['CARNE MOIDA', 1.5, 'kg', 49.35], ['TOMATE', 3, 'un', 14.97], ['ALFACE', 1, 'un', 2.5], ['LIMAO', 1, 'un', 3.2],
+  ]);
+});
+test('sem total impresso: usa a soma dos itens', () => {
+  const r = lerNota('HORTIFRUTI BOM PRECO\nCNPJ 11.111.111/0001-11\nTOMATE 2 KG X 6,00 12,00\nCEBOLA 1 KG X 5,50 5,50');
+  assert.equal(r.valor_total, 17.5);
+  assert.ok(r.total_pela_soma);
+  assert.ok(r.avisos.some((a) => a.includes('soma dos itens')));
+});
+test('último recurso: descrição e valor viram itens para conferir', () => {
+  const r = lerNota('PADARIA\nPAO FRANCES 12,00\nBOLO DE MILHO 18,50\nTOTAL 30,50');
+  assert.equal(r.itens.length, 2);
+  assert.ok(r.itens.every((i) => i.conferir));
+  assert.equal(r.valor_total, 30.5);
+});

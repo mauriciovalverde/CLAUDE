@@ -54,5 +54,5 @@ export const compacto = (v: number) => {
 export const TURNOS: Record<string, string> = { manha: 'Manhã', tarde: 'Tarde', noite: 'Noite', dia: 'Dia todo' };
 export const FORMAS_PAGAMENTO = ['Dinheiro', 'PIX', 'Débito', 'Crédito', 'Boleto', 'Transferência', 'A prazo (fiado)', 'Outro'];
 export const CATEGORIAS_DESPESA = ['Compras: Hortaliças', 'Compras: Frutas', 'Compras: Carnes', 'Compras: Aves', 'Compras: Peixes', 'Compras: Cereais e grãos', 'Compras: Mercearia', 'Compras: Laticínios e frios', 'Compras: Bebidas', 'Compras: Padaria', 'Compras: Embalagens', 'Compras: Limpeza', 'Compras: Outros',
-  'Funcionários', 'Energia', 'Água', 'Gás', 'Internet/Telefone', 'Aluguel', 'Manutenção', 'Equipamentos', 'Impostos', 'Taxas de cartões', 'Despesas administrativas', 'Outras despesas'];
+  'Funcionários', 'Vale a funcionário', 'Transporte', 'Energia', 'Água', 'Gás', 'Internet/Telefone', 'Aluguel', 'Manutenção', 'Equipamentos', 'Impostos', 'Taxas de cartões', 'Despesas administrativas', 'Outras despesas'];
 export const CATEGORIAS_RECEITA = ['Vendas', 'Outras receitas', 'Recebimentos diversos'];
