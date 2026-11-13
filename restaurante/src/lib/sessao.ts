@@ -1,6 +1,10 @@
 // Sessão da equipe: o aparelho lembra o CÓDIGO do restaurante; cada pessoa entra tocando no nome e digitando o PIN.
 import { createContext, useContext } from 'react';
 import { funcao, supabase } from './supabase';
+// @ts-ignore módulos JS
+import { chaveProduto } from './catalogo.js';
+// @ts-ignore
+import { linhasCatalogo } from './catalogoPadrao.js';
 
 export type Papel = 'admin' | 'compras' | 'solicitante' | 'caixa' | 'estoque';
 export type Eu = { id: string; nome: string; papeis: Papel[]; setor: string | null; restaurante_id: string };
@@ -43,6 +47,8 @@ export async function criarRestaurante(nome: string, adminNome: string, pin: str
   if (!r.ok) throw new Error(r.mensagem ?? 'Não consegui criar o restaurante.');
   guardarAparelho({ codigo: r.codigo, nome: r.restaurante.nome, ultimo: r.funcionario_id });
   await abrirSessao(r.sessao);
+  // restaurante novo já começa com a lista padrão de produtos (editável)
+  await supabase.from('rest_produtos').upsert(linhasCatalogo(chaveProduto), { onConflict: 'restaurante_id,chave', ignoreDuplicates: true });
   return r.codigo as string;
 }
 

@@ -38,9 +38,19 @@ export function useRota() {
 
 function Fundo({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen items-start justify-center bg-[#F79F31] p-4 sm:items-center">
-      <div className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-xl dark:bg-slate-900">
-        <img src="./logo.jpg" alt="" className="mx-auto -mt-2 mb-2 h-28 w-28 rounded-2xl object-cover" />
+    <div className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden bg-gradient-to-br from-[#F9B04A] via-[#F79F31] to-[#EE8A1C] p-4">
+      {/* bolhas de luz ao fundo */}
+      <div aria-hidden className="anim-bolha pointer-events-none absolute -left-16 -top-16 h-64 w-64 rounded-full bg-white/20 blur-2xl" />
+      <div aria-hidden className="anim-bolha pointer-events-none absolute -bottom-20 -right-10 h-72 w-72 rounded-full bg-[#A3141B]/15 blur-2xl" style={{ animationDelay: '-6s' }} />
+      <div aria-hidden className="anim-bolha pointer-events-none absolute right-10 top-1/4 h-32 w-32 rounded-full bg-white/15 blur-xl" style={{ animationDelay: '-3s' }} />
+      <div className="anim-surgir relative w-full max-w-sm rounded-3xl bg-white/95 p-6 shadow-2xl backdrop-blur dark:bg-slate-900/95">
+        <div className="relative mx-auto -mt-16 mb-3 h-28 w-28">
+          {/* vapor saindo do prato */}
+          <span aria-hidden className="anim-vapor absolute -top-3 left-9 h-6 w-1.5 rounded-full bg-white/80" />
+          <span aria-hidden className="anim-vapor absolute -top-4 left-[3.3rem] h-7 w-1.5 rounded-full bg-white/80" style={{ animationDelay: '.8s' }} />
+          <span aria-hidden className="anim-vapor absolute -top-3 left-[4.3rem] h-6 w-1.5 rounded-full bg-white/80" style={{ animationDelay: '1.6s' }} />
+          <img src="./logo.jpg" alt="Cantinho do Sabor" className="anim-logo h-28 w-28 rounded-3xl object-cover shadow-lg ring-4 ring-white" />
+        </div>
         {children}
       </div>
     </div>
@@ -93,16 +103,21 @@ function Entrada() {
     catch (e: any) { setErro(e.message); setCarregando(false); }
   }, [quem, codigo]);
 
-  if (tela === 'inicio') return (
-    <Fundo>
-      <h1 className="text-center text-xl font-bold">Gestão do restaurante</h1>
-      <p className="mb-5 text-center text-sm text-slate-500">Compras, estoque, caixa e financeiro num só lugar</p>
-      <div className="space-y-2">
-        <Btn className="w-full !py-3 text-base" onClick={() => { setTela('codigo'); setErro(''); }}><UserRound className="h-5 w-5" />Entrar na equipe (tenho o código)</Btn>
-        <Btn variante="secundario" className="w-full !py-3" onClick={() => { setTela('criar'); setErro(''); }}><Store className="h-5 w-5" />Cadastrar meu restaurante</Btn>
-      </div>
-    </Fundo>
-  );
+  if (tela === 'inicio') {
+    const h = new Date().getHours();
+    return (
+      <Fundo>
+        <p className="anim-surgir text-center text-sm font-medium text-brand-700" style={{ animationDelay: '.15s' }}>{h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'}! 👋</p>
+        <h1 className="anim-surgir mt-1 text-center text-2xl font-bold" style={{ animationDelay: '.25s' }}>Bem-vindo ao seu restaurante</h1>
+        <p className="anim-surgir mb-6 mt-1 text-center text-sm text-slate-500" style={{ animationDelay: '.35s' }}>Compras, estoque, caixa e financeiro num só lugar, simples como deve ser.</p>
+        <div className="space-y-2">
+          <div className="anim-surgir" style={{ animationDelay: '.5s' }}><Btn className="w-full !rounded-2xl !py-3.5 text-base shadow-md shadow-brand-700/20 transition active:scale-[.98]" onClick={() => { setTela('codigo'); setErro(''); }}><UserRound className="h-5 w-5" />Entrar na equipe</Btn></div>
+          <div className="anim-surgir" style={{ animationDelay: '.62s' }}><Btn variante="secundario" className="w-full !rounded-2xl !py-3.5 transition active:scale-[.98]" onClick={() => { setTela('criar'); setErro(''); }}><Store className="h-5 w-5" />Cadastrar meu restaurante</Btn></div>
+        </div>
+        <p className="anim-surgir mt-5 text-center text-xs text-slate-400" style={{ animationDelay: '.75s' }}>Já tem o código? Peça ao responsável e entre com o seu PIN.</p>
+      </Fundo>
+    );
+  }
 
   if (tela === 'codigo') return (
     <Fundo>

@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, Check, Merge, Search } from 'lucide-react';
+import { AlertTriangle, Check, ListPlus, Merge, Plus, Search, Trash2 } from 'lucide-react';
 import { rpc, supabase } from '../lib/supabase';
 import { useEu } from '../lib/sessao';
 // @ts-ignore módulo JS testado
 import { CATEGORIAS, nomeCategoria, semAcento, UNIDADES, chaveProduto } from '../lib/catalogo.js';
+// @ts-ignore módulo JS
+import { linhasCatalogo } from '../lib/catalogoPadrao.js';
 import { addDias, dataBR, dataHora, hoje, lerNum, qtd } from '../lib/fmt';
 import { Abas, Aviso, avisarMudanca, Badge, Btn, Cabecalho, Campo, Card, Input, Modal, q, Select, Tabela, toast, useDados } from '../components/ui';
 
@@ -156,12 +158,24 @@ function Produtos({ produtos, recarregar }: { produtos: any[] | null; recarregar
   const pend = (produtos ?? []).filter((p) => p.status === 'pendente');
   const lista = (produtos ?? []).filter((p) => (!cat || p.categoria === cat) && semAcento(p.nome).toLowerCase().includes(semAcento(busca).toLowerCase()));
   const sel = useMemo(() => (produtos ?? []).filter((p) => marcados.includes(p.id)), [produtos, marcados]);
+  const [adicionando, setAdicionando] = useState(false);
+  // itens da lista padrão que ainda não existem (pela chave padronizada)
+  const faltam = useMemo(() => { if (!produtos) return []; const tem = new Set(produtos.map((p) => p.chave)); return linhasCatalogo(chaveProduto).filter((l: any) => !tem.has(l.chave)); }, [produtos]);
   return (
     <>
       {pend.length > 0 && <Card titulo={`Produtos novos criados pela equipe (${pend.length})`} className="mb-3">
         <p className="mb-2 text-xs text-slate-500">Confira o nome e a categoria e aprove. Se for repetido, marque e use “Juntar”.</p>
         {pend.map((p) => <div key={p.id} className="flex items-center justify-between gap-2 border-b py-1.5 text-sm last:border-0 dark:border-slate-800"><span>{p.nome} · <span className="text-slate-500">{nomeCategoria(p.categoria)}</span></span><span className="flex gap-1"><Btn variante="secundario" onClick={() => setEditar(p)}>Editar</Btn><Btn onClick={async () => { await supabase.from('rest_produtos').update({ status: 'ativo' }).eq('id', p.id); recarregar(); }}><Check className="h-4 w-4" /></Btn></span></div>)}
       </Card>}
+      {(pode('compras') || pode('estoque')) && <div className="mb-3 flex flex-wrap gap-2">
+        <Btn onClick={() => setEditar({ novo: true, nome: '', categoria: cat || 'outros', unidade: 'un', estoque_minimo: 0, controla_estoque: true, status: 'ativo', grafias: [] })}><Plus className="h-4 w-4" />Novo produto</Btn>
+        {faltam.length > 0 && <Btn variante="secundario" carregando={adicionando} onClick={async () => {
+          setAdicionando(true);
+          const { error } = await supabase.from('rest_produtos').upsert(faltam, { onConflict: 'restaurante_id,chave', ignoreDuplicates: true });
+          setAdicionando(false);
+          if (error) toast(error.message, 'erro'); else { toast(`${faltam.length} produtos da lista padrão adicionados`); recarregar(); avisarMudanca(); }
+        }}><ListPlus className="h-4 w-4" />Adicionar lista padrão ({faltam.length} produtos)</Btn>}
+      </div>}
       <Filtro {...{ busca, setBusca, cat, setCat }} />
       {marcados.length >= 2 && pode('compras') && <Btn className="mb-2" onClick={() => setMesclar(true)}><Merge className="h-4 w-4" />Juntar {marcados.length} produtos (são o mesmo)</Btn>}
       <Tabela linhas={produtos ? lista : null} colunas={[
@@ -182,11 +196,31 @@ function Produtos({ produtos, recarregar }: { produtos: any[] | null; recarregar
 }
 
 function EditarProduto({ p, fechar }: { p: any; fechar: () => void }) {
+  const { pode } = useEu();
   const [d, setD] = useState({ nome: p.nome, categoria: p.categoria, unidade: p.unidade, estoque_minimo: String(p.estoque_minimo ?? 0).replace('.', ','), controla_estoque: p.controla_estoque, status: p.status });
+  const [excluir, setExcluir] = useState(false);
+  const salvar = async () => {
+    const nome = d.nome.trim();
+    if (nome.length < 2) { toast('Informe o nome do produto', 'erro'); return; }
+    const nova = chaveProduto(nome);
+    const base = { nome, categoria: d.categoria, unidade: d.unidade, estoque_minimo: lerNum(d.estoque_minimo) || 0, controla_estoque: d.controla_estoque, status: d.status };
+    const { error } = p.novo
+      ? await supabase.from('rest_produtos').insert({ ...base, chave: nova, grafias: [nome] })
+      : await supabase.from('rest_produtos').update({ ...base, ...(nova !== p.chave ? { chave: nova, grafias: [...new Set([...(p.grafias ?? []), p.nome])] } : {}) }).eq('id', p.id);
+    if (error) toast(error.message.includes('duplicate') ? 'Já existe um produto com esse nome. Use “Juntar” para unir os dois.' : error.message, 'erro'); else { toast(p.novo ? 'Produto cadastrado' : 'Produto salvo'); avisarMudanca(); fechar(); }
+  };
+  // produto com histórico (compras, pedidos, estoque) não some do banco: fica inativo para preservar o histórico
+  const apagar = async () => {
+    const conta = async (t: string) => (await supabase.from(t).select('id', { count: 'exact', head: true }).eq('produto_id', p.id)).count ?? 0;
+    const usos = (await conta('rest_compra_itens')) + (await conta('rest_solicitacao_itens')) + (await conta('rest_estoque_movs'));
+    const { error } = usos ? await supabase.from('rest_produtos').update({ status: 'inativo' }).eq('id', p.id) : await supabase.from('rest_produtos').delete().eq('id', p.id);
+    if (error) toast(error.message, 'erro');
+    else { toast(usos ? `Produto desativado: tem ${usos} registro(s) no histórico, que foram mantidos.` : 'Produto excluído'); avisarMudanca(); fechar(); }
+  };
   return (
-    <Modal aberto fechar={fechar} titulo="Produto">
+    <Modal aberto fechar={fechar} titulo={p.novo ? 'Novo produto' : 'Produto'}>
       <div className="space-y-3">
-        <Campo rotulo="Nome padronizado"><Input value={d.nome} onChange={(e) => setD({ ...d, nome: e.target.value })} /></Campo>
+        <Campo rotulo="Nome padronizado"><Input autoFocus={p.novo} value={d.nome} onChange={(e) => setD({ ...d, nome: e.target.value })} /></Campo>
         <div className="grid grid-cols-2 gap-2">
           <Campo rotulo="Categoria"><Select value={d.categoria} onChange={(e) => setD({ ...d, categoria: e.target.value })}>{CATEGORIAS.map((c: any) => <option key={c.id} value={c.id}>{c.nome}</option>)}</Select></Campo>
           <Campo rotulo="Unidade"><Select value={d.unidade} onChange={(e) => setD({ ...d, unidade: e.target.value })}>{UNIDADES.map((u: string) => <option key={u}>{u}</option>)}</Select></Campo>
@@ -195,11 +229,10 @@ function EditarProduto({ p, fechar }: { p: any; fechar: () => void }) {
         </div>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={d.controla_estoque} onChange={(e) => setD({ ...d, controla_estoque: e.target.checked })} />Controlar estoque deste produto</label>
         {p.grafias?.length > 0 && <p className="text-xs text-slate-500">Grafias originais: {p.grafias.join(' · ')}</p>}
-        <Btn className="w-full" onClick={async () => {
-          const nova = chaveProduto(d.nome);
-          const { error } = await supabase.from('rest_produtos').update({ nome: d.nome.trim(), categoria: d.categoria, unidade: d.unidade, estoque_minimo: lerNum(d.estoque_minimo) || 0, controla_estoque: d.controla_estoque, status: d.status, ...(nova !== p.chave ? { chave: nova, grafias: [...new Set([...(p.grafias ?? []), p.nome])] } : {}) }).eq('id', p.id);
-          if (error) toast(error.message.includes('duplicate') ? 'Já existe um produto com esse nome. Use “Juntar” para unir os dois.' : error.message, 'erro'); else { toast('Produto salvo'); avisarMudanca(); fechar(); }
-        }}>Salvar</Btn>
+        <Btn className="w-full" onClick={salvar}>{p.novo ? 'Cadastrar' : 'Salvar'}</Btn>
+        {!p.novo && pode('compras') && (excluir
+          ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm dark:border-rose-900 dark:bg-rose-950/40"><p className="mb-2">Excluir <b>{p.nome}</b>? Se ele já aparece em compras, pedidos ou estoque, fica só <b>desativado</b> (some das listas) para não perder o histórico.</p><div className="flex gap-2"><Btn variante="perigo" onClick={apagar}><Trash2 className="h-4 w-4" />Sim, excluir</Btn><Btn variante="secundario" onClick={() => setExcluir(false)}>Não</Btn></div></div>
+          : <Btn variante="fantasma" className="w-full text-rose-600" onClick={() => setExcluir(true)}><Trash2 className="h-4 w-4" />Excluir produto</Btn>)}
       </div>
     </Modal>
   );

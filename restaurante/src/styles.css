@@ -17,3 +17,15 @@ body { @apply bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text
 .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
 .recharts-text { font-size: 11px; }
 .recharts-cartesian-axis-tick-value { fill: #64748b; }
+
+/* tela de entrada: animações suaves (desligadas para quem prefere menos movimento) */
+@keyframes surgir { from { opacity: 0; transform: translateY(18px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes logo-pop { 0% { opacity: 0; transform: scale(.6) rotate(-8deg); } 60% { opacity: 1; transform: scale(1.06) rotate(2deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes flutuar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes bolha { 0% { transform: translate(0, 0) scale(1); } 50% { transform: translate(30px, -40px) scale(1.15); } 100% { transform: translate(0, 0) scale(1); } }
+@keyframes vapor { 0% { opacity: 0; transform: translateY(6px) scaleY(.8); } 40% { opacity: .9; } 100% { opacity: 0; transform: translateY(-22px) scaleY(1.2); } }
+.anim-surgir { animation: surgir .6s cubic-bezier(.2,.8,.2,1) both; }
+.anim-logo { animation: logo-pop .8s cubic-bezier(.2,.9,.3,1.3) both, flutuar 4s ease-in-out 1s infinite; }
+.anim-bolha { animation: bolha 14s ease-in-out infinite; }
+.anim-vapor { animation: vapor 2.6s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) { .anim-surgir, .anim-logo, .anim-bolha, .anim-vapor { animation: none !important; } }
