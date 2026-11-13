@@ -326,6 +326,8 @@ end $$;
 create or replace function rest_guarda_fechamento() returns trigger language plpgsql security definer set search_path = public as $$
 declare v_admin boolean := rest_pode('admin');
 begin
+  -- manutenção pelo servidor (sem usuário logado): sem trava; quem usa o app sempre tem usuário
+  if auth.uid() is null then return coalesce(new, old); end if;
   if tg_op = 'DELETE' then
     if not v_admin then raise exception 'FECHAMENTO_BLOQUEADO: só o administrador pode excluir um fechamento'; end if;
     return old;
