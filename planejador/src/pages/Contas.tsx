@@ -3,6 +3,7 @@ import { Check, ChevronLeft, ChevronRight, Plus, Trash2, Undo2 } from 'lucide-re
 import { supabase } from '../lib/supabase';
 import { CATEGORIAS_PAGAR, CATEGORIAS_RECEBER, carregar, criarConta } from '../lib/dados';
 import { brl, dataBR, fimMes, hoje } from '../lib/fmt';
+import { PagamentoModal } from '../components/Pagamento';
 import { Abas, Aviso, avisarMudanca, Badge, Btn, Cabecalho, Campo, Card, Input, Modal, Select, Stat, Tabela, toast, useDados } from '../components/ui';
 
 const nomeMes = (m: string) => new Date(m + '-15T12:00:00Z').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
@@ -50,79 +51,10 @@ function NovaConta({ aberto, fechar, tipoPadrao }: { aberto: boolean; fechar: ()
   );
 }
 
-const proximoMes = (iso: string) => { const [a, m, d] = iso.split('-').map(Number); const dt = new Date(Date.UTC(a, m, 1)); const ult = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 0)).getUTCDate(); dt.setUTCDate(Math.min(d, ult)); return dt.toISOString().slice(0, 10); };
-
-/** Pagar (ou receber) tudo ou só uma parte; a parte que faltou vira uma nova conta. */
-function PagamentoModal({ c, fechar }: { c: any | null; fechar: () => void }) {
-  const [modo, setModo] = useState<'tudo' | 'parte'>('tudo');
-  const [valor, setValor] = useState('');
-  const [data, setData] = useState(hoje());
-  const [vencRest, setVencRest] = useState('');
-  const [juros, setJuros] = useState('');
-  const [salvando, setSalvando] = useState(false);
-  const [erro, setErro] = useState('');
-  useEffect(() => { if (c) { setModo('tudo'); setValor(''); setData(hoje()); setVencRest(proximoMes(c.vencimento < hoje() ? hoje() : c.vencimento)); setJuros(''); setErro(''); } }, [c?.id]);
-  if (!c) return null;
-  const receber = c.tipo === 'receber';
-  const ehCartao = c.categoria === 'Cartão de crédito' || !!c.cartao;
-  const pago = valorBR(valor || '0');
-  const restante = Math.round((Number(c.valor) - pago) * 100) / 100;
-  const extra = valorBR(juros || '0') || 0;
-
-  async function confirmar() {
-    setErro(''); setSalvando(true);
-    try {
-      if (modo === 'tudo') {
-        const { error } = await supabase.from('plan_contas').update({ status: 'pago', pago_em: data }).eq('id', c.id);
-        if (error) throw error;
-        toast(receber ? 'Marcado como recebido ✅' : 'Marcado como pago ✅');
-      } else {
-        if (!(pago > 0)) throw new Error(`Digite quanto ${receber ? 'recebeu' : 'pagou'}.`);
-        if (pago >= Number(c.valor)) throw new Error(`O valor é igual ou maior que a conta. Use “${receber ? 'Recebi tudo' : 'Paguei tudo'}”.`);
-        if (!vencRest) throw new Error('Escolha quando vence o restante.');
-        const { error: e1 } = await supabase.from('plan_contas').update({ valor: pago, status: 'pago', pago_em: data, descricao: `${c.descricao} (parcial: ${brl(pago)} de ${brl(c.valor)})` }).eq('id', c.id);
-        if (e1) throw e1;
-        const { error: e2 } = await supabase.from('plan_contas').insert({
-          tipo: c.tipo, descricao: `Restante · ${c.descricao}${extra > 0 ? ` (+ ${brl(extra)} de juros)` : ''}`, categoria: c.categoria,
-          valor: Math.round((restante + extra) * 100) / 100, vencimento: vencRest, grupo_id: c.grupo_id, cartao: c.cartao, origem: 'manual',
-        });
-        if (e2) throw e2;
-        toast(`${receber ? 'Recebido' : 'Pago'} ${brl(pago)}. Restante de ${brl(restante + extra)} lançado para ${dataBR(vencRest)}.`);
-      }
-      avisarMudanca(); fechar();
-    } catch (e: any) { setErro(e.message ?? String(e)); } finally { setSalvando(false); }
-  }
-
-  return (
-    <Modal aberto titulo={receber ? 'Registrar recebimento' : 'Registrar pagamento'} fechar={fechar}>
-      <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">{c.descricao} · <b>{brl(c.valor)}</b> · vence {dataBR(c.vencimento)}</p>
-      <div className="mb-3 grid grid-cols-2 gap-2">
-        {[['tudo', receber ? 'Recebi tudo' : 'Paguei tudo'], ['parte', receber ? 'Recebi uma parte' : 'Paguei uma parte']].map(([v, t]) => (
-          <button key={v} onClick={() => setModo(v as any)} className={`rounded-xl border p-2.5 text-sm font-semibold ${modo === v ? 'border-teal-600 bg-teal-50 text-teal-800 dark:bg-teal-950/40 dark:text-teal-200' : 'border-slate-200 dark:border-slate-700'}`}>{t}</button>
-        ))}
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        {modo === 'parte' && <Campo rotulo={receber ? 'Quanto recebeu (R$)' : 'Quanto pagou (R$)'}><Input inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} autoFocus /></Campo>}
-        <Campo rotulo={receber ? 'Data do recebimento' : 'Data do pagamento'}><Input type="date" value={data} onChange={(e) => setData(e.target.value)} /></Campo>
-      </div>
-      {modo === 'parte' && pago > 0 && restante > 0 && <div className="mt-3 space-y-3 rounded-xl bg-amber-50 p-3 dark:bg-amber-950/30">
-        <p className="text-sm">Ficou faltando <b>{brl(restante)}</b>. Vou lançar como uma nova conta:</p>
-        <div className="grid grid-cols-2 gap-3">
-          <Campo rotulo="Quando vence o restante"><Input type="date" value={vencRest} onChange={(e) => setVencRest(e.target.value)} /></Campo>
-          {!receber && <Campo rotulo="Juros/encargos (opcional)" dica={ehCartao ? 'veja na próxima fatura' : undefined}><Input inputMode="decimal" placeholder="0,00" value={juros} onChange={(e) => setJuros(e.target.value)} /></Campo>}
-        </div>
-        {!receber && ehCartao && <p className="text-xs text-amber-900 dark:text-amber-200">⚠️ Pagar só parte da fatura do cartão costuma cair no <b>rotativo</b>, com juros altos. O restante vem na próxima fatura; quando você importá-la, o app tira este lançamento para não contar duas vezes.</p>}
-        <p className="text-sm">Total do restante: <b>{brl(restante + extra)}</b> em {vencRest ? dataBR(vencRest) : '—'}</p>
-      </div>}
-      {erro && <div className="mt-3"><Aviso tipo="erro">{erro}</Aviso></div>}
-      <div className="mt-4 flex justify-end gap-2"><Btn variante="secundario" onClick={fechar}>Cancelar</Btn><Btn onClick={confirmar} carregando={salvando}>Confirmar</Btn></div>
-    </Modal>
-  );
-}
-
-export default function Contas() {
+export default function Contas({ params }: { params?: URLSearchParams }) {
   const [mes, setMes] = useState(hoje().slice(0, 7));
-  const [aba, setAba] = useState('todas');
+  const [aba, setAba] = useState(params?.get('aba') ?? 'todas');
+  const { dados: caixa } = useDados(carregar.caixa, []);
   const [nova, setNova] = useState<string | null>(null);
   const [excluir, setExcluir] = useState<any>(null);
   const [pagar, setPagar] = useState<any>(null);
@@ -132,8 +64,8 @@ export default function Contas() {
   const soma = (t: string, st?: string) => (dados ?? []).filter((c) => c.tipo === t && (!st || c.status === st)).reduce((s, c) => s + Number(c.valor), 0);
 
   async function marcar(c: any, pago: boolean) {
-    await supabase.from('plan_contas').update({ status: pago ? 'pago' : 'pendente', pago_em: pago ? hoje() : null }).eq('id', c.id);
-    toast(pago ? (c.tipo === 'receber' ? 'Marcado como recebido ✅' : 'Marcado como pago ✅') : 'Voltou para pendente.'); avisarMudanca();
+    await supabase.from('plan_contas').update({ status: pago ? 'pago' : 'pendente', pago_em: pago ? hoje() : null, pago_registrado_em: pago ? new Date().toISOString() : null }).eq('id', c.id);
+    toast(pago ? (c.tipo === 'receber' ? 'Marcado como recebido ✅' : 'Marcado como pago ✅') : 'Voltou para pendente. O valor voltou para o caixa.'); avisarMudanca();
   }
   async function apagar(modo: 'uma' | 'futuras') {
     const c = excluir; const agora = new Date().toISOString();
@@ -157,7 +89,17 @@ export default function Contas() {
         <Stat rotulo="Sobra" valor={brl(soma('receber') - soma('pagar'))} tom={soma('receber') - soma('pagar') >= 0 ? 'bom' : 'ruim'} />
       </div>
       <Card>
-        <Abas abas={[{ id: 'todas', t: 'Todas' }, { id: 'pagar', t: 'A pagar' }, { id: 'receber', t: 'A receber' }]} ativa={aba} mudar={setAba} />
+        <Abas abas={[{ id: 'todas', t: 'Todas' }, { id: 'pagar', t: 'A pagar' }, { id: 'receber', t: 'A receber' }, { id: 'caixa', t: '💰 Caixa' }]} ativa={aba} mudar={setAba} />
+        {aba === 'caixa' ? <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-2 text-center text-sm"><div className="rounded-xl bg-slate-50 p-2 dark:bg-slate-800/50"><div className="text-xs text-slate-500">Caixa agora</div><b className={caixa && caixa.saldo < 0 ? 'text-rose-600' : ''}>{brl(caixa?.saldo)}</b></div><div className="rounded-xl bg-emerald-50 p-2 dark:bg-emerald-950/30"><div className="text-xs text-slate-500">Entrou</div><b className="text-emerald-700">{brl(caixa?.entradas)}</b></div><div className="rounded-xl bg-rose-50 p-2 dark:bg-rose-950/30"><div className="text-xs text-slate-500">Saiu</div><b className="text-rose-700">{brl(caixa?.saidas)}</b></div></div>
+          <Tabela linhas={caixa?.movimentos ?? null} vazio="Nenhuma movimentação ainda. Ao marcar contas como pagas/recebidas (inclusive a fatura do cartão) ou guardar dinheiro nos sonhos, elas aparecem aqui." colunas={[
+            { k: 'data', t: 'Data', r: (m) => dataBR(m.data) },
+            { k: 'descricao', t: 'Movimento', r: (m) => <span>{m.origem === 'cartao' ? '💳 ' : m.origem === 'sonho' ? '✨ ' : ''}{m.descricao}</span> },
+            { k: 'valor', t: 'Valor', num: true, r: (m) => <span className={m.valor < 0 ? 'text-rose-600' : 'text-emerald-600'}>{m.valor > 0 ? '+' : '−'}{brl(Math.abs(m.valor))}</span> },
+            { k: 'saldoApos', t: 'Caixa depois', num: true, r: (m) => <b>{brl(m.saldoApos)}</b> },
+          ]} />
+          <p className="text-xs text-slate-500">Caixa informado: {brl(caixa?.inicial)} em {caixa?.desde ? new Date(caixa.desde).toLocaleString('pt-BR') : '—'}. Para corrigir, use o lápis em “Meu ano”.</p>
+        </div> : <>
         <Tabela linhas={dados ? linhas : null} vazio="Nenhuma conta neste mês. Toque em “+ Pagar” ou “+ Receber”." colunas={[
           { k: 'descricao', t: 'Descrição', r: (c) => <span><span className={c.tipo === 'receber' ? 'text-emerald-600' : 'text-rose-600'}>{c.tipo === 'receber' ? '↓' : '↑'}</span> {c.descricao}{c.parcela_total ? <span className="text-slate-400"> ({c.parcela_num}/{c.parcela_total})</span> : ''}{c.cartao ? <span className="text-slate-400"> · {c.cartao}</span> : ''}</span> },
           { k: 'categoria', t: 'Categoria', esconderCelular: true },
@@ -169,7 +111,7 @@ export default function Contas() {
               : <Btn variante="fantasma" className="!px-2 !py-1 text-xs" onClick={() => marcar(c, false)}><Undo2 className="h-3.5 w-3.5" />Desfazer</Btn>}
             <Btn variante="fantasma" className="!px-2 !py-1 text-xs text-slate-400" onClick={() => setExcluir(c)} aria-label="Remover"><Trash2 className="h-3.5 w-3.5" /></Btn>
           </div> },
-        ]} />
+        ]} /></>}
       </Card>
       <PagamentoModal c={pagar} fechar={() => setPagar(null)} />
       <NovaConta aberto={!!nova} tipoPadrao={nova ?? 'pagar'} fechar={() => setNova(null)} />

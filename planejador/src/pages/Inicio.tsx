@@ -16,19 +16,19 @@ export default function Inicio() {
   const [saldo, setSaldo] = useState('');
   const [mesAberto, setMesAberto] = useState<string | null>(null);
   const { dados } = useDados(async () => {
-    const [cfg, contas, sonhos] = await Promise.all([carregar.config(), carregar.pendentes(), carregar.sonhos()]);
-    return { cfg, contas, sonhos, p: projetar({ contas, sonhos, saldoAtual: Number(cfg?.saldo_atual ?? 0), hojeISO: hoje(), meses: 12 } as any) as any };
+    const [cx, contas, sonhos] = await Promise.all([carregar.caixa(), carregar.pendentes(), carregar.sonhos()]);
+    return { cfg: cx.cfg, caixa: cx, contas, sonhos, p: projetar({ contas, sonhos, saldoAtual: cx.saldo, hojeISO: hoje(), meses: 12 } as any) as any };
   }, []);
   if (!dados) return <Cabecalho titulo="Meu ano" sub="Carregando…" />;
-  const { cfg, contas, p } = dados;
+  const { cfg, caixa, contas, p } = dados;
   const vazio = !contas.length && !dados.sonhos.length;
   const serie = p.meses.map((m: any) => ({ mes: mesNome(m.mes), Entradas: m.receber, Saídas: m.pagar, Sonhos: m.sonhos, 'Saldo previsto': m.saldoAcumulado }));
 
   async function salvarSaldo() {
     const v = saldo.includes(',') ? Number(saldo.replace(/\./g, '').replace(',', '.')) : Number(saldo);
     if (isNaN(v)) { toast('Valor inválido', 'erro'); return; }
-    await supabase.from('plan_config').update({ saldo_atual: v, atualizado_em: new Date().toISOString() }).eq('user_id', cfg.user_id);
-    setEditSaldo(false); toast('Saldo atualizado.'); avisarMudanca();
+    await supabase.from('plan_config').update({ saldo_atual: v, saldo_em: new Date().toISOString(), atualizado_em: new Date().toISOString() }).eq('user_id', cfg.user_id);
+    setEditSaldo(false); toast('Caixa ajustado. A partir de agora, pagamentos e recebimentos atualizam sozinhos.'); avisarMudanca();
   }
   const contasMes = mesAberto ? contas.filter((c: any) => (c.vencimento.slice(0, 7) < hoje().slice(0, 7) ? hoje().slice(0, 7) : c.vencimento.slice(0, 7)) === mesAberto) : [];
 
@@ -37,16 +37,16 @@ export default function Inicio() {
       <Cabecalho titulo="Meu ano" sub={`Projeção de ${nomeMes(p.meses[0].mes)} a ${nomeMes(p.meses[11].mes)}`} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-slate-500">Dinheiro hoje<button onClick={() => { setSaldo(String(cfg?.saldo_atual ?? 0)); setEditSaldo(true); }} className="text-teal-700" aria-label="Editar"><Pencil className="h-3.5 w-3.5" /></button></div>
-          <div className="mt-1 text-xl font-bold tabular-nums sm:text-2xl">{brl(cfg?.saldo_atual)}</div>
-          <div className="text-xs text-slate-500">toque no lápis para ajustar</div>
+          <div className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-slate-500">Caixa hoje<button onClick={() => { setSaldo(String(caixa.saldo)); setEditSaldo(true); }} className="text-teal-700" aria-label="Editar"><Pencil className="h-3.5 w-3.5" /></button></div>
+          <div className={`mt-1 text-xl font-bold tabular-nums sm:text-2xl ${caixa.saldo < 0 ? 'text-rose-600' : ''}`}>{brl(caixa.saldo)}</div>
+          <a href="#/contas?aba=caixa" className="text-xs text-teal-700 underline">{caixa.movimentos.length ? `ver extrato (${caixa.movimentos.length})` : 'atualiza ao pagar/receber'}</a>
         </div>
         <Stat rotulo="Vai entrar (12 meses)" valor={brl(p.totais.receber)} tom="bom" />
         <Stat rotulo="Vai sair (12 meses)" valor={brl(p.totais.pagar)} tom="ruim" sub={p.totais.sonhos ? `+ ${brl(p.totais.sonhos)} para sonhos` : undefined} />
         <Stat rotulo="Saldo no fim" valor={brl(p.saldoFinal)} tom={p.saldoFinal >= 0 ? 'bom' : 'ruim'} sub={nomeMes(p.meses[11].mes)} />
       </div>
 
-      {vazio && <Aviso>👋 Para ver seu ano: 1) toque no lápis e diga quanto dinheiro tem hoje; 2) em <a className="font-semibold underline" href="#/contas">Contas</a> lance salário e contas fixas (marque “todo mês”); 3) em <a className="font-semibold underline" href="#/cartao">Cartão</a> envie o PDF da fatura; 4) crie seus <a className="font-semibold underline" href="#/sonhos">Sonhos</a>.</Aviso>}
+      {vazio && <Aviso>👋 Para ver seu ano: 1) toque no lápis e diga quanto dinheiro tem hoje (depois o caixa se atualiza sozinho); 2) em <a className="font-semibold underline" href="#/contas">Contas</a> lance salário e contas fixas (marque “todo mês”); 3) em <a className="font-semibold underline" href="#/cartao">Cartão</a> envie o PDF da fatura; 4) crie seus <a className="font-semibold underline" href="#/sonhos">Sonhos</a>.</Aviso>}
       {p.primeiroNegativo && <Aviso tipo="erro"><span className="flex items-start gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><span>Atenção: em <b>{nomeMes(p.primeiroNegativo)}</b> o dinheiro previsto fica <b>negativo</b>. Veja o mês abaixo e ajuste: adie um gasto, renegocie uma conta ou reduza o valor guardado para os sonhos naquele mês.</span></span></Aviso>}
 
       <Card titulo="Entradas, saídas e saldo previsto">
@@ -69,8 +69,8 @@ export default function Inicio() {
         ]} />
       </Card>
 
-      <Modal aberto={editSaldo} fechar={() => setEditSaldo(false)} titulo="Quanto dinheiro você tem hoje?">
-        <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">Some o que tem na conta, carteira e caixinhas de uso do dia a dia (o dinheiro dos sonhos fica separado, na tela Sonhos).</p>
+      <Modal aberto={editSaldo} fechar={() => setEditSaldo(false)} titulo="Ajustar o caixa">
+        <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">Quanto dinheiro você tem hoje para o dia a dia (conta + carteira)? O dinheiro dos sonhos fica separado. Depois disso, cada conta paga ou recebida, fatura do cartão e valor guardado nos sonhos atualiza o caixa sozinho. Use este ajuste só se o valor real ficar diferente.</p>
         <Input inputMode="decimal" value={saldo} onChange={(e) => setSaldo(e.target.value)} autoFocus />
         <div className="mt-4 flex justify-end gap-2"><Btn variante="secundario" onClick={() => setEditSaldo(false)}>Cancelar</Btn><Btn onClick={salvarSaldo}>Salvar</Btn></div>
       </Modal>

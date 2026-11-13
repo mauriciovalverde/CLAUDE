@@ -23,7 +23,7 @@ function SonhoModal({ s, fechar }: { s: any | null; fechar: () => void }) {
       const { data, error } = await supabase.from('plan_sonhos').insert(reg).select().single();
       if (error) { toast(error.message, 'erro'); return; }
       const g = valorBR(f.guardado || '0');
-      if (g > 0) await supabase.from('plan_sonho_movs').insert({ sonho_id: data.id, valor: g, forma: f.forma, obs: 'Valor que já tinha guardado' });
+      if (g > 0) await supabase.from('plan_sonho_movs').insert({ sonho_id: data.id, valor: g, forma: f.forma, obs: 'Valor que já tinha guardado', do_caixa: false });
     }
     toast('Sonho salvo ✨'); avisarMudanca(); fechar();
   }
@@ -52,13 +52,14 @@ function MovModal({ s, tipo, fechar }: { s: any | null; tipo: 'guardar' | 'retir
   const [forma, setForma] = useState('Poupança');
   const [data, setData] = useState(hoje());
   const [obs, setObs] = useState('');
-  useEffect(() => { if (s) { setValor(''); setObs(''); setData(hoje()); setForma(s.movs?.[0]?.forma ?? 'Poupança'); } }, [s?.id, tipo]);
+  const [doCaixa, setDoCaixa] = useState(true);
+  useEffect(() => { if (s) { setValor(''); setObs(''); setData(hoje()); setForma(s.movs?.[0]?.forma ?? 'Poupança'); setDoCaixa(true); } }, [s?.id, tipo]);
   if (!s) return null;
   async function salvar() {
     const v = valorBR(valor);
     if (!(v > 0)) { toast('Digite o valor.', 'erro'); return; }
     if (tipo === 'retirar' && v > s.guardado) { toast(`Só há ${brl(s.guardado)} guardados neste sonho.`, 'erro'); return; }
-    const { error } = await supabase.from('plan_sonho_movs').insert({ sonho_id: s.id, valor: tipo === 'guardar' ? v : -v, forma, data, obs: obs || null });
+    const { error } = await supabase.from('plan_sonho_movs').insert({ sonho_id: s.id, valor: tipo === 'guardar' ? v : -v, forma, data, obs: obs || null, do_caixa: doCaixa });
     if (error) { toast(error.message, 'erro'); return; }
     const novo = s.guardado + (tipo === 'guardar' ? v : -v);
     if (tipo === 'guardar' && novo >= s.valor_alvo) { await supabase.from('plan_sonhos').update({ concluido: true }).eq('id', s.id); toast(`🎉 Parabéns! Você chegou na meta de ${s.nome}!`); }
@@ -71,6 +72,7 @@ function MovModal({ s, tipo, fechar }: { s: any | null; tipo: 'guardar' | 'retir
         <Campo rotulo="Valor (R$)"><Input inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} autoFocus /></Campo>
         <Campo rotulo="Data"><Input type="date" value={data} onChange={(e) => setData(e.target.value)} /></Campo>
         <div className="col-span-2"><Campo rotulo={tipo === 'guardar' ? 'Onde guardou' : 'De onde saiu'}><Select value={forma} onChange={(e) => setForma(e.target.value)}>{FORMAS_SONHO.map((x) => <option key={x}>{x}</option>)}</Select></Campo></div>
+        <label className="col-span-2 flex items-start gap-2 text-sm"><input type="checkbox" className="mt-0.5" checked={doCaixa} onChange={(e) => setDoCaixa(e.target.checked)} />{tipo === 'guardar' ? 'Saiu do meu caixa (dinheiro do dia a dia)' : 'Voltou para o meu caixa'}<span className="text-xs text-slate-500">{tipo === 'guardar' ? ' · desmarque se veio de outro lugar (ex.: 13º direto na poupança)' : ''}</span></label>
         <div className="col-span-2"><Campo rotulo="Observação (opcional)"><Input value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Ex.: parcela 5 do consórcio" /></Campo></div>
       </div>
       <div className="mt-4 flex justify-end gap-2"><Btn variante="secundario" onClick={fechar}>Cancelar</Btn><Btn variante={tipo === 'retirar' ? 'perigo' : 'primario'} onClick={salvar}>{tipo === 'guardar' ? 'Guardar' : 'Retirar'}</Btn></div>

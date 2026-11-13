@@ -31,6 +31,17 @@ export const carregar = {
       return { ...x, movs, guardado: Math.round(movs.reduce((t, y) => t + Number(y.valor), 0) * 100) / 100 };
     });
   },
+  caixa: async () => {
+    const [cfg, pagas, movs, sonhos] = await Promise.all([
+      carregar.config(),
+      q<any[]>(supabase.from('plan_contas').select('*').is('excluido_em', null).eq('status', 'pago').not('pago_registrado_em', 'is', null)),
+      q<any[]>(supabase.from('plan_sonho_movs').select('*')),
+      q<any[]>(supabase.from('plan_sonhos').select('id,nome,emoji')),
+    ]);
+    // @ts-ignore módulo JS testado
+    const { calcularCaixa } = await import('./caixa.js');
+    return { cfg, ...(calcularCaixa(cfg, pagas, movs, Object.fromEntries(sonhos.map((s: any) => [s.id, s]))) as any) } as any;
+  },
   faturas: () => q<any[]>(supabase.from('plan_faturas').select('*, plan_fatura_itens(*)').order('vencimento', { ascending: false })),
 };
 
@@ -49,7 +60,7 @@ export async function criarConta(p: { tipo: string; descricao: string; categoria
     linhas.push({
       tipo: p.tipo, descricao: p.descricao.trim(), categoria: p.categoria, valor, vencimento: dt.toISOString().slice(0, 10),
       grupo_id: n > 1 ? grupo : null, parcela_num: p.repeticao === 'parcelada' ? k + 1 : null, parcela_total: p.repeticao === 'parcelada' ? n : null,
-      status: k === 0 && p.pago ? 'pago' : 'pendente', pago_em: k === 0 && p.pago ? new Date().toISOString().slice(0, 10) : null,
+      status: k === 0 && p.pago ? 'pago' : 'pendente', pago_em: k === 0 && p.pago ? new Date().toISOString().slice(0, 10) : null, pago_registrado_em: k === 0 && p.pago ? new Date().toISOString() : null,
     });
   }
   const { error } = await supabase.from('plan_contas').insert(linhas);

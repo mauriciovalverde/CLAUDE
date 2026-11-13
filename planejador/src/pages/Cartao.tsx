@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Camera, FileUp, Loader2, Sparkles, Trash2 } from 'lucide-react';
 import { lerImagensFatura } from '../lib/ocr';
+import { PagamentoModal } from '../components/Pagamento';
 import { funcao, supabase } from '../lib/supabase';
 import { carregar } from '../lib/dados';
 import { brl, dataBR, mesNome } from '../lib/fmt';
@@ -58,6 +59,10 @@ export default function Cartao() {
   const [importando, setImportando] = useState(false);
   const [ver, setVer] = useState<any>(null);
   const { dados: faturas } = useDados(carregar.faturas, []);
+  const { dados: contasFatura } = useDados(async () => (await supabase.from('plan_contas').select('*').is('excluido_em', null).eq('origem', 'fatura')).data ?? [], []);
+  const [pagar, setPagar] = useState<any>(null);
+  const contaDa = (f: any) => (contasFatura ?? []).find((c: any) => c.fatura_id === f.id);
+  const situacao = (f: any) => { const c = contaDa(f); if (!c) return null; if (c.status === 'pendente') return c.vencimento < new Date().toISOString().slice(0, 10) ? 'atrasada' : 'a pagar'; return /\(parcial/.test(c.descricao) ? 'paga em parte' : 'paga'; };
 
   async function montarRevisao(f: any, arquivo: string) {
     const { data: cfg } = await supabase.from('plan_config').select('cartoes').maybeSingle();
@@ -185,7 +190,10 @@ export default function Cartao() {
           { k: 'cartao', t: 'Cartão' }, { k: 'vencimento', t: 'Vencimento', r: (f) => dataBR(f.vencimento) },
           { k: 'itens', t: 'Compras', num: true, r: (f) => f.plan_fatura_itens?.length ?? 0 },
           { k: 'total', t: 'Total', num: true, r: (f) => <strong>{brl(f.total)}</strong> },
+          { k: 'sit', t: 'Situação', r: (f) => { const st = situacao(f); return st ? <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${st === 'paga' ? 'bg-emerald-100 text-emerald-800' : st === 'paga em parte' ? 'bg-sky-100 text-sky-800' : st === 'atrasada' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'}`}>{st}</span> : '—'; } },
+          { k: 'a', t: '', r: (f) => { const c = contaDa(f); return c?.status === 'pendente' ? <Btn variante="secundario" className="!px-2 !py-1 text-xs" onClick={(e) => { e.stopPropagation(); setPagar(c); }}>Paguei</Btn> : null; } },
         ]} />
+        <p className="mt-2 text-xs text-slate-500">A fatura é a mesma conta que aparece em Contas: pagar aqui ou lá dá no mesmo, e o valor sai do caixa.</p>
       </Card>
 
       <Modal aberto={!!rev} fechar={() => { setRev(null); setErro(''); }} titulo="Confira a fatura" largo>
@@ -237,6 +245,7 @@ export default function Cartao() {
         </div>}
       </Modal>
 
+      <PagamentoModal c={pagar} fechar={() => setPagar(null)} />
       <Modal aberto={!!ver} fechar={() => setVer(null)} titulo={ver ? `${ver.cartao} · vence ${dataBR(ver.vencimento)}` : ''} largo>
         {ver && <div className="space-y-3">
           <p className="text-lg font-bold">{brl(ver.total)}</p>
@@ -246,7 +255,7 @@ export default function Cartao() {
             { k: 'data', t: 'Data' }, { k: 'descricao', t: 'Compra', r: (i) => <span>{i.descricao}{i.parcela_total ? ` (${i.parcela_num}/${i.parcela_total})` : ''}</span> },
             { k: 'categoria', t: 'Categoria', esconderCelular: true, r: (i) => <span>{i.categoria}{i.portador ? <span className="text-slate-400"> · {i.portador}</span> : ''}</span> }, { k: 'valor', t: 'Valor', num: true, r: (i) => brl(i.valor) },
           ]} />
-          <div className="text-right"><Btn variante="fantasma" className="text-rose-600" onClick={() => excluirFatura(ver)}><Trash2 className="h-4 w-4" />Remover fatura</Btn></div>
+          <div className="flex justify-between">{contaDa(ver)?.status === 'pendente' ? <Btn onClick={() => { setPagar(contaDa(ver)); setVer(null); }}>Paguei (tudo ou parte)</Btn> : <span className="text-sm text-slate-500">{situacao(ver) ? `Situação: ${situacao(ver)}` : ''}</span>}<Btn variante="fantasma" className="text-rose-600" onClick={() => excluirFatura(ver)}><Trash2 className="h-4 w-4" />Remover fatura</Btn></div>
         </div>}
       </Modal>
     </div>
