@@ -281,3 +281,14 @@ begin
   ) into r;
   return r;
 end $$;
+
+-- compra cancelada: todas as contas dela (em aberto e já pagas) são canceladas, para não contar no caixa nem nas despesas
+create or replace function rest_compra_cancelada() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.status = 'cancelada' and old.status is distinct from 'cancelada' then
+    update rest_contas set status = 'cancelado' where compra_id = new.id and status <> 'cancelado';
+  end if;
+  return new;
+end $$;
+revoke execute on function rest_compra_cancelada() from public, anon, authenticated;
+create trigger rest_compras_cancela_contas after update of status on rest_compras for each row execute function rest_compra_cancelada();
