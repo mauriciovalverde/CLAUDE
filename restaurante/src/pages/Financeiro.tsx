@@ -122,7 +122,7 @@ function Fluxo() {
     const de = addMeses(inicioMes(), -5), ate = addMeses(inicioMes(), 4);
     const [vendas, contas, painel] = await Promise.all([
       q<any[]>(supabase.from('rest_vendas').select('data,liquido').gte('data', de)),
-      q<any[]>(supabase.from('rest_contas').select('tipo,valor,status,vencimento,pago_em,emissao,categoria,descricao').neq('status', 'cancelado').or(`vencimento.gte.${de},pago_em.gte.${de}`).lte('vencimento', ate)),
+      q<any[]>(supabase.from('rest_contas').select('tipo,valor,status,vencimento,pago_em,emissao,categoria,descricao').not('status', 'in', '(cancelado,historico)').or(`vencimento.gte.${de},pago_em.gte.${de}`).lte('vencimento', ate)),
       rpc('rest_painel', { p_de: inicioMes(), p_ate: hoje() }),
     ]);
     return { vendas, contas, painel };

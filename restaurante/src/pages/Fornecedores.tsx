@@ -84,7 +84,7 @@ function EditarFornecedor({ f, fechar }: { f: any; fechar: () => void }) {
 
 function VerFornecedor({ f, itens, fechar, editar }: { f: any; itens: any[]; fechar: () => void; editar: () => void }) {
   const { pode } = useEu();
-  const { dados: contas } = useDados(() => pode('admin') ? q<any[]>(supabase.from('rest_contas').select('valor,status,vencimento,pago_em').eq('fornecedor_id', f.id).neq('status', 'cancelado')) : Promise.resolve(null), [f.id]);
+  const { dados: contas } = useDados(() => pode('admin') ? q<any[]>(supabase.from('rest_contas').select('valor,status,vencimento,pago_em').eq('fornecedor_id', f.id).not('status', 'in', '(cancelado,historico)')) : Promise.resolve(null), [f.id]);
   const compras = useMemo(() => { const m = new Map<string, { numero: number; data: string; total: number }>(); for (const i of itens) { const c = m.get(i.compra_id) ?? { numero: i.compra_numero, data: i.data, total: 0 }; c.total += Number(i.valor_total); m.set(i.compra_id, c); } return [...m.values()].sort((a, b) => b.data.localeCompare(a.data)); }, [itens]);
   const produtos = useMemo(() => { const m = new Map<string, { produto: string; vezes: number; total: number; ultimo: number | null }>(); for (const i of itens) { const p = m.get(i.produto) ?? { produto: i.produto, vezes: 0, total: 0, ultimo: null }; p.vezes++; p.total += Number(i.valor_total); if (i.valor_unitario) p.ultimo = Number(i.valor_unitario); m.set(i.produto, p); } return [...m.values()].sort((a, b) => b.total - a.total); }, [itens]);
   const pend = (contas ?? []).filter((c) => c.status === 'pendente').reduce((t, c) => t + Number(c.valor), 0);

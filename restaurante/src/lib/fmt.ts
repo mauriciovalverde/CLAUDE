@@ -42,6 +42,7 @@ export const STATUS: Record<string, [string, keyof typeof SITUACAO_COR]> = {
   aberto: ['Aberto', 'info'], encerrado: ['Aguardando conferência', 'alerta'], devolvido: ['Devolvido p/ correção', 'atrasado'], conferido: ['Conferido', 'pago'],
   pendente: ['Pendente', 'pendente'], conferida: ['Conferida', 'pago'], descartada: ['Descartada', 'cancelado'], pago: ['Pago', 'pago'], cancelado: ['Cancelado', 'cancelado'],
   ativo: ['Ativo', 'ok'], inativo: ['Inativo', 'cancelado'],
+  historico: ['Histórico (fora dos valores)', 'cancelado'],
 };
 /** Rótulo curto para eixos de gráfico: 850 · 1,5k · 2,3mi */
 export const compacto = (v: number) => {
