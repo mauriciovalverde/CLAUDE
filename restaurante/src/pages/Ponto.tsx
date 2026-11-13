@@ -117,7 +117,7 @@ function Pendencias() {
               <div className="min-w-0 flex-1">
                 <b>{dados.nome[m.funcionario_id]}</b> · {NOMES_TIPO[m.tipo as keyof typeof NOMES_TIPO]} · <b>{dataBR(m.data_ref)} {horaLocal(m.horario)}</b>{m.previsto && <span className="text-slate-500"> (previsto {horaLocal(m.previsto)}, {m.diferenca_min > 0 ? '+' : ''}{m.diferenca_min} min)</span>}
                 <div className="text-amber-700 dark:text-amber-400">{textoMotivos(m.motivos)}</div>
-                <div className="text-xs text-slate-500">NSR {m.nsr} · {m.origem === 'contingencia' ? 'contingência' : 'app'}{m.horario_informado && ` · horário do aparelho ${horaLocal(m.horario_informado)}`}{m.face_distancia != null && ` · semelhança ${Math.round((1 - m.face_distancia) * 100)}%`}{m.distancia_m != null && ` · ${m.distancia_m} m do local`}</div>
+                <div className="text-xs text-slate-500">NSR {m.nsr} · {m.origem === 'contingencia' ? 'contingência' : 'app'}{m.horario_informado && ` · horário do aparelho ${horaLocal(m.horario_informado)}`}{m.face_distancia != null && ` · distância facial ${m.face_distancia.toFixed(2).replace(".", ",")} (confere até 0,50)`}{m.distancia_m != null && ` · ${m.distancia_m} m do local`}</div>
                 {m.endereco && <div className="truncate text-xs text-slate-500">{m.endereco}</div>}
                 {m.lat != null && <a className="inline-flex items-center gap-1 text-xs text-brand-700" target="_blank" rel="noreferrer" href={`https://www.openstreetmap.org/?mlat=${m.lat}&mlon=${m.lng}#map=18/${m.lat}/${m.lng}`}>Ver no mapa<ExternalLink className="h-3 w-3" /></a>}
                 {m.justificativa && <div className="mt-1 rounded-lg bg-slate-50 p-1.5 text-xs dark:bg-slate-800">Justificativa: {m.justificativa}</div>}

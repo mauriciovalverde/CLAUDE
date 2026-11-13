@@ -38,7 +38,13 @@ const gravarFila = (f: any[]) => { try { localStorage.setItem(FILA, JSON.stringi
 export const filaPendente = () => lerFila().length;
 const ehErroDeRede = (e: any) => /fetch|network|Failed to fetch|Load failed|internet/i.test(String(e?.message ?? e)) || !navigator.onLine;
 /** Envia o que ficou guardado sem internet. O servidor grava o horário dele e guarda o do aparelho como informação (sempre vai para análise). */
-export async function enviarFila(restId: string, funcId: string) {
+let enviandoFila: Promise<number> | null = null;
+export function enviarFila(restId: string, funcId: string) {
+  // uma remessa por vez: dois avisos de "voltou a internet" não podem enviar o mesmo registro duas vezes
+  enviandoFila ??= enviarFilaAgora(restId, funcId).finally(() => { enviandoFila = null; });
+  return enviandoFila;
+}
+async function enviarFilaAgora(restId: string, funcId: string) {
   const fila = lerFila(); if (!fila.length) return 0;
   let enviados = 0; const resto: any[] = [];
   for (const item of fila) {
@@ -136,7 +142,7 @@ export default function BaterPonto({ ctx, fechar, pronto }: { ctx: Ctx; fechar: 
       if (ehErroDeRede(e)) {
         // sem internet: guarda no aparelho e envia depois (contingência auditável)
         const selfie = foto ? await new Promise<string>((ok) => { const r = new FileReader(); r.onload = () => ok(r.result as string); r.readAsDataURL(foto); }) : null;
-        gravarFila([...lerFila(), { funcId: ctx.funcId, horario: new Date().toISOString(), p, selfie }]);
+        gravarFila([...lerFila(), { funcId: ctx.funcId, horario: new Date().toISOString(), p: { ...p, tipo: ctx.proximo.tipo }, selfie }]);
         pronto({ offline: true, tipo: ctx.proximo.tipo, horario_informado: new Date().toISOString() });
       } else setErro(e.message ?? String(e));
     } finally { setEnviando(false); }
@@ -156,7 +162,7 @@ export default function BaterPonto({ ctx, fechar, pronto }: { ctx: Ctx; fechar: 
         </div>
         <div className="space-y-1.5 rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
           {!contingencia && <Item ok={rosto.vivo} carregando={!rosto.vivo} texto={rosto.vivo ? 'Prova de vida confirmada' : 'Aguardando prova de vida'} />}
-          {!contingencia && !cadastro && rosto.vivo && <Item ok={faceOk} texto={faceOk ? 'Rosto confere' : 'Rosto não confere — vai para análise'} sub={rosto.dist != null ? `semelhança ${Math.max(0, Math.round((1 - rosto.dist) * 100))}%` : undefined} />}
+          {!contingencia && !cadastro && rosto.vivo && <Item ok={faceOk} texto={faceOk ? 'Rosto confere' : 'Rosto não confere — vai para análise'} sub={rosto.dist != null ? `distância facial ${rosto.dist.toFixed(2).replace(".", ",")} (confere até 0,50)` : undefined} />}
           {cadastro && !contingencia && <Item ok={rosto.vivo} texto="Primeiro acesso: esta foto vira o seu rosto de referência" />}
           <Item ok={gps ? dentro !== false : false} carregando={gps === undefined} texto={gps === undefined ? 'Buscando localização…' : gps === null ? 'Sem localização (GPS negado ou indisponível)' : dentro === false ? `Fora do local autorizado (${Math.round(perto!.d)} m de ${perto!.l.nome})` : dentro ? `No local: ${perto!.l.nome}` : 'Localização obtida'} sub={end || (lat != null ? `${lat.toFixed(5)}, ${lng!.toFixed(5)} · precisão ${Math.round(gps!.coords.accuracy)} m` : undefined)} />
           {ctx.proximo.dentroJanela === false && <Item ok={false} texto="Fora da janela de horário prevista" sub="O registro é aceito com o horário real e vai para análise (a lei não permite bloquear a marcação)." />}

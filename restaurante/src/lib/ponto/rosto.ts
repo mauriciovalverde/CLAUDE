@@ -12,7 +12,7 @@ export function carregarRosto() {
   carregando ??= (async () => {
     const m = await import('@vladmandic/face-api');
     const base = new URL('./modelos-face/', window.location.href).toString();
-    await Promise.all([m.nets.tinyFaceDetector.loadFromUri(base), m.nets.faceLandmark68TinyNet.loadFromUri(base), m.nets.faceRecognitionNet.loadFromUri(base)]);
+    await Promise.all([m.nets.tinyFaceDetector.loadFromUri(base), m.nets.faceLandmark68Net.loadFromUri(base), m.nets.faceRecognitionNet.loadFromUri(base)]);
     fa = m; return m;
   })();
   carregando.catch(() => { carregando = null; });
@@ -31,7 +31,7 @@ function ear(p: { x: number; y: number }[]) {
 /** Lê um quadro: rosto, descritor, abertura dos olhos e giro da cabeça. null = nenhum rosto. */
 export async function ler(fonte: HTMLVideoElement | HTMLCanvasElement | HTMLImageElement): Promise<Leitura> {
   const m = await carregarRosto();
-  const r = await m.detectSingleFace(fonte, new m.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 })).withFaceLandmarks(true).withFaceDescriptor();
+  const r = await m.detectSingleFace(fonte, new m.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 })).withFaceLandmarks().withFaceDescriptor();
   if (!r) return null;
   const p = r.landmarks.positions; const b = r.detection.box;
   const giro = (p[30].x - (b.x + b.width / 2)) / b.width; // nariz em relação ao centro do rosto

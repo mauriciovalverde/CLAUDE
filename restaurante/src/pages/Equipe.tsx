@@ -57,7 +57,7 @@ function EditarPessoa({ f, fechar }: { f: any; fechar: () => void }) {
   );
 }
 
-const TABELAS: Record<string, string> = { rest_contas: 'Conta', rest_compras: 'Compra', rest_fechamentos: 'Fechamento de caixa', rest_vendas: 'Venda', rest_notas: 'Nota fiscal', rest_estoque_movs: 'Estoque', rest_produtos: 'Produto', rest_fornecedores: 'Fornecedor', rest_funcionarios: 'Equipe', rest_restaurantes: 'Restaurante', rest_solicitacoes: 'Solicitação' };
+const TABELAS: Record<string, string> = { rest_ponto_marcacoes: 'Ponto: marcação', rest_ponto_ajustes: 'Ponto: correção', rest_ponto_ausencias: 'Ponto: ausência', rest_ponto_jornadas: 'Ponto: jornada', rest_ponto_fechamentos: 'Ponto: fechamento do mês', rest_func_ficha: 'Ficha do funcionário', rest_ponto_locais: 'Ponto: local', rest_ponto_folgas: 'Ponto: folga', rest_contas: 'Conta', rest_compras: 'Compra', rest_fechamentos: 'Fechamento de caixa', rest_vendas: 'Venda', rest_notas: 'Nota fiscal', rest_estoque_movs: 'Estoque', rest_produtos: 'Produto', rest_fornecedores: 'Fornecedor', rest_funcionarios: 'Equipe', rest_restaurantes: 'Restaurante', rest_solicitacoes: 'Solicitação' };
 function Auditoria() {
   const [t, setT] = useState('');
   const { dados } = useDados(() => { let x = supabase.from('rest_auditoria').select('*').order('em', { ascending: false }).limit(200); if (t) x = x.eq('tabela', t); return q<any[]>(x); }, [t]);

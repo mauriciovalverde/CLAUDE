@@ -218,12 +218,12 @@ function Historico({ f }: { f: any }) {
         <FotoPrivada caminho={m.selfie_path} className="h-14 w-14" />
         <div className="min-w-0 flex-1">
           <b>{dataBR(m.data_ref)} {horaLocal(m.horario)}</b> · {NOMES_TIPO[m.tipo as keyof typeof NOMES_TIPO]} <span className="text-xs text-slate-500">NSR {m.nsr} · {m.origem}</span>
-          <div className="text-xs text-slate-500">{m.endereco ?? (m.lat != null ? `${m.lat.toFixed(5)}, ${m.lng.toFixed(5)}` : 'sem localização')}{m.distancia_m != null && ` · ${m.distancia_m} m`}{m.motivos?.length ? ` · ${textoMotivos(m.motivos)}` : ''}</div>
+          <div className="text-xs text-slate-500">{m.origem === 'ajuste' ? 'Correção aprovada pelo administrador' : m.endereco ?? (m.lat != null ? `${m.lat.toFixed(5)}, ${m.lng.toFixed(5)}` : 'sem localização')}{m.distancia_m != null && ` · ${m.distancia_m} m`}{m.motivos?.length ? ` · ${textoMotivos(m.motivos)}` : ''}</div>
           {m.justificativa && <div className="text-xs">Justificativa: {m.justificativa}</div>}
           {m.obs_analise && <div className="text-xs text-slate-500">Análise: {m.obs_analise} ({dataHora(m.analisado_em)})</div>}
           {m.substituida_por && <div className="text-xs text-amber-700">Substituída por correção aprovada (original preservado)</div>}
         </div>
-        <CorDia cor={m.situacao === 'aprovado' ? 'verde' : m.situacao === 'pendente' ? 'amarelo' : 'vermelho'}>{m.situacao}</CorDia>
+        <div className="shrink-0 self-start"><CorDia cor={m.situacao === 'aprovado' ? 'verde' : m.situacao === 'pendente' ? 'amarelo' : 'vermelho'}>{m.substituida_por ? 'Substituída' : m.situacao === 'aprovado' ? 'Aprovada' : m.situacao === 'pendente' ? 'Em análise' : 'Rejeitada'}</CorDia></div>
       </div>))}</div>
   );
 }

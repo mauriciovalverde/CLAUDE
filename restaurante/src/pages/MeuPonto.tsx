@@ -87,7 +87,7 @@ export default function MeuPonto() {
             <Clock className="h-4 w-4 text-slate-400" />
             <div className="flex-1"><b>{NOMES_TIPO[m.tipo as keyof typeof NOMES_TIPO]}</b> às <b className="tabular-nums">{horaLocal(m.horario)}</b>{m.origem === 'ajuste' && ' (correção aprovada)'}{m.substituida_por && ' (substituída)'}
               <div className="text-xs text-slate-500">NSR {m.nsr}{m.motivos?.length ? ' · ' + textoMotivos(m.motivos) : ''}</div></div>
-            <CorDia cor={m.situacao === 'aprovado' ? 'verde' : m.situacao === 'pendente' ? 'amarelo' : 'vermelho'}>{m.situacao === 'aprovado' ? 'Aprovada' : m.situacao === 'pendente' ? 'Em análise' : 'Rejeitada'}</CorDia>
+            <div className="shrink-0"><CorDia cor={m.substituida_por ? 'cinza' : m.situacao === 'aprovado' ? 'verde' : m.situacao === 'pendente' ? 'amarelo' : 'vermelho'}>{m.substituida_por ? 'Substituída' : m.situacao === 'aprovado' ? 'Aprovada' : m.situacao === 'pendente' ? 'Em análise' : 'Rejeitada'}</CorDia></div>
           </div>))}</div>}
       </Card>
 
