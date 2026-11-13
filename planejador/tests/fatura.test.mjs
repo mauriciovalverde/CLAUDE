@@ -86,3 +86,25 @@ test('fatura de um cartão só não cria divisão', async () => {
   const f = lerFatura(await linhasDoPdf(new URL('./nubank.pdf', import.meta.url)));
   assert.equal(f.cartoes.length, 1);
 });
+
+test('caixa integrado: contas, fatura parcial e sonhos', async () => {
+  const { calcularCaixa } = await import('../src/lib/caixa.js');
+  const cfg = { saldo_atual: 2000, saldo_em: '2026-11-10T12:00:00Z' };
+  const contas = [
+    { id: 1, tipo: 'receber', valor: 5000, status: 'pago', pago_em: '2026-11-11', pago_registrado_em: '2026-11-11T10:00:00Z', descricao: 'Salário' },
+    { id: 2, tipo: 'pagar', valor: 1000, status: 'pago', pago_em: '2026-11-12', pago_registrado_em: '2026-11-12T10:00:00Z', descricao: 'Fatura Nubank (parcial)', origem: 'fatura' },
+    { id: 3, tipo: 'pagar', valor: 300, status: 'pago', pago_em: '2026-11-01', pago_registrado_em: '2026-11-01T10:00:00Z', descricao: 'Antes do saldo informado' },
+    { id: 4, tipo: 'pagar', valor: 999, status: 'pendente', descricao: 'Pendente não mexe no caixa' },
+  ];
+  const movs = [
+    { id: 'a', sonho_id: 's1', valor: 500, forma: 'Poupança', do_caixa: true, criado_em: '2026-11-12T11:00:00Z', data: '2026-11-12' },
+    { id: 'b', sonho_id: 's1', valor: 600, forma: 'Poupança', do_caixa: false, criado_em: '2026-11-12T11:00:00Z', data: '2026-11-12' },
+    { id: 'c', sonho_id: 's1', valor: -200, forma: 'Poupança', do_caixa: true, criado_em: '2026-11-12T12:00:00Z', data: '2026-11-12' },
+  ];
+  const c = calcularCaixa(cfg, contas, movs, { s1: { nome: 'Viagem', emoji: '✈️' } });
+  assert.equal(c.saldo, 5700); // 2000 + 5000 - 1000 - 500 + 200
+  assert.equal(c.movimentos.length, 4);
+  assert.equal(c.movimentos[0].saldoApos, 5700);
+  assert.equal(c.movimentos[c.movimentos.length - 1].saldoApos, 7000);
+  assert.deepEqual([c.entradas, c.saidas], [5200, 1500]);
+});
