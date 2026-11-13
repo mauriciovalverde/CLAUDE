@@ -76,10 +76,14 @@ const REGRAS = [
   ['mercearia', /OLEO|VINAGRE|FARINHA|ACUCAR|\bSAL\b|MOLHO|EXTRATO|KETCHUP|MAIONESE|MOSTARDA|MASSA|MACARRAO|\bMAC\b|MIOJO|LASANHA|CAFE|ERVILHA|MILHO|SARDINHA|ATUM|CHAMPIGNON|COCO|CONDENSADO|CORANTE|AROMA|CHOCOLATE|FOUNDANT|FONDANT|MOLEQUE|UVA PASSA|AMEIXA SECA|AZEITE|AZEITONA|PALMITO|CALDO|FERMENTO|GELATINA|AMIDO|MAIZENA|BATATA PALITO|BATATA PALHA|BATATA FRITA|\bOVO\b|ACHOCOLATADO|DOCE|\bMEL\b|TOMATE PELADO|CONSERVA|ROSCA|PASTEL|SOJA|PROTEINA|BARBECUE|KIBE|ERVA DOCE/],
 ];
 
-/** Sugere a categoria a partir do nome. Retorna 'outros' quando não reconhece. */
+/**
+ * Sugere a categoria a partir do nome. Retorna 'outros' quando não reconhece.
+ * @param {string} nome
+ * @returns {string}
+ */
 export function categorizar(nome) {
   const k = chaveProduto(nome);
-  for (const [cat, re] of REGRAS) if (re.test(k)) return cat;
+  for (const [cat, re] of REGRAS) if (/** @type {RegExp} */ (re).test(k)) return String(cat);
   return 'outros';
 }
 

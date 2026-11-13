@@ -1,0 +1,19 @@
+@import 'tailwindcss';
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  /* cores da marca (logo Cantinho do Sabor): vermelho e laranja */
+  --color-brand-50: #fdf2f2; --color-brand-100: #fbe2e2; --color-brand-200: #f6c4c5; --color-brand-300: #ee9a9c;
+  --color-brand-400: #e0646a; --color-brand-500: #cc3a40; --color-brand-600: #b8242a; --color-brand-700: #a3141b;
+  --color-brand-800: #861016; --color-brand-900: #6d1015; --color-brand-950: #3d0609;
+  --color-laranja: #f79f31;
+}
+
+:root { color-scheme: light; }
+html.dark { color-scheme: dark; }
+body { @apply bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100; font-feature-settings: 'cv11', 'ss01'; }
+.tabular-nums { font-variant-numeric: tabular-nums; }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+.recharts-text { font-size: 11px; }
+.recharts-cartesian-axis-tick-value { fill: #64748b; }
