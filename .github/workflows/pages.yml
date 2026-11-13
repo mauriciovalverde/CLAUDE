@@ -37,6 +37,10 @@ jobs:
       - run: npm ci && npm run build
         working-directory: planejador
       - run: cp -r planejador/dist dist/planejador
+      # Restaurante Inteligente (app separado, publicado em /<repo>/restaurante/)
+      - run: npm ci && npm run build
+        working-directory: restaurante
+      - run: cp -r restaurante/dist dist/restaurante
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

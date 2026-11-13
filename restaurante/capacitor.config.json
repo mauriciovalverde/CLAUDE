@@ -1,0 +1,7 @@
+{
+  "appId": "app.restauranteinteligente.gestao",
+  "appName": "Restaurante",
+  "webDir": "dist",
+  "android": { "allowMixedContent": false },
+  "server": { "androidScheme": "https" }
+}
