@@ -27,6 +27,8 @@ const paginas: Record<string, React.LazyExoticComponent<React.ComponentType<any>
   equipe: lazy(() => import('./pages/Equipe')),
   configuracoes: lazy(() => import('./pages/Configuracoes')),
   ajuda: lazy(() => import('./pages/Ajuda')),
+  'meu-ponto': lazy(() => import('./pages/MeuPonto')),
+  ponto: lazy(() => import('./pages/Ponto')),
 };
 
 export function useRota() {

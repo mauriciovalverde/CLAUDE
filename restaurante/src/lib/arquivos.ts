@@ -30,3 +30,22 @@ export async function linkArquivo(caminho: string) {
   if (error) throw new Error(error.message);
   return data.signedUrl;
 }
+
+// Balde separado para dados sensíveis do ponto (selfies, foto da ficha, atestados): o empregado só acessa a própria pasta.
+export const BALDE_PRIVADO = 'rest-privado';
+export async function enviarPrivado(restauranteId: string, funcionarioId: string, pasta: string, arq: File | Blob, nome = 'arquivo.jpg') {
+  const blob = arq instanceof File ? await comprimir(arq) : arq;
+  const ext = blob.type === 'image/jpeg' ? 'jpg' : blob.type === 'application/pdf' ? 'pdf' : (nome.split('.').pop() || 'bin').toLowerCase();
+  const caminho = `${restauranteId}/${funcionarioId}/${pasta}/${new Date().toISOString().slice(0, 10)}-${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from(BALDE_PRIVADO).upload(caminho, blob, { contentType: blob.type || 'application/octet-stream', upsert: false });
+  if (error) throw new Error('Não consegui enviar o arquivo: ' + error.message);
+  return caminho;
+}
+const cacheLinks = new Map<string, { url: string; ate: number }>();
+export async function linkPrivado(caminho: string) {
+  const c = cacheLinks.get(caminho); if (c && c.ate > Date.now()) return c.url;
+  const { data, error } = await supabase.storage.from(BALDE_PRIVADO).createSignedUrl(caminho, 3600);
+  if (error) throw new Error(error.message);
+  cacheLinks.set(caminho, { url: data.signedUrl, ate: Date.now() + 50 * 60000 });
+  return data.signedUrl;
+}
