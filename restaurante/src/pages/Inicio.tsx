@@ -24,10 +24,10 @@ export default function Inicio() {
       r.estoque = (data ?? []).filter((p) => Number(p.estoque_atual) <= Number(p.estoque_minimo)).length;
     }
     if (pode('admin')) {
-      add('fechamento', contar('rest_fechamentos', (x) => x.eq('status', 'encerrado')));
+      add('caixa', contar('rest_fechamentos', (x) => x.eq('status', 'encerrado')));
       add('financeiro', contar('rest_contas', (x) => x.eq('status', 'pendente').eq('tipo', 'pagar').lte('vencimento', hoje())));
     } else if (pode('caixa')) {
-      add('fechamento', contar('rest_fechamentos', (x) => x.eq('operador_id', eu.id).in('status', ['aberto', 'devolvido'])));
+      add('caixa', contar('rest_fechamentos', (x) => x.eq('operador_id', eu.id).in('status', ['aberto', 'devolvido'])));
     }
     tarefas.push(meusComunicados(eu.id).then((l) => { const c = contadores(l); r.comunicados = c.pendentes; r._urg = c.urgentes; r._conf = c.confirmadas; r._prazo = c.prazoProximo; r._venc = c.vencidas; }).catch(() => {}));
     add('pedir', contar('rest_solicitacoes', (x) => x.eq('solicitante_id', eu.id).eq('status', 'em_elaboracao')));

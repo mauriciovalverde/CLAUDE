@@ -9,7 +9,7 @@ export const MODULOS: { id: string; t: string; i: any; cor: string; tinta: strin
   { id: 'compras', t: 'Compras', i: ShoppingBasket, cor: 'bg-[#EADFC9]', tinta: 'text-[#5B4A2E]', papeis: ['compras'], desc: 'Registrar e receber' },
   { id: 'solicitacoes', t: 'Solicitações', i: ClipboardList, cor: 'bg-[#D3E7CC]', tinta: 'text-[#35552E]', papeis: ['compras'], desc: 'Aprovar pedidos' },
   { id: 'fornecedores', t: 'Fornecedores', i: UsersRound, cor: 'bg-[#CDF3E3]', tinta: 'text-[#22604A]', papeis: ['compras'], desc: 'Cadastro e preços' },
-  { id: 'fechamento', t: 'Fechamento', i: Calculator, cor: 'bg-[#F3D0EC]', tinta: 'text-[#6E3463]', papeis: ['caixa'], desc: 'Caixa do turno' },
+  { id: 'caixa', t: 'Caixa', i: Calculator, cor: 'bg-[#F3D0EC]', tinta: 'text-[#6E3463]', papeis: ['caixa'], desc: 'Abrir e fechar o caixa' },
   { id: 'notas', t: 'Notas fiscais', i: FileText, cor: 'bg-[#E8C9BC]', tinta: 'text-[#6B3E2C]', papeis: ['compras'], desc: 'Foto e conferência' },
   { id: 'estoque', t: 'Estoque', i: Box, cor: 'bg-[#FDE3C3]', tinta: 'text-[#7A4A17]', papeis: ['estoque', 'compras'], desc: 'Saldo e inventário' },
   { id: 'dashboard', t: 'Dashboard', i: BarChart3, cor: 'bg-[#E9DBF5]', tinta: 'text-[#5A3F78]', papeis: ['admin'], desc: 'Visão do restaurante' },
