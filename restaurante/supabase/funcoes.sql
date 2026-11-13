@@ -287,6 +287,10 @@ create or replace function rest_compra_cancelada() returns trigger language plpg
 begin
   if new.status = 'cancelada' and old.status is distinct from 'cancelada' then
     update rest_contas set status = 'cancelado' where compra_id = new.id and status <> 'cancelado';
+    -- estorna no estoque o que essa compra deu entrada
+    insert into rest_estoque_movs(restaurante_id, produto_id, tipo, quantidade, motivo)
+    select m.restaurante_id, m.produto_id, 'ajuste', -sum(m.quantidade), 'Estorno da entrada da compra #' || new.numero || ' (cancelada)'
+      from rest_estoque_movs m where m.compra_id = new.id and m.tipo = 'entrada' group by m.restaurante_id, m.produto_id having sum(m.quantidade) <> 0;
   end if;
   return new;
 end $$;

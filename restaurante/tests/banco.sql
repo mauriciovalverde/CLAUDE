@@ -164,4 +164,5 @@ reset role;
 create temp table t_cc as select c.compra_id from rest_contas c join rest_compras p on p.id = c.compra_id where c.status = 'pago' and p.status <> 'cancelada' limit 1;
 update rest_compras set status = 'cancelada' where id = (select compra_id from t_cc);
 select t_ok((select bool_and(status = 'cancelado') from rest_contas where compra_id = (select compra_id from t_cc)), 'compra cancelada cancela também a conta já paga');
+select t_ok(coalesce((select sum(quantidade) from rest_estoque_movs where compra_id = (select compra_id from t_cc) and tipo = 'entrada'), 0) = -coalesce((select sum(quantidade) from rest_estoque_movs where motivo like 'Estorno da entrada da compra #%'), 0), 'compra cancelada estorna o estoque');
 \echo TODOS OS TESTES DO BANCO PASSARAM
