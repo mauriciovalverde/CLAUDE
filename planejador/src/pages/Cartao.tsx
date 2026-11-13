@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { FileUp, Loader2, Sparkles, Trash2 } from 'lucide-react';
+import { Camera, FileUp, Loader2, Sparkles, Trash2 } from 'lucide-react';
+import { lerImagensFatura } from '../lib/ocr';
 import { funcao, supabase } from '../lib/supabase';
 import { carregar } from '../lib/dados';
 import { brl, dataBR, mesNome } from '../lib/fmt';
@@ -11,7 +12,9 @@ import { Aviso, avisarMudanca, Btn, Cabecalho, Campo, Card, Input, Modal, Tabela
 
 const CORES = ['#0F766E', '#0EA5E9', '#F59E0B', '#8B5CF6', '#EF4444', '#10B981', '#64748B', '#EC4899', '#84CC16', '#F97316', '#14B8A6'];
 const valorBR = (s: string) => (String(s).includes(',') ? Number(String(s).replace(/\./g, '').replace(',', '.')) : Number(s));
-type Item = { data: string; descricao: string; valor: number; parcela_num: number | null; parcela_total: number | null; categoria: string; usar: boolean };
+type Item = { data: string; descricao: string; valor: number; parcela_num: number | null; parcela_total: number | null; categoria: string; usar: boolean; portador?: string | null };
+type CartaoSec = { id: string; nome: string; total: number; qtd: number; adicional: boolean; apelido: string; incluir: boolean };
+const rotulo = (c: CartaoSec) => c.apelido || c.nome || (c.id === 'principal' ? 'Cartão principal' : `Final ${c.id}`);
 
 /** Parcelas futuras agrupadas por mês (a partir do mês seguinte ao vencimento). */
 function futuras(itens: Item[], vencimento: string) {
@@ -48,17 +51,47 @@ export default function Cartao() {
   const [erro, setErro] = useState('');
   const [precisaSenha, setPrecisaSenha] = useState<File | null>(null);
   const [senha, setSenha] = useState('');
-  const [rev, setRev] = useState<null | { cartao: string; vencimento: string; total: string; itens: Item[]; arquivo: string; texto: string; viaIA?: boolean }>(null);
+  const [rev, setRev] = useState<null | { cartao: string; vencimento: string; total: string; totalCabecalho: number | null; itens: Item[]; cartoes: CartaoSec[]; arquivo: string; texto: string; viaIA?: boolean; viaFoto?: boolean }>(null);
+  const fotoRef = useRef<HTMLInputElement>(null);
+  const [progresso, setProgresso] = useState<{ p: number; msg: string } | null>(null);
   const [importando, setImportando] = useState(false);
   const [ver, setVer] = useState<any>(null);
   const { dados: faturas } = useDados(carregar.faturas, []);
+
+  async function montarRevisao(f: any, arquivo: string) {
+    const { data: cfg } = await supabase.from('plan_config').select('cartoes').maybeSingle();
+    const memo = (cfg?.cartoes ?? {}) as Record<string, { apelido?: string; incluir?: boolean }>;
+    const cartoes: CartaoSec[] = (f.cartoes ?? []).map((c: any) => ({ ...c, apelido: memo[c.id]?.apelido ?? '', incluir: memo[c.id]?.incluir ?? true }));
+    const fora = new Set(cartoes.filter((c) => !c.incluir).map((c) => c.id));
+    const itens = f.itens.map((i: any) => ({ ...i, usar: !fora.has(i.portador ?? 'principal') }));
+    const totalCab = f.total ?? null;
+    const soma = Math.round(itens.filter((i: Item) => i.usar).reduce((t: number, i: Item) => t + i.valor, 0) * 100) / 100;
+    setRev({ cartao: f.banco ?? 'Cartão', vencimento: f.vencimento ?? '', total: String(fora.size ? soma : (totalCab ?? soma)), totalCabecalho: totalCab, itens, cartoes, arquivo, texto: f.linhas.join('\n'), viaFoto: !!f.viaFoto });
+  }
+
+  async function lerFotos(arqs: File[]) {
+    setLendo(true); setErro(''); setProgresso({ p: 0, msg: 'Começando…' });
+    try { await montarRevisao(await lerImagensFatura(arqs, (p, msg) => setProgresso({ p, msg })), arqs.map((a) => a.name).join(', ')); }
+    catch (e: any) { setErro(e.message ?? 'Falha ao ler a imagem.'); }
+    finally { setLendo(false); setProgresso(null); if (fotoRef.current) fotoRef.current.value = ''; }
+  }
+
+  /** Marca/desmarca um cartão inteiro (ex.: só o meu, sem o da esposa) e recalcula o total. */
+  function alternarCartao(id: string, incluir: boolean) {
+    if (!rev) return;
+    const cartoes = rev.cartoes.map((c) => c.id === id ? { ...c, incluir } : c);
+    const itens = rev.itens.map((i) => (i.portador ?? 'principal') === id ? { ...i, usar: incluir } : i);
+    const todos = cartoes.every((c) => c.incluir);
+    const soma = Math.round(itens.filter((i) => i.usar).reduce((t, i) => t + i.valor, 0) * 100) / 100;
+    setRev({ ...rev, cartoes, itens, total: String(todos && rev.totalCabecalho ? rev.totalCabecalho : soma) });
+  }
 
   async function ler(arq: File, s?: string) {
     setLendo(true); setErro('');
     try {
       const f: any = await lerPdfFatura(arq, s);
       setPrecisaSenha(null); setSenha('');
-      setRev({ cartao: f.banco ?? 'Cartão', vencimento: f.vencimento ?? '', total: String(f.total ?? f.soma ?? ''), itens: f.itens.map((i: any) => ({ ...i, usar: true })), arquivo: arq.name, texto: f.linhas.join('\n') });
+      await montarRevisao(f, arq.name);
     } catch (e: any) {
       if (e.senha) setPrecisaSenha(arq); setErro(e.message);
     } finally { setLendo(false); if (arquivoRef.current) arquivoRef.current.value = ''; }
@@ -68,7 +101,7 @@ export default function Cartao() {
     if (!rev) return; setLendo(true); setErro('');
     try {
       const f = await lerComIA(rev.texto);
-      setRev({ ...rev, cartao: f.banco ?? rev.cartao, vencimento: f.vencimento ?? rev.vencimento, total: String(f.total ?? rev.total), itens: f.itens.map((i: any) => ({ ...i, usar: true })), viaIA: true });
+      setRev({ ...rev, cartao: f.banco ?? rev.cartao, vencimento: f.vencimento ?? rev.vencimento, total: String(f.total ?? rev.total), totalCabecalho: f.total ?? rev.totalCabecalho, itens: f.itens.map((i: any) => ({ ...i, usar: true, portador: null })), cartoes: [], viaIA: true });
       toast('Fatura lida pela IA. Confira com atenção antes de importar.', 'info');
     } catch (e: any) { setErro('Leitura pela IA falhou: ' + e.message); } finally { setLendo(false); }
   }
@@ -86,15 +119,24 @@ export default function Cartao() {
         if (!confirm('Esta fatura já foi importada. Substituir pela nova leitura?')) { setImportando(false); return; }
         await supabase.from('plan_faturas').delete().eq('id', existente.id);
       }
+      const varios = rev.cartoes.length > 1;
+      const escolhidos = rev.cartoes.filter((c) => c.incluir);
+      const sufixo = varios && escolhidos.length < rev.cartoes.length ? ` (${escolhidos.map(rotulo).join(', ')})` : '';
+      if (varios) {
+        const memo: Record<string, any> = {};
+        rev.cartoes.forEach((c) => { memo[c.id] = { apelido: c.apelido || undefined, incluir: c.incluir }; });
+        const { data: cfgAtual } = await supabase.from('plan_config').select('cartoes').maybeSingle();
+        await supabase.from('plan_config').update({ cartoes: { ...(cfgAtual?.cartoes ?? {}), ...memo } }).eq('user_id', user!.id);
+      }
       const { data: fat, error } = await supabase.from('plan_faturas').insert({ cartao, vencimento: venc, total, arquivo_nome: rev.arquivo }).select().single();
       if (error) throw error;
-      await supabase.from('plan_fatura_itens').insert(rev.itens.filter((i) => i.usar).map((i) => ({ fatura_id: fat.id, data: i.data, descricao: i.descricao, valor: i.valor, parcela_num: i.parcela_num, parcela_total: i.parcela_total, categoria: i.categoria })));
+      await supabase.from('plan_fatura_itens').insert(rev.itens.filter((i) => i.usar).map((i) => ({ fatura_id: fat.id, data: i.data, descricao: i.descricao, valor: i.valor, parcela_num: i.parcela_num, parcela_total: i.parcela_total, categoria: i.categoria, portador: i.portador ? rotulo(rev.cartoes.find((c) => c.id === i.portador) ?? ({ id: i.portador } as CartaoSec)) : null })));
       // previsões antigas (de faturas anteriores) a partir deste mês são substituídas por esta fatura, mais recente
       const { data: anteriores } = await supabase.from('plan_faturas').select('id').eq('cartao', cartao).lt('vencimento', venc);
       if (anteriores?.length) await supabase.from('plan_contas').update({ excluido_em: new Date().toISOString() }).eq('origem', 'fatura_parcela').eq('status', 'pendente').gte('vencimento', venc.slice(0, 7) + '-01').in('fatura_id', anteriores.map((a) => a.id));
-      const linhas: any[] = [{ tipo: 'pagar', descricao: `Fatura ${cartao}`, categoria: 'Cartão de crédito', valor: total, vencimento: venc, origem: 'fatura', fatura_id: fat.id, cartao }];
+      const linhas: any[] = [{ tipo: 'pagar', descricao: `Fatura ${cartao}${sufixo}`, categoria: 'Cartão de crédito', valor: total, vencimento: venc, origem: 'fatura', fatura_id: fat.id, cartao }];
       const temMaisNova = (faturas ?? []).some((f) => f.cartao === cartao && f.vencimento > venc);
-      if (!temMaisNova) for (const p of futuras(rev.itens, venc)) linhas.push({ tipo: 'pagar', descricao: `Parcelas já compradas no ${cartao} (${p.qtd})`, categoria: 'Cartão de crédito', valor: p.total, vencimento: p.venc, origem: 'fatura_parcela', fatura_id: fat.id, cartao });
+      if (!temMaisNova) for (const p of futuras(rev.itens, venc)) linhas.push({ tipo: 'pagar', descricao: `Parcelas já compradas no ${cartao}${sufixo} (${p.qtd})`, categoria: 'Cartão de crédito', valor: p.total, vencimento: p.venc, origem: 'fatura_parcela', fatura_id: fat.id, cartao });
       const { error: e2 } = await supabase.from('plan_contas').insert(linhas.map((l) => ({ ...l, user_id: user!.id })));
       if (e2) throw e2;
       toast(`Fatura importada: ${brl(total)}${linhas.length > 1 ? ` + parcelas previstas em ${linhas.length - 1} mês(es)` : ''}.`);
@@ -113,7 +155,7 @@ export default function Cartao() {
 
   return (
     <div className="space-y-4">
-      <Cabecalho titulo="Cartão de crédito" sub="Envie o PDF da fatura: o app lê as compras e prevê as parcelas dos próximos meses" />
+      <Cabecalho titulo="Cartão de crédito" sub="Envie o PDF ou uma foto da fatura: o app lê as compras, separa os cartões e prevê as parcelas" />
       <Card>
         <input ref={arquivoRef} type="file" accept="application/pdf,.pdf" className="hidden" onChange={(e) => e.target.files?.[0] && ler(e.target.files[0])} />
         <button onClick={() => arquivoRef.current?.click()} disabled={lendo} className="flex w-full flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-teal-600/50 p-6 text-teal-800 hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-950/30">
@@ -121,6 +163,12 @@ export default function Cartao() {
           <span className="font-semibold">{lendo ? 'Lendo a fatura…' : 'Escolher PDF da fatura'}</span>
           <span className="text-xs text-slate-500">Baixe a fatura em PDF no app do seu banco. O arquivo é lido no seu celular e não é enviado para ninguém.</span>
         </button>
+        <input ref={fotoRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => e.target.files?.length && lerFotos([...e.target.files])} />
+        <button onClick={() => fotoRef.current?.click()} disabled={lendo} className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white p-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+          <Camera className="h-5 w-5 text-teal-700" />Enviar foto ou print da fatura
+        </button>
+        <p className="mt-1 text-center text-[11px] text-slate-500">Pode escolher várias imagens (uma por página). Foto reta, com boa luz e sem cortar os valores.</p>
+        {progresso && <div className="mt-3"><div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800"><div className="h-full bg-teal-600 transition-all" style={{ width: `${progresso.p}%` }} /></div><p className="mt-1 text-xs text-slate-500">{progresso.msg}</p></div>}
         {precisaSenha && <div className="mt-3 flex gap-2"><Input type="password" placeholder="Senha do PDF" value={senha} onChange={(e) => setSenha(e.target.value)} /><Btn onClick={() => ler(precisaSenha, senha)} carregando={lendo}>Abrir</Btn></div>}
         {erro && !rev && <div className="mt-3"><Aviso tipo="erro">{erro}</Aviso></div>}
       </Card>
@@ -136,6 +184,20 @@ export default function Cartao() {
       <Modal aberto={!!rev} fechar={() => { setRev(null); setErro(''); }} titulo="Confira a fatura" largo>
         {rev && <div className="space-y-3">
           {rev.viaIA && <Aviso tipo="alerta">Lida pela IA: confira valores e parcelas com atenção.</Aviso>}
+          {rev.viaFoto && <Aviso tipo="alerta">Lida a partir de imagem: confira os valores, a leitura de foto pode trocar algum número.</Aviso>}
+          {rev.cartoes.length > 1 && <div className="rounded-xl border border-teal-200 bg-teal-50/60 p-3 dark:border-teal-900 dark:bg-teal-950/30">
+            <p className="mb-2 text-sm font-semibold">Esta fatura tem {rev.cartoes.length} cartões. Marque o que deve entrar:</p>
+            <div className="space-y-2">{rev.cartoes.map((c) => (
+              <div key={c.id} className={`flex flex-wrap items-center gap-2 rounded-lg bg-white p-2 dark:bg-slate-900 ${c.incluir ? '' : 'opacity-50'}`}>
+                <input type="checkbox" className="h-5 w-5" checked={c.incluir} onChange={(e) => alternarCartao(c.id, e.target.checked)} />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium">{c.id === 'principal' ? 'Sem identificação' : `Final ${c.id}`}{c.adicional && <span className="ml-1 rounded bg-slate-100 px-1.5 text-[10px] dark:bg-slate-800">adicional</span>}{c.nome && <span className="text-slate-500"> · {c.nome}</span>}</div>
+                  <input className="mt-1 w-full rounded-md border border-slate-200 px-2 py-1 text-xs dark:border-slate-700 dark:bg-slate-950" placeholder="Apelido (ex.: Eu, Esposa)" value={c.apelido} onChange={(e) => setRev({ ...rev, cartoes: rev.cartoes.map((x) => x.id === c.id ? { ...x, apelido: e.target.value } : x) })} />
+                </div>
+                <div className="text-right"><div className="font-bold tabular-nums">{brl(c.total)}</div><div className="text-[11px] text-slate-500">{c.qtd} compra(s)</div></div>
+              </div>))}</div>
+            <p className="mt-2 text-[11px] text-slate-500">O app lembra a sua escolha e os apelidos nas próximas faturas.</p>
+          </div>}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Campo rotulo="Cartão"><Input value={rev.cartao} onChange={(e) => setRev({ ...rev, cartao: e.target.value })} /></Campo>
             <Campo rotulo="Vencimento"><Input type="date" value={rev.vencimento} onChange={(e) => setRev({ ...rev, vencimento: e.target.value })} /></Campo>
@@ -147,7 +209,7 @@ export default function Cartao() {
               <tr key={k} className={`border-b border-slate-100 last:border-0 dark:border-slate-800 ${i.usar ? '' : 'opacity-40'}`}>
                 <td className="p-2"><input type="checkbox" checked={i.usar} onChange={(e) => setRev({ ...rev, itens: rev.itens.map((x, j) => j === k ? { ...x, usar: e.target.checked } : x) })} /></td>
                 <td className="p-2 text-xs text-slate-500">{i.data}</td>
-                <td className="p-2">{i.descricao}{i.parcela_total && <span className="ml-1 rounded bg-violet-100 px-1.5 text-xs text-violet-800 dark:bg-violet-900/40 dark:text-violet-200">{i.parcela_num}/{i.parcela_total}</span>}<span className="block text-[11px] text-slate-400">{i.categoria}</span></td>
+                <td className="p-2">{i.descricao}{i.parcela_total && <span className="ml-1 rounded bg-violet-100 px-1.5 text-xs text-violet-800 dark:bg-violet-900/40 dark:text-violet-200">{i.parcela_num}/{i.parcela_total}</span>}<span className="block text-[11px] text-slate-400">{i.categoria}{rev.cartoes.length > 1 && i.portador ? ` · ${rotulo(rev.cartoes.find((c) => c.id === i.portador) ?? ({ id: i.portador } as CartaoSec))}` : ''}</span></td>
                 <td className={`p-2 text-right tabular-nums ${i.valor < 0 ? 'text-emerald-600' : ''}`}>{brl(i.valor)}</td>
               </tr>))}</tbody></table>
           </div>}
@@ -163,10 +225,11 @@ export default function Cartao() {
       <Modal aberto={!!ver} fechar={() => setVer(null)} titulo={ver ? `${ver.cartao} · vence ${dataBR(ver.vencimento)}` : ''} largo>
         {ver && <div className="space-y-3">
           <p className="text-lg font-bold">{brl(ver.total)}</p>
+          {(() => { const por = new Map<string, number>(); (ver.plan_fatura_itens ?? []).forEach((i: any) => i.portador && por.set(i.portador, (por.get(i.portador) ?? 0) + Number(i.valor))); return por.size > 1 ? <div className="flex flex-wrap gap-2">{[...por].map(([k, v]) => <span key={k} className="rounded-lg bg-slate-100 px-2 py-1 text-xs dark:bg-slate-800">{k}: <b>{brl(v)}</b></span>)}</div> : null; })()}
           {!!cats.length && <ResponsiveContainer width="100%" height={220}><PieChart><Pie data={cats} dataKey="value" nameKey="name" innerRadius={45} outerRadius={80}>{cats.map((_, i) => <Cell key={i} fill={CORES[i % CORES.length]} />)}</Pie><Tooltip formatter={(v: any) => brl(v)} /><Legend /></PieChart></ResponsiveContainer>}
           <Tabela linhas={ver.plan_fatura_itens} vazio="Só o total foi importado." colunas={[
             { k: 'data', t: 'Data' }, { k: 'descricao', t: 'Compra', r: (i) => <span>{i.descricao}{i.parcela_total ? ` (${i.parcela_num}/${i.parcela_total})` : ''}</span> },
-            { k: 'categoria', t: 'Categoria', esconderCelular: true }, { k: 'valor', t: 'Valor', num: true, r: (i) => brl(i.valor) },
+            { k: 'categoria', t: 'Categoria', esconderCelular: true, r: (i) => <span>{i.categoria}{i.portador ? <span className="text-slate-400"> · {i.portador}</span> : ''}</span> }, { k: 'valor', t: 'Valor', num: true, r: (i) => brl(i.valor) },
           ]} />
           <div className="text-right"><Btn variante="fantasma" className="text-rose-600" onClick={() => excluirFatura(ver)}><Trash2 className="h-4 w-4" />Remover fatura</Btn></div>
         </div>}

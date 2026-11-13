@@ -3,7 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "scripts": { "dev": "vite", "build": "tsc --noEmit && vite build", "preview": "vite preview", "test": "node --test tests/fatura.test.mjs" },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "node --test tests/fatura.test.mjs tests/ocr.test.mjs"
+  },
   "dependencies": {
     "@capacitor/android": "7.4.3",
     "@capacitor/app": "7.1.0",
@@ -16,7 +21,8 @@
     "pdfjs-dist": "4.10.38",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "recharts": "2.13.3"
+    "recharts": "2.13.3",
+    "tesseract.js": "^5.1.1"
   },
   "devDependencies": {
     "@capacitor/cli": "7.4.3",
