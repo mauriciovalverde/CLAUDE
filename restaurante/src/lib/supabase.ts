@@ -36,7 +36,7 @@ const ERROS: Record<string, string> = {
   JA_RECEBIDA: 'Já recebida',
   JA_PAGA: 'Já paga',
   VALOR_ACIMA_DO_SALDO: 'Valor acima da conta',
-  FECHAMENTO_ENCERRADO: 'Caixa encerrado',
+  FECHAMENTO_ENCERRADO: 'Caixa fechado',
   FECHAMENTO_BLOQUEADO: 'Caixa bloqueado',
 };
 export function traduzirErro(m: string) {

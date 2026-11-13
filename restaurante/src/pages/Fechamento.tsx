@@ -23,7 +23,7 @@ export default function Fechamento() {
   const [aba, setAba] = useState(pode('admin') ? 'conferir' : 'meu');
   return (
     <div>
-      <Cabecalho titulo="Fechamento de caixa" sub="Informe quanto entrou em cada forma de pagamento" />
+      <Cabecalho titulo="Caixa" sub="1) Abra o caixa com o valor inicial  2) No fim do dia, faça o fechamento" />
       <Abas abas={[...(pode('admin') ? [{ id: 'conferir', t: '🔍 Conferir' }] : []), { id: 'meu', t: '🧮 Meu caixa' }, { id: 'historico', t: 'Histórico' }]} ativa={aba} mudar={setAba} />
       {aba === 'meu' && <MeuCaixa />}
       {aba === 'conferir' && <Lista status={['encerrado']} />}
@@ -60,7 +60,7 @@ function MeuCaixa() {
     setSalvando(false); setConfirmar(false);
     if (error) { toast(error.message.replace(/^.*?: /, ''), 'erro'); return; }
     setReg(r); avisarMudanca();
-    toast(encerrar ? 'Caixa encerrado e enviado para conferência ✅' : 'Rascunho salvo');
+    toast(encerrar ? 'Caixa fechado e enviado para conferência ✅' : 'Rascunho salvo');
   };
   // abrir o caixa: registra o saldo inicial (dinheiro que o dono deixou no caixa para o dia)
   const abrir = async () => {
@@ -80,7 +80,7 @@ function MeuCaixa() {
           <Campo rotulo="Turno"><Select value={turno} onChange={(e) => setTurno(e.target.value)}>{Object.entries(TURNOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select></Campo>
         </div>
         {reg && <div className="mt-2 flex items-center gap-2 text-sm"><Badge s={reg.status} />{reg.status === 'devolvido' && reg.obs_conferencia && <span className="text-rose-700">Administrador: {reg.obs_conferencia}</span>}</div>}
-        {bloqueado && <div className="mt-2"><Aviso tipo="info"><Lock className="mr-1 inline h-4 w-4" />Caixa encerrado. Para corrigir, peça ao administrador para devolver.</Aviso></div>}
+        {bloqueado && <div className="mt-2"><Aviso tipo="info"><Lock className="mr-1 inline h-4 w-4" />Caixa fechado. Para corrigir, peça ao administrador para devolver.</Aviso></div>}
         {reg && <div className="mt-3 rounded-xl bg-emerald-50 p-3 dark:bg-emerald-950/30">
           <div className="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-800 dark:text-emerald-300"><Unlock className="h-4 w-4" />Caixa aberto em {dataHora(reg.criado_em)}</div>
           {campo('fundo_troco', 'Saldo inicial', 'dinheiro que o dono deixou no caixa para começar o dia')}
@@ -113,12 +113,12 @@ function MeuCaixa() {
       </Card>
       {!bloqueado && <div className="flex flex-col gap-2 sm:flex-row">
         <Btn variante="secundario" className="flex-1 !py-3" carregando={salvando} onClick={() => salvar(false)}>Salvar rascunho</Btn>
-        <Btn className="flex-1 !py-3 text-base" disabled={c.total <= 0} onClick={() => setConfirmar(true)}><Lock className="h-5 w-5" />Encerrar caixa</Btn>
+        <Btn className="flex-1 !py-3 text-base" disabled={c.total <= 0} onClick={() => setConfirmar(true)}><Lock className="h-5 w-5" />Fazer o fechamento</Btn>
       </div>}
       </>}
-      <Modal aberto={confirmar} fechar={() => setConfirmar(false)} titulo="Encerrar o caixa?">
-        <p className="text-sm">Total de <b>{brl(c.total)}</b> em {TURNOS[turno].toLowerCase()} de {dataBR(data)}. Depois de encerrar, só o administrador pode reabrir.</p>
-        <Btn className="mt-4 w-full !py-3" carregando={salvando} onClick={() => salvar(true)}>Sim, encerrar</Btn>
+      <Modal aberto={confirmar} fechar={() => setConfirmar(false)} titulo="Fazer o fechamento do caixa?">
+        <p className="text-sm">Total de <b>{brl(c.total)}</b> em {TURNOS[turno].toLowerCase()} de {dataBR(data)}. Depois do fechamento, só o administrador pode reabrir.</p>
+        <Btn className="mt-4 w-full !py-3" carregando={salvando} onClick={() => salvar(true)}>Sim, fechar o caixa</Btn>
       </Modal>
     </div>
   );

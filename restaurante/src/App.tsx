@@ -17,7 +17,8 @@ const paginas: Record<string, React.LazyExoticComponent<React.ComponentType<any>
   notas: lazy(() => import('./pages/Notas')),
   fornecedores: lazy(() => import('./pages/Fornecedores')),
   estoque: lazy(() => import('./pages/Estoque')),
-  fechamento: lazy(() => import('./pages/Fechamento')),
+  caixa: lazy(() => import('./pages/Fechamento')),
+  fechamento: lazy(() => import('./pages/Fechamento')), // endereço antigo
   vendas: lazy(() => import('./pages/Vendas')),
   financeiro: lazy(() => import('./pages/Financeiro')),
   dashboard: lazy(() => import('./pages/Dashboard')),
