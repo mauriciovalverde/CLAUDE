@@ -69,3 +69,20 @@ test('projeção do ano com sonho', () => {
   assert.equal(p.primeiroNegativo, '2026-11');
   assert.equal(p.totais.sonhos, 12000);
 });
+
+test('fatura com dois cartões (titular e adicional)', async () => {
+  const f = lerFatura(await linhasDoPdf(new URL('./dois-cartoes.pdf', import.meta.url)));
+  assert.equal(f.banco, 'Bradesco');
+  assert.equal(f.total, 2010);
+  assert.equal(f.itens.length, 6, JSON.stringify(f.itens.map((i) => i.descricao)));
+  assert.deepEqual(f.cartoes.map((c) => [c.id, c.total, c.qtd, c.adicional]), [['4321', 1060, 3, false], ['8765', 950, 3, true]]);
+  assert.equal(f.cartoes[0].nome, 'MAURICIO VALVERDE');
+  assert.equal(f.cartoes[1].nome, 'ANA VALVERDE');
+  assert.equal(f.itens.find((i) => /SAMSUNG/.test(i.descricao)).portador, '4321');
+  assert.equal(f.itens.find((i) => /MAGALU/.test(i.descricao)).portador, '8765');
+});
+
+test('fatura de um cartão só não cria divisão', async () => {
+  const f = lerFatura(await linhasDoPdf(new URL('./nubank.pdf', import.meta.url)));
+  assert.equal(f.cartoes.length, 1);
+});

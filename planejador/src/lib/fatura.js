@@ -16,6 +16,18 @@ export function valorBR(s) {
 const RE_VALOR = /(-\s*)?(?:R\$\s*)?(-\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})\s*(-)?\s*$/;
 const RE_DATA = /^(\d{2})\s*[/.-]\s*(\d{2})(?:\s*[/.-]\s*(\d{2,4}))?\b|^(\d{2})\s+(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\b/i;
 const RE_PARCELA = /(?:PARC(?:ELA)?\.?\s*)?\b(\d{1,2})\s*(?:\/|\bDE\b)\s*(\d{1,2})\b(?!\s*[/.-]\s*\d)/i;
+// Cabeçalho de seção de cartão: "MAURICIO VALVERDE - FINAL 1234", "Cartão adicional final 5678", "**** **** **** 9012"
+const RE_CARTAO = /(?:\bfinal\b|termina(?:do|da)?\s+em|\bcart[aã]o\b[^\d\n]{0,25})\s*[:\-–nº°.]*\s*(?:[*xX•.\s]{0,16})(\d{4})\b|(?:[*xX•]{4}[\s.-]*){2,3}(\d{4})\b/i;
+function lerPortador(linha) {
+  const m = linha.match(RE_CARTAO);
+  if (!m) return null;
+  const final = m[1] || m[2];
+  if (/^(19|20)\d{2}$/.test(final) && !/final|[*xX•]{4}/i.test(linha)) return null; // evita confundir com ano
+  const antes = linha.slice(0, m.index).replace(/lan[cç]amentos?|compras?( e saques)?|despesas?|cart[aã]o( de cr[eé]dito)?|n[uú]mero|titular|adicional|virtual|f[ií]sico|[:\-–|]/gi, ' ').replace(/\s+/g, ' ').trim();
+  const nome = /[a-zà-ú]{3,}/i.test(antes) ? antes.split(' ').slice(0, 3).join(' ') : '';
+  return { id: final, nome, adicional: /adicional|dependente/i.test(linha), virtual: /virtual/i.test(linha) };
+}
+
 const IGNORAR = /pagamento\s+(recebido|efetuado|de\s+fatura)|^total|saldo\s+anterior|limite|subtotal|cr[eé]dito\s+rotativo|juros\s+do\s+rotativo|iof\s+sobre\s+rotativo|valor\s+m[ií]nimo|resumo/i;
 
 /** Extrai cabeçalho (banco, vencimento, total) e itens de compra. */
@@ -42,11 +54,17 @@ export function lerFatura(linhas, hojeISO = new Date().toISOString().slice(0, 10
 
   // itens
   const itens = [];
+  let portador = null;
+  const portadores = new Map();
   for (const bruta of linhas) {
     const l = bruta.replace(/\s+/g, ' ').trim();
     const md = l.match(RE_DATA);
     const mvl = l.match(RE_VALOR);
-    if (!md || !mvl) continue;
+    if (!md || !mvl) {
+      const pt = lerPortador(l);
+      if (pt) { portador = pt.id; const ant = portadores.get(pt.id); portadores.set(pt.id, { ...pt, nome: ant?.nome || pt.nome, adicional: ant?.adicional || pt.adicional }); }
+      continue;
+    }
     let desc = l.slice(md[0].length, l.length - mvl[0].length).trim();
     if (!desc || desc.length < 2 || IGNORAR.test(desc)) continue;
     const valor = valorBR(mvl[0]);
@@ -58,10 +76,14 @@ export function lerFatura(linhas, hojeISO = new Date().toISOString().slice(0, 10
       if (n >= 1 && t >= 2 && n <= t && t <= 48) { parcela_num = n; parcela_total = t; desc = desc.replace(mp[0], '').replace(/\s{2,}/g, ' ').replace(/[-–]\s*$/, '').trim(); }
     }
     const data = md[4] ? `${md[4]}/${String(MESES[md[5].toUpperCase()]).padStart(2, '0')}` : `${md[1]}/${md[2]}`;
-    itens.push({ data, descricao: desc, valor, parcela_num, parcela_total, categoria: categorizar(desc) });
+    itens.push({ data, descricao: desc, valor, parcela_num, parcela_total, categoria: categorizar(desc), portador });
   }
+  // resumo por cartão (só aparece quando a fatura tem mais de um)
+  const resumo = new Map();
+  for (const i of itens) { const k = i.portador ?? 'principal'; const r = resumo.get(k) ?? { id: k, total: 0, qtd: 0 }; r.total = Math.round((r.total + i.valor) * 100) / 100; r.qtd++; resumo.set(k, r); }
+  const cartoes = [...resumo.values()].map((r) => ({ ...r, nome: portadores.get(r.id)?.nome ?? '', adicional: !!portadores.get(r.id)?.adicional, virtual: !!portadores.get(r.id)?.virtual }));
   const soma = Math.round(itens.reduce((s, i) => s + i.valor, 0) * 100) / 100;
-  return { banco, vencimento, total: total ?? soma, soma, itens, hojeISO };
+  return { banco, vencimento, total: total ?? soma, soma, itens, cartoes, hojeISO };
 }
 
 const CATS = [
