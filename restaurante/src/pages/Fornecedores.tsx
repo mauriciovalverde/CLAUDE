@@ -147,7 +147,7 @@ function CompararPrecos({ itens }: { itens: any[] | null }) {
         <div className="h-64"><ResponsiveContainer><LineChart data={serie} margin={{ left: -10, right: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" /><XAxis dataKey="data" tickFormatter={(d) => dataBR(d).slice(0, 5)} /><YAxis tickFormatter={(v) => `R$${v}`} width={60} />
           <Tooltip formatter={(v: any) => brl(v)} labelFormatter={(d) => dataBR(d)} /><Legend />
-          {forns.map((f, k) => <Line key={f} type="monotone" dataKey={f} stroke={CORES[k % CORES.length]} connectNulls dot={{ r: 2 }} />)}
+          {forns.map((f, k) => <Line isAnimationActive={false} key={f} type="monotone" dataKey={f} stroke={CORES[k % CORES.length]} connectNulls dot={{ r: 2 }} />)}
         </LineChart></ResponsiveContainer></div>
       </Card>}
       {!porForn.length && itens && <Card><p className="text-center text-sm text-slate-500">Sem preços registrados para este produto.</p></Card>}

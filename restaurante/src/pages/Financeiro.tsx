@@ -152,7 +152,7 @@ function Fluxo() {
       <Aviso tipo="info">Saldo de caixa = saldo informado + vendas líquidas + recebimentos − pagamentos (desde a data do saldo). Não é o extrato do banco: vendas no cartão podem cair depois.</Aviso>
       <Card titulo="Entradas, saídas e previsão (6 meses para trás e 4 para frente)">
         <div className="h-64"><ResponsiveContainer><ComposedChart data={meses} margin={{ left: -10 }}><CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} /><XAxis dataKey="mes" tickFormatter={(m) => mesNome(m + '-01')} /><YAxis tickFormatter={compacto} width={48} /><Tooltip formatter={(v: any) => brl(v)} labelFormatter={(m) => mesNome(m + '-01')} /><Legend />
-          <Bar dataKey="entradas" name="Entradas" fill="#16a34a" radius={[3, 3, 0, 0]} /><Bar dataKey="saidas" name="Saídas" fill="#a3141b" radius={[3, 3, 0, 0]} /><Line dataKey="resultado" name="Resultado" stroke="#f79f31" strokeWidth={2} />
+          <Bar isAnimationActive={false} maxBarSize={56} dataKey="entradas" name="Entradas" fill="#16a34a" radius={[3, 3, 0, 0]} /><Bar isAnimationActive={false} maxBarSize={56} dataKey="saidas" name="Saídas" fill="#a3141b" radius={[3, 3, 0, 0]} /><Line isAnimationActive={false} dataKey="resultado" name="Resultado" stroke="#f79f31" strokeWidth={2} />
         </ComposedChart></ResponsiveContainer></div>
         <Tabela linhas={meses} chave="mes" colunas={[
           { k: 'mes', t: 'Mês', r: (x) => <span>{mesNome(x.mes + '-01')}{x.mes > hoje().slice(0, 7) ? ' (previsão)' : ''}</span> },

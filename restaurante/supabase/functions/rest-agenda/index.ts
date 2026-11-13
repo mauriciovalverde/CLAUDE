@@ -17,8 +17,8 @@ Deno.serve(async (req) => {
   const { data: r } = await db.from('rest_restaurantes').select('id,nome').eq('agenda_token', t).maybeSingle();
   if (!r) return new Response('não encontrado', { status: 404 });
   const desde = new Date(Date.now() - 45 * 86400_000).toISOString().slice(0, 10);
-  const { data: contas } = await db.from('rest_contas').select('id,numero,tipo,descricao,valor,vencimento,status,pago_em,atualizado_em,nota_numero')
-    .eq('restaurante_id', r.id).neq('status', 'cancelado').gte('vencimento', desde).order('vencimento').limit(2000);
+  const { data: contas } = await db.from('rest_contas').select('id,numero,tipo,descricao,valor,vencimento,status,pago_em,atualizado_em,nota_numero,origem')
+    .eq('restaurante_id', r.id).neq('status', 'cancelado').neq('origem', 'planilha').gte('vencimento', desde).order('vencimento').limit(2000);
   const agora = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
   const linhas = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Restaurante Inteligente//Vencimentos//PT', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
     `X-WR-CALNAME:${esc(`${r.nome} · Contas`)}`, 'X-WR-TIMEZONE:America/Bahia', 'REFRESH-INTERVAL;VALUE=DURATION:PT6H', 'X-PUBLISHED-TTL:PT6H'];

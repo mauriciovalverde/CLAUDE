@@ -30,6 +30,14 @@ const RE_ITEM = new RegExp(`^(?:\\d{1,3}\\s+)?(?:\\d{4,14}\\s+)?(.+?)\\s+(\\d+(?
 const RE_QTD = new RegExp(`^(\\d+(?:[.,]\\d{1,4})?)\\s*${UN}\\.?\\s*[xX*×]\\s*(\\d+(?:[.,]\\d{2,4}))\\s+(\\d{1,3}(?:\\.\\d{3})*,\\d{2}|\\d+\\.\\d{2})\\s*$`, 'i');
 const unidade = (u) => ({ UND: 'un', UNID: 'un', UN: 'un', KG: 'kg', PC: 'pct', PCT: 'pct', PT: 'pct', CX: 'cx', LT: 'L', L: 'L', G: 'g', FD: 'fardo', DZ: 'dz', BD: 'bandeja', BJ: 'bandeja', MC: 'maço', GF: 'garrafa', LA: 'lata' }[String(u).toUpperCase()] ?? 'un');
 
+/** Tira o nº do item e o código de barras (mesmo lido com erro pelo OCR) do começo da descrição. */
+export function limparDescricao(d) {
+  let t = String(d ?? '').trim().replace(/^\d{1,3}\s+/, '');
+  const m = t.match(/^(\S{6,16})\s+(.*)$/);
+  if (m && (m[1].match(/\d/g) ?? []).length >= 5) t = m[2];
+  return t.trim();
+}
+
 export function lerNota(texto, qr) {
   const linhas = String(texto ?? '').split(/\r?\n/).map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
   const tudo = linhas.join('\n');
@@ -63,10 +71,10 @@ export function lerNota(texto, qr) {
     const l = linhas[i];
     if (/TOTAL|SUBTOTAL|DESCONTO|TROCO|CNPJ|CHAVE/i.test(l)) continue;
     let m = l.match(RE_ITEM);
-    if (m) { r.itens.push({ descricao: m[1].replace(/^\d{1,3}\s+/, '').trim(), quantidade: num(m[2]), unidade: unidade(m[3]), unit: num(m[4]), total: num(m[5]) }); continue; }
+    if (m) { r.itens.push({ descricao: limparDescricao(m[1]), quantidade: num(m[2]), unidade: unidade(m[3]), unit: num(m[4]), total: num(m[5]) }); continue; }
     m = l.match(RE_QTD);
     if (m && i > 0 && !RE_QTD.test(linhas[i - 1]) && /[A-Za-z]{3}/.test(linhas[i - 1])) {
-      r.itens.push({ descricao: linhas[i - 1].replace(/^\d{1,3}\s+(\d{4,14}\s+)?/, '').trim(), quantidade: num(m[1]), unidade: unidade(m[2]), unit: num(m[3]), total: num(m[4]) });
+      r.itens.push({ descricao: limparDescricao(linhas[i - 1]), quantidade: num(m[1]), unidade: unidade(m[2]), unit: num(m[3]), total: num(m[4]) });
     }
   }
   for (const it of r.itens) if (it.quantidade && it.unit && Math.abs(it.quantidade * it.unit - it.total) > Math.max(0.05, it.total * 0.02)) it.conferir = true;

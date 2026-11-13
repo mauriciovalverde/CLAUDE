@@ -241,7 +241,8 @@ begin
   update rest_estoque_movs set produto_id = p_manter where produto_id = any(p_remover);
   update rest_produtos set estoque_atual = estoque_atual + v_soma,
     grafias = (select array_agg(distinct x) from unnest(grafias || coalesce(v_graf, '{}')) x), status = 'ativo' where id = p_manter;
-  delete from rest_produtos where id = any(p_remover);
+  -- o repetido não é apagado: fica inativo, sem saldo, e aponta no nome para o produto mantido
+  update rest_produtos set status = 'inativo', estoque_atual = 0, controla_estoque = false where id = any(p_remover);
   return jsonb_build_object('ok', true, 'removidos', cardinality(p_remover));
 end $$;
 
@@ -253,9 +254,9 @@ begin
   if v_rest is null or not rest_pode('admin') then raise exception 'SEM_PERMISSAO: só o administrador vê o painel financeiro'; end if;
   select * into v_rest_row from rest_restaurantes where id = v_rest;
   select coalesce(v_rest_row.saldo_inicial, 0)
-       + coalesce((select sum(liquido) from rest_vendas where restaurante_id = v_rest and data > v_rest_row.saldo_em and data <= v_hoje), 0)
-       + coalesce((select sum(valor) from rest_contas where restaurante_id = v_rest and tipo = 'receber' and status = 'pago' and pago_em > v_rest_row.saldo_em), 0)
-       - coalesce((select sum(valor) from rest_contas where restaurante_id = v_rest and tipo = 'pagar' and status = 'pago' and pago_em > v_rest_row.saldo_em), 0)
+       + coalesce((select sum(liquido) from rest_vendas where restaurante_id = v_rest and data >= v_rest_row.saldo_em and data <= v_hoje), 0)
+       + coalesce((select sum(valor) from rest_contas where restaurante_id = v_rest and tipo = 'receber' and status = 'pago' and pago_em >= v_rest_row.saldo_em), 0)
+       - coalesce((select sum(valor) from rest_contas where restaurante_id = v_rest and tipo = 'pagar' and status = 'pago' and pago_em >= v_rest_row.saldo_em), 0)
     into v_saldo;
   select jsonb_build_object(
     'hoje', v_hoje,

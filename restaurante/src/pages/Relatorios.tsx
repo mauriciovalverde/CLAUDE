@@ -64,7 +64,7 @@ export default function Relatorios() {
       const r = await RELATORIOS[rel].g(per.de, per.ate);
       const total = r.tabelas.reduce((t, x) => t + x.linhas.length, 0);
       if (!total) { toast('Não há dados para esse relatório no período escolhido.', 'info'); return; }
-      const completo: Rel = { ...r, restaurante: rest.nome, periodo: rel === 'estoque' ? `posição em ${dataBR(new Date().toISOString().slice(0, 10))}` : `${dataBR(per.de)} a ${dataBR(per.ate)}` };
+      const completo: Rel = { ...r, restaurante: rest.nome, periodo: rel === 'estoque' ? `posição em ${dataBR(new Date().toISOString().slice(0, 10))}` : (per.nome === 'Tudo' ? 'todo o período' : `${dataBR(per.de)} a ${dataBR(per.ate)}`) };
       if (tipo === 'pdf') await gerarPDF(completo); else await gerarExcel(completo);
       toast('Relatório gerado');
     } catch (e: any) { toast(e.message ?? String(e), 'erro'); } finally { setGerando(null); }

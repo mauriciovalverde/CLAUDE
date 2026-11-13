@@ -35,8 +35,8 @@ export default function Notas() {
       <Cabecalho titulo="Notas fiscais" sub="Fotografe a nota: o app lê, você confere e lança a compra" />
       <Card className="mb-3">
         <div className="flex flex-wrap gap-2">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-brand-700 px-4 py-3 text-sm font-semibold text-white"><Camera className="h-5 w-5" />Fotografar nota<input type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={(e) => fotografar([...(e.target.files ?? [])])} /></label>
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium dark:border-slate-700"><FileText className="h-5 w-5" />Escolher imagem<input type="file" accept="image/*" multiple className="hidden" onChange={(e) => fotografar([...(e.target.files ?? [])])} /></label>
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-brand-700 px-4 py-3 text-sm font-semibold text-white"><Camera className="h-5 w-5" />Fotografar nota<input type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={(e) => { fotografar([...(e.target.files ?? [])]); e.target.value = ''; }} /></label>
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium dark:border-slate-700"><FileText className="h-5 w-5" />Escolher imagem<input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { fotografar([...(e.target.files ?? [])]); e.target.value = ''; }} /></label>
           <Btn variante="secundario" onClick={() => setRev({ itens: [], avisos: [], manual: true })}>Digitar nota</Btn>
         </div>
         {lendo && <div className="mt-3"><div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800"><div className="h-2 rounded-full bg-brand-700 transition-all" style={{ width: `${lendo.p}%` }} /></div><p className="mt-1 text-sm text-slate-500">{lendo.msg}</p></div>}

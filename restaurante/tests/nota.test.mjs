@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chaveValida, dadosDaChave, chaveDoQr, lerNota } from '../src/lib/nota.js';
+import { chaveValida, dadosDaChave, chaveDoQr, lerNota, limparDescricao } from '../src/lib/nota.js';
 
 // chave fictícia com dígito verificador correto
 function chaveCom(base43) { let s = 0, p = 2; for (let i = 42; i >= 0; i--) { s += Number(base43[i]) * p; p = p === 9 ? 2 : p + 1; } const r = s % 11; return base43 + (r < 2 ? 0 : 11 - r); }
@@ -49,4 +49,11 @@ test('avisa quando a soma não bate e quando não acha itens', () => {
   assert.equal(r.itens.length, 1);
   assert.ok(r.avisos.some((a) => a.includes('diferente do total')));
   assert.ok(lerNota('foto borrada').avisos.some((a) => a.includes('itens')));
+});
+
+test('remove nº do item e código de barras lido com erro', () => {
+  assert.equal(limparDescricao('003 789000000PNPOA2 FEIJAO CARIOCA 1KG'), 'FEIJAO CARIOCA 1KG');
+  assert.equal(limparDescricao('7890000000001 OLEO DE SOJA 900ML'), 'OLEO DE SOJA 900ML');
+  assert.equal(limparDescricao('ARROZ PARBOILIZADO 5KG'), 'ARROZ PARBOILIZADO 5KG');
+  assert.equal(limparDescricao('LEITE CONDENSADO 395G'), 'LEITE CONDENSADO 395G');
 });
