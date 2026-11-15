@@ -105,4 +105,13 @@ html[data-fontscale="2"] { font-size: 125%; }
 @utility card-soft { background: var(--color-card); border-radius: 1.125rem; box-shadow: var(--shadow-card); border: 1px solid var(--color-border); }
 @utility tap { min-height: 48px; }
 
-@media print { .no-print { display: none !important; } body { background: white; } }
+@media print {
+  @page { size: A4; margin: 12mm; }
+  .no-print { display: none !important; }
+  body { background: white; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .print-page { border: 0 !important; border-radius: 0 !important; padding: 0 !important; box-shadow: none !important; }
+  .quebra-pagina { break-before: page; page-break-before: always; height: 0; border: 0 !important; margin: 0 !important; }
+  .grafico, tr { break-inside: avoid; page-break-inside: avoid; }
+}
+.quebra-pagina { border-top: 2px dashed var(--color-border); margin: 0.5rem 0; }
