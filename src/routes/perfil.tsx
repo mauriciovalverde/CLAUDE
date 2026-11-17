@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Bell, BriefcaseMedical, Download, FileText, LogOut, Pencil, ShieldCheck, Trash2, UserRound } from "lucide-react";
+import { Bell, BriefcaseMedical, Scale, Download, FileText, LogOut, Pencil, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app/AppShell";
 import { Btn, Campo, Card, CardLink, Chip, PageHeader, inputCls } from "@/components/app/kit";
@@ -119,6 +119,7 @@ function Perfil() {
         <CardLink to="/sou-profissional" icon={BriefcaseMedical} tom="green" title="Sou profissional" subtitle="Cadastre seu perfil no diretório de especialistas" />
         <CardLink to="/privacidade" icon={ShieldCheck} tom="navy" title="Privacidade e LGPD" subtitle="Como seus dados são usados e protegidos" />
         <CardLink to="/termos" icon={FileText} tom="navy" title="Termos de uso" />
+        <MeusDireitos />
         <CardLink onClick={exportar} icon={Download} tom="blue" title="Baixar meus dados" subtitle="Cópia de tudo o que você registrou (LGPD, art. 18)" />
       </div>
 
@@ -127,5 +128,41 @@ function Perfil() {
         <Btn v="ghost" className="text-emergency" onClick={excluir}><Trash2 className="h-4 w-4" /> Excluir minha conta</Btn>
       </div>
     </div>
+  );
+}
+
+const TIPOS: [string, string][] = [
+  ["acesso", "Quero saber quais dados vocês têm sobre mim"], ["correcao", "Corrigir dados"], ["exclusao", "Apagar dados"],
+  ["portabilidade", "Levar meus dados para outro serviço"], ["revogacao", "Revogar um consentimento"], ["informacao", "Com quem meus dados são compartilhados"],
+  ["oposicao", "Me opor a um uso dos meus dados"], ["prontuario", "Cópia do prontuário psicológico"],
+];
+
+function MeusDireitos() {
+  const { user } = useAuth();
+  const [aberto, setAberto] = useState(false);
+  const [tipo, setTipo] = useState("acesso");
+  const [detalhes, setDetalhes] = useState("");
+  const [lista, setLista] = useState<any[]>([]);
+  const carregar = () => db.from("lgpd_solicitacoes").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).then(({ data }: any) => setLista(data ?? []));
+  useEffect(() => { if (aberto && user) carregar(); }, [aberto, user]);
+  async function enviar() {
+    const { error } = await db.from("lgpd_solicitacoes").insert({ user_id: user!.id, tipo, detalhes: detalhes.trim() || null });
+    if (error) return toast.error(error.message);
+    toast.success("Pedido enviado. A resposta chega em até 15 dias."); setDetalhes(""); carregar();
+  }
+  if (!aberto) return <CardLink onClick={() => setAberto(true)} icon={Scale} tom="navy" title="Meus direitos (LGPD)" subtitle="Pedir acesso, correção, exclusão ou cópia dos seus dados" />;
+  return (
+    <Card className="flex flex-col gap-3">
+      <h2 className="flex items-center gap-2 font-display text-lg font-bold"><Scale className="h-5 w-5 text-primary" /> Meus direitos (LGPD)</h2>
+      <select className={inputCls} value={tipo} onChange={(e) => setTipo(e.target.value)} aria-label="Tipo de pedido">{TIPOS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+      <textarea className="min-h-24 w-full rounded-xl border border-input bg-card p-4" maxLength={2000} placeholder="Detalhes (opcional)" value={detalhes} onChange={(e) => setDetalhes(e.target.value)} aria-label="Detalhes" />
+      <div className="flex gap-2"><Btn onClick={enviar}>Enviar pedido</Btn><Btn v="ghost" onClick={() => setAberto(false)}>Fechar</Btn></div>
+      {lista.map((s) => (
+        <div key={s.id} className="rounded-xl bg-muted p-3 text-sm">
+          <b>{TIPOS.find(([k]) => k === s.tipo)?.[1] ?? s.tipo}</b> · <Chip tom={s.status === "concluida" ? "green" : s.status === "negada" ? "red" : "amber"}>{s.status.replace("_", " ")}</Chip>
+          {s.resposta && <p className="mt-1">{s.resposta}</p>}
+        </div>
+      ))}
+    </Card>
   );
 }

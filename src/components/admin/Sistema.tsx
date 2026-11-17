@@ -56,6 +56,7 @@ export function Configuracoes() {
       { chave: "mensagem_confirmacao", valor: c.mensagem_confirmacao, publico: true },
       { chave: "whatsapp_grupo", valor: c.whatsapp_grupo?.trim() ?? "", publico: true },
       { chave: "regras_convivencia", valor: c.regras_convivencia, publico: true },
+      { chave: "whatsapp_agendamento", valor: digits(c.whatsapp_agendamento ?? ""), publico: true },
     ];
     if (c.whatsapp_grupo && !/^https:\/\/(chat\.whatsapp\.com|wa\.me)\//.test(c.whatsapp_grupo.trim())) return toast.error("O link do grupo deve começar com https://chat.whatsapp.com/");
     const { error } = await db.from("configuracoes").upsert(linhas);
@@ -69,6 +70,7 @@ export function Configuracoes() {
       <h2 className="flex items-center gap-2 font-display text-lg font-bold"><ShieldCheck className="h-5 w-5 text-primary" /> Configurações gerais</h2>
       <Campo id="cf-numero_confirmacao" label="WhatsApp que recebe as confirmações de cadastro" obrigatorio dica="Com DDI e DDD. Ex.: 5573933002471"><input {...inp("numero_confirmacao")} inputMode="numeric" /></Campo>
       <Campo id="cf-mensagem_confirmacao" label="Mensagem pronta da confirmação" obrigatorio><input {...inp("mensagem_confirmacao")} /></Campo>
+      <Campo id="cf-whatsapp_agendamento" label="WhatsApp que recebe os pedidos de consulta" dica="Com DDI e DDD. Se ficar vazio, usa o número das confirmações de cadastro."><input {...inp("whatsapp_agendamento")} inputMode="numeric" /></Campo>
       <Campo id="cf-whatsapp_grupo" label="Link do grupo de apoio no WhatsApp" dica="Só aparece para famílias com cadastro confirmado."><input {...inp("whatsapp_grupo")} placeholder="https://chat.whatsapp.com/…" /></Campo>
       <Campo id="cf-regras_convivencia" label="Regras de convivência do grupo" dica="Uma regra por linha."><textarea {...inp("regras_convivencia")} className={textareaCls + " min-h-40"} /></Campo>
       <Btn onClick={salvar} className="self-start">Salvar</Btn>
@@ -76,7 +78,7 @@ export function Configuracoes() {
   );
 }
 
-const ACOES: Record<string, string> = { abrir_ficha: "Abriu ficha", familia_status: "Mudou status do cadastro", comunicado_enviado: "Enviou comunicado", papel_concedido: "Concedeu papel", papel_removido: "Removeu papel", configuracoes: "Alterou configurações" };
+const ACOES: Record<string, string> = { acesso_negado: "Tentativa negada", prontuario_lido: "Leu prontuário (autorizado)", acesso_clinico_solicitado: "Pediu acesso clínico", notificacao_reenviada: "Reenviou notificação", lgpd_respondida: "Respondeu LGPD", abrir_ficha: "Abriu ficha", familia_status: "Mudou status do cadastro", comunicado_enviado: "Enviou comunicado", papel_concedido: "Concedeu papel", papel_removido: "Removeu papel", configuracoes: "Alterou configurações" };
 
 export function Logs() {
   const { data, loading } = useQuery(async () => {
@@ -92,11 +94,52 @@ export function Logs() {
       {data.logs.map((l) => (
         <div key={l.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3 text-sm">
           <span className="w-36 text-xs text-muted-foreground">{fDataHora(l.created_at)}</span>
-          <Chip>{ACOES[l.acao] ?? l.acao}</Chip>
+          <Chip tom={l.acao === "acesso_negado" ? "red" : "navy"}>{ACOES[l.acao] ?? l.acao}</Chip>
           <span className="flex-1">{l.alvo}{l.detalhes ? ` · ${l.detalhes}` : ""}</span>
           <span className="text-xs font-semibold">{autor(l.autor_id)}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+const TIPOS_LGPD: Record<string, string> = { acesso: "Acesso aos dados", correcao: "Correção", exclusao: "Exclusão", portabilidade: "Portabilidade", revogacao: "Revogar consentimento", informacao: "Com quem compartilhamos", oposicao: "Oposição a tratamento", prontuario: "Cópia do prontuário" };
+export { TIPOS_LGPD };
+
+export function Lgpd() {
+  const { user } = useAuth();
+  const { data, loading, recarregar } = useQuery(async () => {
+    const [l, p] = await Promise.all([db.from("lgpd_solicitacoes").select("*").order("created_at", { ascending: false }).limit(200), db.from("perfis").select("id,nome_chamada,email")]);
+    return { itens: (l.data ?? []) as any[], perfis: (p.data ?? []) as any[] };
+  }, []);
+  const [resp, setResp] = useState<Record<string, string>>({});
+  async function responder(id: string, status: string) {
+    const { error } = await db.from("lgpd_solicitacoes").update({ status, resposta: resp[id] || null, respondido_por: user!.id, respondido_em: new Date().toISOString() }).eq("id", id);
+    error ? toast.error(error.message) : (toast.success("Solicitação atualizada e titular avisado."), recarregar());
+  }
+  if (loading) return <Carregando />;
+  if (!data?.itens.length) return <Vazio icon={ShieldCheck} titulo="Nenhuma solicitação de titular" texto="Pedidos feitos em Perfil → Meus direitos (LGPD) aparecem aqui." />;
+  const quem = (id: string) => { const p = data.perfis.find((x) => x.id === id); return p ? `${p.nome_chamada || ""} · ${p.email}` : "Conta excluída"; };
+  return (
+    <div className="flex flex-col gap-3">
+      <Aviso tom="blue">Prazo: responder em até 15 dias (LGPD, art. 19). Pedidos de prontuário são encaminhados ao psicólogo responsável, que detém a guarda.</Aviso>
+      {data.itens.map((s) => {
+        const dias = Math.floor((Date.now() - new Date(s.created_at).getTime()) / 864e5);
+        const aberto = ["aberta", "em_andamento"].includes(s.status);
+        return (
+          <Card key={s.id} className="flex flex-col gap-2 p-4">
+            <div className="flex flex-wrap items-center gap-2"><b>{TIPOS_LGPD[s.tipo] ?? s.tipo}</b><Chip tom={aberto ? (dias > 10 ? "red" : "amber") : s.status === "concluida" ? "green" : "navy"}>{s.status.replace("_", " ")}{aberto ? ` · ${dias} dia(s)` : ""}</Chip></div>
+            <p className="text-sm text-muted-foreground">{quem(s.user_id)} · {fDataHora(s.created_at)}</p>
+            {s.detalhes && <p className="rounded-xl bg-muted p-3 text-sm">{s.detalhes}</p>}
+            {aberto ? (
+              <>
+                <textarea className={textareaCls + " min-h-20"} placeholder="Resposta ao titular" value={resp[s.id] ?? ""} onChange={(e) => setResp({ ...resp, [s.id]: e.target.value })} aria-label="Resposta" />
+                <div className="flex flex-wrap gap-2"><Btn v="soft" className="min-h-10" onClick={() => responder(s.id, "em_andamento")}>Em andamento</Btn><Btn className="min-h-10" onClick={() => responder(s.id, "concluida")}>Concluir</Btn><Btn v="ghost" className="min-h-10" onClick={() => responder(s.id, "negada")}>Negar (com justificativa)</Btn></div>
+              </>
+            ) : s.resposta && <p className="text-sm"><b>Resposta:</b> {s.resposta}</p>}
+          </Card>
+        );
+      })}
     </div>
   );
 }

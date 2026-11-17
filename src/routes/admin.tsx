@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { BookOpen, CalendarHeart, Video, ClipboardCheck, FileClock, LayoutDashboard, MapPin, Megaphone, Settings, Star, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { BookOpen, CalendarHeart, Scale, Video, ClipboardCheck, FileClock, LayoutDashboard, MapPin, Megaphone, Settings, Star, Users } from "lucide-react";
 import { AppShell } from "@/components/app/AppShell";
 import { Carregando, PageHeader, Vazio } from "@/components/app/kit";
 import { useAuth } from "@/lib/auth";
@@ -12,7 +12,8 @@ import { Comunicados } from "@/components/admin/Comunicados";
 import { Conteudos } from "@/components/admin/Conteudos";
 import { DiretorioAdmin } from "@/components/admin/DiretorioAdmin";
 import { HistoriasAdmin, EncontrosAdmin } from "@/components/admin/Moderacao";
-import { Usuarios, Configuracoes, Logs } from "@/components/admin/Sistema";
+import { Usuarios, Configuracoes, Logs, Lgpd } from "@/components/admin/Sistema";
+import { DesafioDuasEtapas, DuasEtapas, precisaSegundaEtapa } from "@/components/admin/DuasEtapas";
 import { Teleconsultas } from "@/components/admin/Teleconsultas";
 
 const ABAS = [
@@ -25,6 +26,7 @@ const ABAS = [
   { k: "encontros", l: "Encontros", I: CalendarHeart, admin: true },
   { k: "conteudos", l: "Conteúdos", I: BookOpen, admin: true },
   { k: "usuarios", l: "Usuários", I: Users, admin: true },
+  { k: "lgpd", l: "LGPD", I: Scale, admin: true },
   { k: "config", l: "Configurações", I: Settings, admin: true },
   { k: "logs", l: "Logs", I: FileClock, admin: true },
 ] as const;
@@ -35,13 +37,17 @@ export const Route = createFileRoute("/admin")({
 });
 
 function Admin() {
-  const { ready, isStaff, isAdmin } = useAuth();
+  const { ready, isStaff, isAdmin, sair } = useAuth();
+  const [mfa, setMfa] = useState<boolean | null>(null);
+  useEffect(() => { if (isAdmin) precisaSegundaEtapa().then(setMfa); else setMfa(false); }, [isAdmin]);
   const { aba = "painel" } = Route.useSearch();
   const nav = useNavigate();
   useEffect(() => { if (isStaff) db.rpc("processar_agendados").then(() => {}); }, [isStaff]);
-  useEffect(() => { if (ready && !isStaff) nav({ to: "/inicio" }); }, [ready, isStaff, nav]);
+  useEffect(() => { if (ready && !isStaff) { db.rpc("registrar_tentativa_negada", { _recurso: "painel_admin" }).then(() => {}); nav({ to: "/inicio" }); } }, [ready, isStaff, nav]);
   if (!ready) return <Carregando />;
   if (!isStaff) return <Vazio icon={LayoutDashboard} titulo="Acesso restrito" texto="Esta área é só para a equipe do Centro." />;
+  if (mfa === null) return <Carregando />;
+  if (mfa) return <DesafioDuasEtapas onOk={() => setMfa(false)} onSair={sair} />;
   const abas = ABAS.filter((a) => isAdmin || !a.admin);
   const atual = abas.find((a) => a.k === aba)?.k ?? "painel";
 
@@ -64,7 +70,8 @@ function Admin() {
       {atual === "encontros" && <EncontrosAdmin />}
       {atual === "conteudos" && <Conteudos />}
       {atual === "usuarios" && <Usuarios />}
-      {atual === "config" && <Configuracoes />}
+      {atual === "lgpd" && <Lgpd />}
+      {atual === "config" && <><DuasEtapas /><Configuracoes /></>}
       {atual === "logs" && <Logs />}
     </div>
   );

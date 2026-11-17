@@ -27,14 +27,17 @@ const SECOES: [string, string[]][] = [
   ["Com quem compartilhamos", [
     "Não vendemos nem cedemos seus dados.",
     "Cuidadores e escolas só acessam o diário quando você convida ou cria um link, e você pode encerrar o acesso a qualquer momento.",
+    "Psicólogos não veem seu telefone, e-mail, endereço nem CPF: identificam o paciente por um código interno e o primeiro nome. O contato com a família é feito pela equipe do Centro.",
+    "O prontuário psicológico fica só com o psicólogo responsável, sob sigilo profissional. A administração só lê com autorização dele, por prazo definido e com registro.",
     "Usamos provedores de hospedagem e banco de dados com criptografia em trânsito e controle de acesso por linha.",
   ]],
   ["Seus direitos", [
     "Confirmar, acessar, corrigir e baixar seus dados (Perfil → Baixar meus dados).",
     "Revogar consentimentos e excluir sua conta e todos os dados da família (Perfil → Excluir minha conta).",
+    "Fazer qualquer pedido sobre seus dados em Perfil → Meus direitos (LGPD). Respondemos em até 15 dias.",
     "Para dúvidas ou pedidos, fale com a equipe pelo WhatsApp do Centro.",
   ]],
-  ["Por quanto tempo guardamos", ["Enquanto sua conta estiver ativa. Após a exclusão, os dados são apagados, exceto registros que a lei obrigue a manter."]],
+  ["Por quanto tempo guardamos", ["Enquanto sua conta estiver ativa. Após a exclusão, os dados são apagados, exceto registros que a lei obrigue a manter — como o prontuário psicológico, guardado por no mínimo 5 anos (Resolução CFP 01/2009), apenas com o código interno, sem seus dados de contato."]],
 ];
 
 function Privacidade() {

@@ -6,6 +6,7 @@ import { TopBar } from "@/components/app/AppShell";
 import { Btn, Campo, inputCls } from "@/components/app/kit";
 import { emailValido } from "@/lib/br";
 import { useAuth } from "@/lib/auth";
+import { DesafioDuasEtapas, precisaSegundaEtapa } from "@/components/admin/DuasEtapas";
 
 export const Route = createFileRoute("/entrar")({
   validateSearch: (s: Record<string, unknown>) => ({ volta: typeof s.volta === "string" ? s.volta : undefined }) as { volta?: string },
@@ -20,6 +21,8 @@ function Entrar() {
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [mfa, setMfa] = useState(false);
+  const destino = () => nav({ to: (volta && volta.startsWith("/") ? volta : "/inicio") as any });
 
   async function entrar(e: React.FormEvent) {
     e.preventDefault();
@@ -33,10 +36,20 @@ function Entrar() {
       setErro(/confirm/i.test(error.message) ? "Confirme seu e-mail antes de entrar. Veja a mensagem que enviamos para sua caixa de entrada." : "E-mail ou senha não conferem. Confira e tente de novo.");
       return;
     }
+    if (await precisaSegundaEtapa()) { setMfa(true); return; }
     await refresh();
     toast.success("Que bom ter você de volta!");
-    nav({ to: (volta && volta.startsWith("/") ? volta : "/inicio") as any });
+    destino();
   }
+
+  if (mfa) return (
+    <div className="min-h-screen">
+      <TopBar publico />
+      <main id="conteudo" className="px-4 py-10">
+        <DesafioDuasEtapas onOk={async () => { await refresh(); toast.success("Que bom ter você de volta!"); destino(); }} onSair={async () => { await supabase.auth.signOut(); setMfa(false); }} />
+      </main>
+    </div>
+  );
 
   return (
     <div className="min-h-screen">
