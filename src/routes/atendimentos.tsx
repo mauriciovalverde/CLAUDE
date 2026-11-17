@@ -33,6 +33,7 @@ function Atendimentos() {
     <div className="flex flex-col gap-5">
       <PageHeader title="Meus" highlight="atendimentos" subtitle={`${perfil.nome} · ${perfil.registro}`} />
       {!perfil.ativo && <Aviso tom="amber">Seu perfil está aguardando a validação do CRP pela equipe. Enquanto isso, já pode cadastrar seus horários.</Aviso>}
+      {perfil.modalidades?.includes("online") && !perfil.link_sala && <Aviso tom="red">Cadastre o link do seu <b>Google Meet</b> em <button className="font-bold text-primary underline" onClick={() => setAba("perfil")}>Perfil</button> para poder confirmar consultas online.</Aviso>}
       <PedidosAcesso />
       <div role="tablist" className="grid grid-cols-4 gap-1 rounded-full bg-muted p-1">
         {([["agenda", "Consultas", CalendarDays], ["horarios", "Abrir agenda", Clock], ["pacientes", "Pacientes", Users], ["perfil", "Perfil", Settings2]] as const).map(([k, l, I]) => (
@@ -148,7 +149,7 @@ function Agenda({ perfil, abrirProntuario }: { perfil: PsiPerfil; abrirProntuari
                 {c.motivo && <p className="rounded-xl bg-muted p-3 text-sm">“{c.motivo}”</p>}
                 {(c.recusa_motivo || c.cancelado_motivo) && <p className="text-sm text-muted-foreground">Motivo: {c.recusa_motivo || c.cancelado_motivo}</p>}
                 <div className="flex flex-wrap gap-2">
-                  {c.status === "confirmada" && c.modalidade === "online" && c.link_video && <a href={c.link_video} target="_blank" rel="noopener noreferrer" className={cn(btn.base, aberta ? btn.wa : btn.outline, "min-h-10")}><Video className="h-4 w-4" /> {aberta ? "Entrar na sala" : "Sala"}</a>}
+                  {c.status === "confirmada" && c.modalidade === "online" && c.link_video && <a href={c.link_video} target="_blank" rel="noopener noreferrer" className={cn(btn.base, aberta ? btn.wa : btn.outline, "min-h-10")}><Video className="h-4 w-4" /> {aberta ? "Entrar no Google Meet" : "Google Meet"}</a>}
                   {c.status === "confirmada" && c.modalidade === "presencial" && <span className={cn(btn.base, "min-h-10 bg-muted text-navy")}><MapPin className="h-4 w-4" /> {perfil.endereco_presencial || "Presencial"}</span>}
                   {c.status === "confirmada" && !passou && <Btn v="outline" className="min-h-10" onClick={() => setReagendar(c)}><RefreshCw className="h-4 w-4" /> Reagendar</Btn>}
                   {["confirmada", "realizada", "falta"].includes(c.status) && passou && <Btn v="soft" className="min-h-10" onClick={() => mudar(c, "realizada")}>Realizada</Btn>}
@@ -472,7 +473,7 @@ function FormPerfil({ perfil, onSalvo }: { perfil: PsiPerfil | null; onSalvo: ()
     if (!/crp/i.test(f.registro) || f.registro.replace(/\D/g, "").length < 4) return toast.error("Informe o CRP completo. Ex.: CRP 03/12345");
     if (!f.modalidades.length) return toast.error("Escolha pelo menos uma modalidade.");
     if (f.modalidades.includes("presencial") && f.endereco_presencial.trim().length < 8) return toast.error("Informe o endereço do atendimento presencial.");
-    if (f.link_sala && !/^https:\/\//.test(f.link_sala)) return toast.error("O link da sala deve começar com https://");
+    if (f.modalidades.includes("online") && !/^https:\/\/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}/i.test(f.link_sala.trim())) return toast.error("Cole o link do seu Google Meet. Ex.: https://meet.google.com/abc-defg-hij");
     const dados = {
       user_id: user!.id, nome: f.nome.trim(), registro: f.registro.trim().toUpperCase(), abordagem: f.abordagem.trim() || null, bio: f.bio.trim() || null,
       duracao_min: Number(f.duracao_min), link_sala: f.link_sala.trim() || null, aceita_novos: f.aceita_novos,
@@ -500,7 +501,7 @@ function FormPerfil({ perfil, onSalvo }: { perfil: PsiPerfil | null; onSalvo: ()
       </Campo>
       {f.modalidades.includes("presencial") && <Campo id="pp-end" label="Endereço do atendimento presencial" obrigatorio dica="Aparece para a família só depois que você confirmar a consulta."><input id="pp-end" className={inputCls} value={f.endereco_presencial} onChange={(e) => setF({ ...f, endereco_presencial: e.target.value })} /></Campo>}
       <Campo id="pp-b" label="Apresentação para as famílias"><textarea id="pp-b" className={textareaCls} maxLength={800} value={f.bio} onChange={(e) => setF({ ...f, bio: e.target.value })} placeholder="Sua experiência com famílias atípicas, faixas etárias que atende, etc." /></Campo>
-      {f.modalidades.includes("online") && <Campo id="pp-l" label="Link fixo da sua sala" dica="Google Meet, Zoom etc. Se deixar vazio, o app cria uma sala segura (Jitsi) para cada consulta."><input id="pp-l" className={inputCls} value={f.link_sala} onChange={(e) => setF({ ...f, link_sala: e.target.value })} placeholder="https://meet.google.com/..." /></Campo>}
+      {f.modalidades.includes("online") && <Campo id="pp-l" label="Link do seu Google Meet" obrigatorio dica="No Google Meet, toque em “Nova reunião” → “Criar uma reunião para mais tarde”, copie o link e cole aqui. Ele vale para todas as suas consultas online."><input id="pp-l" className={inputCls} value={f.link_sala} onChange={(e) => setF({ ...f, link_sala: e.target.value })} placeholder="https://meet.google.com/..." /></Campo>}
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-5 w-5" checked={f.aceita_novos} onChange={(e) => setF({ ...f, aceita_novos: e.target.checked })} /> Aceito novos pacientes</label>
       <Btn onClick={salvar} className="self-start">{perfil ? "Salvar perfil" : "Enviar para validação"}</Btn>
       <p className="text-xs text-muted-foreground">O atendimento online deve seguir as normas do Conselho Federal de Psicologia, incluindo o cadastro no e-Psi quando exigido.</p>

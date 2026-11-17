@@ -251,7 +251,7 @@ begin
   if _aceitar then
     if c.inicio < now() then raise exception 'O horário já passou. Recuse ou reagende.'; end if;
     sala := case when c.modalidade = 'presencial' then null
-                 else coalesce(nullif(p.link_sala, ''), 'https://meet.jit.si/centro-acolhimento-' || replace(gen_random_uuid()::text, '-', '')) end;
+                 else public._sala_meet(p.link_sala) end;
     insert into public.agenda(familia_id, filho_id, titulo, tipo, inicio, repeticao, lembrete_min, local, notas)
       values (c.familia_id, c.filho_id, 'Consulta com ' || p.nome, 'consulta', c.inicio, 'nao', 60,
               case when c.modalidade = 'presencial' then coalesce(p.endereco_presencial, 'Presencial') else 'Online · abra em Consultas' end, c.motivo)
@@ -313,7 +313,7 @@ begin
   if not exists (select 1 from public.horarios_livres(c.profissional_id, (_novo_inicio at time zone 'America/Bahia')::date, (_novo_inicio at time zone 'America/Bahia')::date) h where h.inicio = _novo_inicio) then
     raise exception 'O novo horário não está livre.';
   end if;
-  sala := case when c.modalidade = 'presencial' then null else coalesce(nullif(p.link_sala, ''), 'https://meet.jit.si/centro-acolhimento-' || replace(gen_random_uuid()::text, '-', '')) end;
+  sala := case when c.modalidade = 'presencial' then null else public._sala_meet(p.link_sala) end;
   insert into public.agenda(familia_id, filho_id, titulo, tipo, inicio, repeticao, lembrete_min, local, notas)
     values (c.familia_id, c.filho_id, 'Consulta com ' || p.nome, 'consulta', _novo_inicio, 'nao', 60,
             case when c.modalidade = 'presencial' then coalesce(p.endereco_presencial, 'Presencial') else 'Online · abra em Consultas' end, c.motivo)
@@ -620,3 +620,24 @@ language sql stable security definer set search_path = public as $$
     and not exists (select 1 from public.psi_bloqueios b where b.profissional_id = _prof and b.inicio < slots.ini + make_interval(mins => dur) and b.fim > slots.ini)
   order by 1
 $$;
+
+-- ===================================================================== 16. Somente Google Meet (sem Jitsi)
+create or replace function public._sala_meet(_link text) returns text language plpgsql immutable as $$
+begin
+  if nullif(trim(coalesce(_link, '')), '') is null then
+    raise exception 'Cadastre o link do seu Google Meet em Atendimentos → Perfil antes de confirmar consultas online.';
+  end if;
+  return trim(_link);
+end $$;
+-- decidir_consulta e reagendar_consulta passam a usar public._sala_meet(p.link_sala) no lugar do Jitsi.
+create or replace function public.psi_link_propagar() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.link_sala is distinct from old.link_sala then
+    update public.consultas set link_video = nullif(trim(new.link_sala), '')
+     where profissional_id = new.user_id and status = 'confirmada' and modalidade = 'online' and fim > now();
+  end if;
+  return new;
+end $$;
+drop trigger if exists psi_link_propagar on public.psi_perfis;
+create trigger psi_link_propagar after update of link_sala on public.psi_perfis for each row execute function public.psi_link_propagar();

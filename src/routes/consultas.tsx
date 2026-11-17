@@ -112,8 +112,8 @@ function Consultas() {
                   {c.modalidade === "presencial" ? (
                     <span className={cn(btn.base, "bg-muted text-navy")}><MapPin className="h-5 w-5" /> {psiDe(c.profissional_id)?.endereco_presencial || "Endereço enviado pelo Centro"}</span>
                   ) : aberta && c.link_video
-                    ? <a href={c.link_video} target="_blank" rel="noopener noreferrer" className={cn(btn.base, btn.wa)}><Video className="h-5 w-5" /> Entrar na sala</a>
-                    : <span className={cn(btn.base, "bg-muted text-muted-foreground")}><Video className="h-5 w-5" /> A sala abre 15 min antes</span>}
+                    ? <a href={c.link_video} target="_blank" rel="noopener noreferrer" className={cn(btn.base, btn.wa)}><Video className="h-5 w-5" /> Entrar no Google Meet</a>
+                    : <span className={cn(btn.base, "bg-muted text-muted-foreground")}><Video className="h-5 w-5" /> {c.link_video ? "O Google Meet abre 15 min antes" : "Link do Google Meet em breve"}</span>}
                   <a href={linkGoogleAgenda(`Consulta com ${nomePsi(c.profissional_id)}`, c.inicio, c.fim, c.modalidade === "presencial" ? "Consulta presencial" : `Entre pelo app: ${c.link_video ?? ""}`)} target="_blank" rel="noopener noreferrer" className={cn(btn.base, btn.outline)}><CalendarPlus className="h-4 w-4" /> Google Agenda</a>
                   <Btn v="ghost" onClick={() => cancelar(c)}>Cancelar</Btn>
                 </div>
