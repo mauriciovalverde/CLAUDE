@@ -19,6 +19,8 @@ function Atendimentos() {
   const [aba, setAba] = useState<Aba>("agenda");
   const [prontuario, setProntuario] = useState<{ id: string; codigo: string; nome: string } | null>(null);
   const { data: perfil, loading, recarregar } = useQuery<PsiPerfil | null>(async () => (await db.from("psi_perfis").select("*").eq("user_id", user!.id).maybeSingle()).data, [user?.id]);
+  const { data: nDisp } = useQuery<number>(async () => (await db.from("psi_disponibilidade").select("id", { count: "exact", head: true }).eq("profissional_id", user!.id)).count ?? 0, [user?.id, aba]);
+  useEffect(() => { if (nDisp === 0) setAba("horarios"); }, [nDisp === 0]);
   if (loading) return <Carregando />;
   if (!perfil) return (
     <div className="flex flex-col gap-5">
@@ -33,10 +35,11 @@ function Atendimentos() {
       {!perfil.ativo && <Aviso tom="amber">Seu perfil está aguardando a validação do CRP pela equipe. Enquanto isso, já pode cadastrar seus horários.</Aviso>}
       <PedidosAcesso />
       <div role="tablist" className="grid grid-cols-4 gap-1 rounded-full bg-muted p-1">
-        {([["agenda", "Agenda", CalendarDays], ["pacientes", "Pacientes", Users], ["horarios", "Horários", Clock], ["perfil", "Perfil", Settings2]] as const).map(([k, l, I]) => (
+        {([["agenda", "Consultas", CalendarDays], ["horarios", "Abrir agenda", Clock], ["pacientes", "Pacientes", Users], ["perfil", "Perfil", Settings2]] as const).map(([k, l, I]) => (
           <button key={k} role="tab" aria-selected={aba === k} onClick={() => setAba(k)} className={cn("tap flex flex-col items-center justify-center gap-0.5 rounded-full py-1 text-[11px] font-semibold sm:flex-row sm:gap-1.5 sm:text-sm", aba === k ? "bg-card text-primary shadow-card" : "text-muted-foreground")}><I className="h-4 w-4" />{l}</button>
         ))}
       </div>
+      {nDisp === 0 && aba !== "horarios" && <Aviso tom="amber">Sua agenda ainda está fechada. <button className="font-bold text-primary underline" onClick={() => setAba("horarios")}>Toque aqui para escolher os dias e horários</button> em que você atende.</Aviso>}
       {aba === "agenda" && <Agenda perfil={perfil} abrirProntuario={setProntuario} />}
       {aba === "pacientes" && <Pacientes abrir={setProntuario} />}
       {aba === "horarios" && <Horarios perfil={perfil} onSalvo={recarregar} />}
@@ -358,6 +361,10 @@ function Horarios({ perfil, onSalvo }: { perfil: PsiPerfil; onSalvo: () => void 
     if (error) return toast.error(error.message);
     recarregar();
   }
+  async function addFaixa(dia: number, ini: string, fim: string) {
+    const { error } = await db.from("psi_disponibilidade").insert({ profissional_id: perfil.user_id, dia_semana: dia, hora_inicio: ini, hora_fim: fim });
+    error ? toast.error(error.message) : (toast.success(`${DIAS_SEMANA[dia]} ${ini}–${fim} aberto para agendamento.`), recarregar());
+  }
   async function copiarSemana() {
     const base = (disp ?? []).filter((d) => d.dia_semana === novo.dia);
     if (!base.length) return toast.error(`Cadastre primeiro os horários de ${DIAS_SEMANA[novo.dia]}.`);
@@ -379,6 +386,34 @@ function Horarios({ perfil, onSalvo }: { perfil: PsiPerfil; onSalvo: () => void 
 
   return (
     <div className="flex flex-col gap-4">
+      <Card className="flex flex-col gap-3 border-primary">
+        <h2 className="font-display text-xl font-bold">Em quais dias e horários você atende?</h2>
+        <p className="text-sm font-semibold text-navy">Toque em “+ Manhã” ou “+ Tarde” no dia em que você atende. Para outro horário, use o campo logo abaixo da lista.</p>
+        <ul className="flex flex-col gap-2">
+          {DIAS_SEMANA.map((nome, i) => {
+            const itens = (disp ?? []).filter((d) => d.dia_semana === i);
+            return (
+              <li key={nome} className="flex flex-wrap items-center gap-2 rounded-xl bg-muted p-3 text-sm">
+                <b className="w-full sm:w-20">{nome}</b>
+                {itens.map((d) => (
+                  <span key={d.id} className="inline-flex items-center gap-1 rounded-full bg-success/15 px-3 py-1 font-semibold text-navy">{hhmm(d.hora_inicio)}–{hhmm(d.hora_fim)}<button onClick={() => remover(d.id)} aria-label={`Remover ${nome} ${hhmm(d.hora_inicio)}`} className="text-muted-foreground hover:text-emergency"><Trash2 className="h-3.5 w-3.5" /></button></span>
+                ))}
+                {!itens.some((d) => d.hora_inicio < "12:00") && <button onClick={() => addFaixa(i, "08:00", "12:00")} className="rounded-full border border-dashed border-primary bg-card px-3 py-2 text-sm font-semibold text-primary">+ Manhã 8h–12h</button>}
+                {!itens.some((d) => d.hora_fim > "13:00") && <button onClick={() => addFaixa(i, "13:00", "18:00")} className="rounded-full border border-dashed border-primary bg-card px-3 py-2 text-sm font-semibold text-primary">+ Tarde 13h–18h</button>}
+              </li>
+            );
+          })}
+        </ul>
+        <p className="text-sm text-muted-foreground">As famílias veem vagas de {regras.duracao_min} min + {regras.intervalo_min} min de intervalo dentro destes horários (horário da Bahia).</p>
+        <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-[1fr_8rem_8rem_auto]">
+          <div className="col-span-2 sm:col-span-1"><Campo id="h-dia" label="Dia" obrigatorio><select id="h-dia" className={inputCls} value={novo.dia} onChange={(e) => setNovo({ ...novo, dia: Number(e.target.value) })}>{DIAS_SEMANA.map((d, i) => <option key={d} value={i}>{d}</option>)}</select></Campo></div>
+          <Campo id="h-ini" label="Das" obrigatorio><input id="h-ini" type="time" className={inputCls} value={novo.ini} onChange={(e) => setNovo({ ...novo, ini: e.target.value })} /></Campo>
+          <Campo id="h-fim" label="Até" obrigatorio><input id="h-fim" type="time" className={inputCls} value={novo.fim} onChange={(e) => setNovo({ ...novo, fim: e.target.value })} /></Campo>
+          <Btn onClick={addDisp} className="col-span-2 sm:col-span-1"><Plus className="h-4 w-4" /> Adicionar</Btn>
+        </div>
+        <Btn v="ghost" className="self-start text-sm" onClick={copiarSemana}>Copiar {DIAS_SEMANA[novo.dia]} para os outros dias úteis</Btn>
+      </Card>
+
       <Card className="flex flex-col gap-3">
         <h2 className="font-display text-lg font-bold">Regras da agenda</h2>
         <div className="grid gap-3 sm:grid-cols-3">
@@ -387,31 +422,6 @@ function Horarios({ perfil, onSalvo }: { perfil: PsiPerfil; onSalvo: () => void 
           <Campo id="r-a" label="Antecedência mínima" obrigatorio><select id="r-a" className={inputCls} value={regras.antecedencia_horas} onChange={(e) => setRegras({ ...regras, antecedencia_horas: Number(e.target.value) })}>{[1, 2, 4, 12, 24, 48].map((h) => <option key={h} value={h}>{h} hora(s)</option>)}</select></Campo>
         </div>
         <Btn v="soft" onClick={salvarRegras} className="self-start">Salvar regras</Btn>
-      </Card>
-
-      <Card className="flex flex-col gap-3">
-        <h2 className="font-display text-lg font-bold">Dias e horários de atendimento</h2>
-        <p className="text-sm text-muted-foreground">As famílias veem vagas de {regras.duracao_min} min + {regras.intervalo_min} min de intervalo dentro destes horários (horário da Bahia).</p>
-        <ul className="flex flex-col gap-2">
-          {DIAS_SEMANA.map((nome, i) => {
-            const itens = (disp ?? []).filter((d) => d.dia_semana === i);
-            return (
-              <li key={nome} className="flex flex-wrap items-center gap-2 rounded-xl bg-muted p-3 text-sm">
-                <b className="w-20">{nome}</b>
-                {itens.length ? itens.map((d) => (
-                  <span key={d.id} className="inline-flex items-center gap-1 rounded-full bg-card px-3 py-1 font-semibold">{hhmm(d.hora_inicio)}–{hhmm(d.hora_fim)}<button onClick={() => remover(d.id)} aria-label={`Remover ${nome} ${hhmm(d.hora_inicio)}`} className="text-muted-foreground hover:text-emergency"><Trash2 className="h-3.5 w-3.5" /></button></span>
-                )) : <span className="text-muted-foreground">Não atende</span>}
-              </li>
-            );
-          })}
-        </ul>
-        <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-[1fr_8rem_8rem_auto]">
-          <div className="col-span-2 sm:col-span-1"><Campo id="h-dia" label="Dia" obrigatorio><select id="h-dia" className={inputCls} value={novo.dia} onChange={(e) => setNovo({ ...novo, dia: Number(e.target.value) })}>{DIAS_SEMANA.map((d, i) => <option key={d} value={i}>{d}</option>)}</select></Campo></div>
-          <Campo id="h-ini" label="Das" obrigatorio><input id="h-ini" type="time" className={inputCls} value={novo.ini} onChange={(e) => setNovo({ ...novo, ini: e.target.value })} /></Campo>
-          <Campo id="h-fim" label="Até" obrigatorio><input id="h-fim" type="time" className={inputCls} value={novo.fim} onChange={(e) => setNovo({ ...novo, fim: e.target.value })} /></Campo>
-          <Btn onClick={addDisp} className="col-span-2 sm:col-span-1"><Plus className="h-4 w-4" /> Adicionar</Btn>
-        </div>
-        <Btn v="ghost" className="self-start text-sm" onClick={copiarSemana}>Copiar {DIAS_SEMANA[novo.dia]} para os outros dias úteis</Btn>
       </Card>
 
       <Card className="flex flex-col gap-3">
