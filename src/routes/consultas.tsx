@@ -168,7 +168,7 @@ function Agendar({ psis, filhos, whats, onVoltar, onAgendado }: { psis: PsiPerfi
 
   const { data: slots, loading } = useQuery<{ inicio: string; fim: string }[]>(async () => {
     if (!psi) return [];
-    const hoje = new Date(); const ate = new Date(Date.now() + 28 * 864e5);
+    const hoje = new Date(); const ate = new Date(Date.now() + 60 * 864e5);
     const iso = (d: Date) => d.toLocaleDateString("sv-SE", { timeZone: "America/Bahia" });
     const { data } = await db.rpc("horarios_livres", { _prof: psi.user_id, _de: iso(hoje), _ate: iso(ate) });
     return data ?? [];
@@ -225,7 +225,7 @@ function Agendar({ psis, filhos, whats, onVoltar, onAgendado }: { psis: PsiPerfi
       )}
 
       {psi && !slot && (loading ? <Carregando /> : !porDia.size ? (
-        <Vazio icon={CalendarCheck} titulo="Sem horários livres" texto={`${psi.nome} não tem horários disponíveis nas próximas 4 semanas. Tente outro profissional ou volte depois.`} />
+        <Vazio icon={CalendarCheck} titulo="Sem horários livres" texto={`${psi.nome} não tem horários disponíveis nos próximos 60 dias. Tente outro profissional ou volte depois.`} />
       ) : (
         <>
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Dias">

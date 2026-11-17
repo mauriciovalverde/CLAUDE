@@ -573,3 +573,50 @@ do $$ declare f text; begin
     execute 'grant execute on function public.' || f || ' to authenticated';
   end loop;
 end $$;
+
+-- ===================================================================== 15. Agenda por DATA (psicólogo escolhe datas e horários livres)
+create table if not exists public.psi_datas (
+  id uuid primary key default gen_random_uuid(),
+  profissional_id uuid not null references public.psi_perfis(user_id) on delete cascade,
+  data date not null,
+  hora_inicio time not null,
+  hora_fim time not null,
+  created_at timestamptz not null default now(),
+  check (hora_fim > hora_inicio)
+);
+create index if not exists psi_datas_idx on public.psi_datas (profissional_id, data);
+alter table public.psi_datas enable row level security;
+drop policy if exists "datas: ver" on public.psi_datas;
+create policy "datas: ver" on public.psi_datas for select using (true);
+drop policy if exists "datas: dono" on public.psi_datas;
+create policy "datas: dono" on public.psi_datas for all
+  using (profissional_id = auth.uid() or public.is_staff(auth.uid()))
+  with check (profissional_id = auth.uid() or public.is_staff(auth.uid()));
+revoke all on public.psi_datas from anon;
+
+create or replace function public.horarios_livres(_prof uuid, _de date, _ate date)
+returns table(inicio timestamptz, fim timestamptz)
+language sql stable security definer set search_path = public as $$
+  with p as (select * from public.psi_perfis where user_id = _prof and (ativo or user_id = auth.uid())),
+  dias as (select d::date dia from generate_series(_de, least(_ate, _de + 90), interval '1 day') d),
+  faixas as (
+    select dias.dia, a.hora_inicio, a.hora_fim from dias
+      join public.psi_disponibilidade a on a.profissional_id = _prof and a.dia_semana = extract(dow from dias.dia)
+    union all
+    select d.data, d.hora_inicio, d.hora_fim from public.psi_datas d
+      where d.profissional_id = _prof and d.data between _de and least(_ate, _de + 90)
+  ),
+  slots as (
+    select distinct (s at time zone 'America/Bahia') ini, p.duracao_min dur, p.antecedencia_horas ant
+    from faixas cross join p
+    cross join lateral generate_series(faixas.dia + faixas.hora_inicio, faixas.dia + faixas.hora_fim - make_interval(mins => p.duracao_min),
+                                       make_interval(mins => p.duracao_min + p.intervalo_min)) s
+  )
+  select ini, ini + make_interval(mins => dur)
+  from slots
+  where ini > now() + make_interval(hours => ant)
+    and not exists (select 1 from public.consultas c where c.profissional_id = _prof and c.status in ('pendente','confirmada')
+                    and c.inicio < slots.ini + make_interval(mins => dur) and c.fim > slots.ini)
+    and not exists (select 1 from public.psi_bloqueios b where b.profissional_id = _prof and b.inicio < slots.ini + make_interval(mins => dur) and b.fim > slots.ini)
+  order by 1
+$$;
