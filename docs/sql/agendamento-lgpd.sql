@@ -205,7 +205,7 @@ begin
   select * into p from public.psi_perfis where user_id = _prof and ativo;
   if not found then raise exception 'Profissional indisponível.'; end if;
   if coalesce(_modalidade, 'online') <> all(p.modalidades) then raise exception 'Este profissional não atende nessa modalidade.'; end if;
-  if coalesce(_para_quem, 'mae') not in ('mae','filho','familia') then raise exception 'Escolha para quem é a consulta.'; end if;
+  if coalesce(_para_quem, 'mae') <> 'mae' then raise exception 'O atendimento é só para o titular do cadastro.'; end if; _para_quem := 'mae'; _filho := null;
   if not p.aceita_novos and not exists (select 1 from public.consultas where profissional_id = _prof and familia_id = f.id and status in ('realizada','confirmada','pendente')) then
     raise exception 'Este profissional não está recebendo novas famílias no momento.';
   end if;
