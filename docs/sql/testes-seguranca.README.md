@@ -7,3 +7,10 @@ executa as tentativas de acesso indevido trocando o papel (`role`) e o JWT simul
 Cenários: psicólogo lendo dados de outro psicólogo; psicólogo lendo e-mail/telefone/CPF/endereço pela API;
 psicólogo chamando funções de administração; família lendo dados de outra família; equipe e visitante sem login
 lendo prontuário; dois pedidos para o mesmo horário.
+
+## Resultado — 17/11/2026 (31 de 31 OK)
+Agenda por data; pedido pendente; mesmo horário bloqueado para outra família; psicólogo sem acesso a
+familias/perfis/cpfs/pacientes/logs e à tabela de consultas; agenda do psicólogo só com código + primeiro nome;
+prontuário só do responsável e sem exclusão; outro psicólogo não lê, não escreve, não se passa pelo colega,
+não mexe na agenda nem cancela/reagenda/recusa consulta alheia; família e equipe sem acesso a prontuário;
+visitante sem login barrado; tentativas negadas registradas no log; fila WhatsApp/e-mail com lembretes 24 h e 2 h.
