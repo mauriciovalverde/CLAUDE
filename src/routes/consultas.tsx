@@ -157,7 +157,8 @@ function Agendar({ psis, filhos, whats, onVoltar, onAgendado }: { psis: PsiPerfi
   const [psi, setPsi] = useState<PsiPerfil | null>(psis.length === 1 ? psis[0] : null);
   const [dia, setDia] = useState<string>("");
   const [slot, setSlot] = useState<{ inicio: string; fim: string } | null>(null);
-  const [paraQuem, setParaQuem] = useState<string>(filhos.length ? "filho" : "mae");
+  // O atendimento é só para o titular do cadastro (a mãe/responsável), nunca para a criança.
+  const paraQuem: string = "mae";
   const [filho, setFilho] = useState(filhos[0]?.id ?? "");
   const [modalidade, setModalidade] = useState("online");
   const [motivo, setMotivo] = useState("");
@@ -255,16 +256,6 @@ function Agendar({ psis, filhos, whats, onVoltar, onAgendado }: { psis: PsiPerfi
             <p className="font-display text-lg font-bold">{fDataLonga(slot.inicio)} · {fHora(slot.inicio)}</p>
             <p className="text-sm">{psi.nome} · {psi.registro} · {psi.duracao_min} min</p>
           </div>
-          <Campo id="ag-quem" label="A consulta é para quem?" obrigatorio>
-            <div className="flex flex-wrap gap-2">
-              {[["mae", "Para mim"], ...(filhos.length ? [["filho", "Para meu filho(a)"]] : []), ["familia", "Para a família"]].map(([k, l]) => (
-                <button key={k} type="button" onClick={() => setParaQuem(k)} className={cn("tap rounded-full border px-4 text-sm font-semibold", paraQuem === k ? "border-primary bg-primary-soft text-primary" : "border-border bg-card")}>{l}</button>
-              ))}
-            </div>
-          </Campo>
-          {paraQuem === "filho" && filhos.length > 1 && (
-            <div className="flex flex-wrap gap-2">{filhos.map((f) => <button key={f.id} type="button" onClick={() => setFilho(f.id)} className={cn("tap rounded-full border px-4 text-sm font-semibold", filho === f.id ? "border-primary bg-primary text-white" : "border-border bg-card")}>{f.nome.split(" ")[0]}{f.nascimento ? ` · ${idadeTxt(f.nascimento)}` : ""}</button>)}</div>
-          )}
           {(psi.modalidades?.length ?? 0) > 1 && (
             <Campo id="ag-mod" label="Modalidade" obrigatorio>
               <div className="flex flex-wrap gap-2">
