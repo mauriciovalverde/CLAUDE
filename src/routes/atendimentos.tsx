@@ -347,13 +347,10 @@ function Horarios({ perfil, onSalvo }: { perfil: PsiPerfil; onSalvo: () => void 
   const hojeIso = new Date().toLocaleDateString("sv-SE");
   const { data: datas, recarregar } = useQuery<any[]>(async () => (await db.from("psi_datas").select("*").eq("profissional_id", perfil.user_id).gte("data", hojeIso).order("data").order("hora_inicio")).data ?? [], [perfil.user_id]);
   const { data: disp, recarregar: recDisp } = useQuery<any[]>(async () => (await db.from("psi_disponibilidade").select("*").eq("profissional_id", perfil.user_id).order("dia_semana")).data ?? [], [perfil.user_id]);
-  const { data: bloq, recarregar: recBloq } = useQuery<any[]>(async () => (await db.from("psi_bloqueios").select("*").eq("profissional_id", perfil.user_id).gte("fim", new Date().toISOString()).order("inicio")).data ?? [], [perfil.user_id]);
   const [mes, setMes] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [sel, setSel] = useState<string[]>([]);
   const [faixa, setFaixa] = useState({ ini: "13:00", fim: "15:00" });
   const [regras, setRegras] = useState({ duracao_min: perfil.duracao_min, intervalo_min: perfil.intervalo_min ?? 10, antecedencia_horas: perfil.antecedencia_horas ?? 2 });
-  const amanha = new Date(); amanha.setDate(amanha.getDate() + 1); amanha.setHours(0, 0, 0, 0);
-  const [b, setB] = useState({ ini: paraInputLocal(amanha), fim: paraInputLocal(new Date(amanha.getTime() + 864e5)), motivo: "" });
   const hhmm = (t: string) => t.slice(0, 5);
   const iso = (d: Date) => d.toLocaleDateString("sv-SE");
   const porData = useMemo(() => { const m = new Map<string, any[]>(); (datas ?? []).forEach((x) => m.set(x.data, [...(m.get(x.data) ?? []), x])); return m; }, [datas]);
@@ -365,12 +362,12 @@ function Horarios({ perfil, onSalvo }: { perfil: PsiPerfil; onSalvo: () => void 
   const nomeData = (k: string) => new Date(k + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" }).replace(/\./g, "");
 
   function alternar(k: string) { setSel((s) => (s.includes(k) ? s.filter((x) => x !== k) : [...s, k].sort())); }
-  async function abrir() {
-    if (!sel.length) return toast.error("Toque nas datas do calendário.");
-    if (faixa.fim <= faixa.ini) return toast.error("O horário final precisa ser depois do inicial.");
-    const { error } = await db.from("psi_datas").insert(sel.map((data) => ({ profissional_id: perfil.user_id, data, hora_inicio: faixa.ini, hora_fim: faixa.fim })));
+  async function abrir(faixas: [string, string][]) {
+    if (!sel.length) return toast.error("Toque nos dias do calendário.");
+    if (faixas.some(([i, f]) => f <= i)) return toast.error("O horário final precisa ser depois do inicial.");
+    const { error } = await db.from("psi_datas").insert(sel.flatMap((data) => faixas.map(([i, f]) => ({ profissional_id: perfil.user_id, data, hora_inicio: i, hora_fim: f }))));
     if (error) return toast.error(error.message);
-    toast.success(`Agenda aberta: ${sel.length} data(s), das ${faixa.ini} às ${faixa.fim}.`); setSel([]); recarregar();
+    toast.success(`Agenda aberta em ${sel.length} dia(s): ${faixas.map(([i, f]) => `${i}–${f}`).join(" e ")}.`); setSel([]); recarregar();
   }
   async function remover(id: string) { await db.from("psi_datas").delete().eq("id", id); recarregar(); }
   async function removerSemanal(id: string) { await db.from("psi_disponibilidade").delete().eq("id", id); recDisp(); }
@@ -378,20 +375,12 @@ function Horarios({ perfil, onSalvo }: { perfil: PsiPerfil; onSalvo: () => void 
     const { error } = await db.from("psi_perfis").update(regras).eq("user_id", perfil.user_id);
     error ? toast.error(error.message) : (toast.success("Regras da agenda salvas."), onSalvo());
   }
-  async function addBloq() {
-    const ini = new Date(b.ini), fim = new Date(b.fim);
-    if (!(fim > ini)) return toast.error("O fim precisa ser depois do início.");
-    const { error } = await db.from("psi_bloqueios").insert({ profissional_id: perfil.user_id, inicio: ini.toISOString(), fim: fim.toISOString(), motivo: b.motivo || null });
-    if (error) return toast.error(error.message);
-    toast.success("Período bloqueado. Consultas já marcadas nesse período continuam valendo — reagende ou cancele se precisar."); recBloq();
-  }
-  async function remBloq(id: string) { await db.from("psi_bloqueios").delete().eq("id", id); recBloq(); }
 
   return (
     <div className="flex flex-col gap-4">
       <Card className="flex flex-col gap-3 border-primary">
-        <h2 className="font-display text-xl font-bold">Abra sua agenda por data</h2>
-        <p className="text-sm font-semibold text-navy">1. Toque nas datas em que vai atender. 2. Escolha o horário (ex.: 13:00 às 15:00). 3. Toque em “Abrir agenda”.</p>
+        <h2 className="font-display text-xl font-bold">Em quais dias você está disponível?</h2>
+        <p className="text-sm font-semibold text-navy">Toque nos dias em que você está disponível e escolha manhã, tarde ou um horário diferente.</p>
         <div className="flex items-center justify-between">
           <button onClick={() => setMes(new Date(mes.getFullYear(), mes.getMonth() - 1, 1))} disabled={mes <= new Date(new Date().getFullYear(), new Date().getMonth(), 1)} className="tap grid w-12 place-items-center rounded-full border border-border bg-card disabled:opacity-30" aria-label="Mês anterior"><ChevronLeft className="h-5 w-5" /></button>
           <b className="font-display text-lg first-letter:uppercase">{mes.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</b>
@@ -414,12 +403,25 @@ function Horarios({ perfil, onSalvo }: { perfil: PsiPerfil; onSalvo: () => void 
         <p className="flex flex-wrap gap-3 text-xs text-muted-foreground"><span><span className="mr-1 inline-block h-2.5 w-2.5 rounded-full bg-success" />com horário aberto</span><span><span className="mr-1 inline-block h-2.5 w-2.5 rounded-full bg-primary" />selecionada</span></p>
         {sel.length > 0 && (
           <div className="flex flex-col gap-3 rounded-2xl bg-primary-soft p-4">
-            <p className="text-sm font-semibold">{sel.length} data(s): {sel.map(nomeData).join(", ")}</p>
+            <p className="text-sm font-semibold">{sel.length} dia(s) marcado(s): {sel.map(nomeData).join(", ")}</p>
+            <p className="text-sm font-bold text-navy">Qual período?</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Btn className="whitespace-nowrap px-2 text-base" onClick={() => abrir([["08:00", "12:00"]])}>Manhã 8–12h</Btn>
+              <Btn className="whitespace-nowrap px-2 text-base" onClick={() => abrir([["13:00", "18:00"]])}>Tarde 13–18h</Btn>
+              <Btn v="soft" className="col-span-2" onClick={() => abrir([["08:00", "12:00"], ["13:00", "18:00"]])}>Manhã e tarde</Btn>
+            </div>
+            <p className="text-sm font-bold text-navy">Ou horário diferente:</p>
             <div className="grid grid-cols-2 gap-2">
               <Campo id="f-ini" label="Das" obrigatorio><input id="f-ini" type="time" className={inputCls} value={faixa.ini} onChange={(e) => setFaixa({ ...faixa, ini: e.target.value })} /></Campo>
               <Campo id="f-fim" label="Até" obrigatorio><input id="f-fim" type="time" className={inputCls} value={faixa.fim} onChange={(e) => setFaixa({ ...faixa, fim: e.target.value })} /></Campo>
             </div>
-            <div className="flex flex-wrap gap-2"><Btn onClick={abrir} className="flex-1"><Plus className="h-4 w-4" /> Abrir agenda</Btn><Btn v="ghost" onClick={() => setSel([])}>Limpar</Btn></div>
+            <div className="flex flex-wrap gap-2"><Btn v="outline" onClick={() => abrir([[faixa.ini, faixa.fim]])} className="flex-1"><Plus className="h-4 w-4" /> Abrir este horário</Btn><Btn v="ghost" onClick={() => setSel([])}>Limpar</Btn></div>
+            {sel.some((k) => porData.has(k)) && (
+              <div className="flex flex-col gap-1 border-t border-primary/20 pt-2 text-sm">
+                <b>Já abertos nesses dias:</b>
+                {sel.filter((k) => porData.has(k)).map((k) => <div key={k} className="flex flex-wrap items-center gap-2"><span className="w-24 first-letter:uppercase">{nomeData(k)}</span>{porData.get(k)!.map((x) => <span key={x.id} className="inline-flex items-center gap-1 rounded-full bg-card px-3 py-1 font-semibold">{hhmm(x.hora_inicio)}–{hhmm(x.hora_fim)}<button onClick={() => remover(x.id)} aria-label="Fechar horário" className="text-muted-foreground hover:text-emergency"><Trash2 className="h-3.5 w-3.5" /></button></span>)}</div>)}
+              </div>
+            )}
           </div>
         )}
       </Card>
@@ -453,21 +455,6 @@ function Horarios({ perfil, onSalvo }: { perfil: PsiPerfil; onSalvo: () => void 
         <Btn v="soft" onClick={salvarRegras} className="self-start">Salvar regras</Btn>
       </Card>
 
-      <Card className="flex flex-col gap-3">
-        <h2 className="flex items-center gap-2 font-display text-lg font-bold"><CalendarOff className="h-5 w-5 text-primary" /> Bloqueios, folgas e férias</h2>
-        <div className="grid gap-2 sm:grid-cols-3">
-          <Campo id="b-i" label="De" obrigatorio><input id="b-i" type="datetime-local" className={inputCls} value={b.ini} onChange={(e) => setB({ ...b, ini: e.target.value })} /></Campo>
-          <Campo id="b-f" label="Até" obrigatorio><input id="b-f" type="datetime-local" className={inputCls} value={b.fim} onChange={(e) => setB({ ...b, fim: e.target.value })} /></Campo>
-          <Campo id="b-m" label="Motivo"><input id="b-m" className={inputCls} value={b.motivo} onChange={(e) => setB({ ...b, motivo: e.target.value })} placeholder="Ex.: férias" /></Campo>
-        </div>
-        <Btn v="outline" onClick={addBloq} className="self-start">Bloquear período</Btn>
-        {(bloq ?? []).map((x) => (
-          <div key={x.id} className="flex items-center gap-2 rounded-xl bg-muted p-3 text-sm">
-            <span className="flex-1">{fData(x.inicio)} {fHora(x.inicio)} → {fData(x.fim)} {fHora(x.fim)}{x.motivo ? ` · ${x.motivo}` : ""}</span>
-            <button onClick={() => remBloq(x.id)} aria-label="Remover bloqueio" className="tap grid place-items-center text-muted-foreground"><Trash2 className="h-4 w-4" /></button>
-          </div>
-        ))}
-      </Card>
     </div>
   );
 }
