@@ -6,14 +6,24 @@ import { cn } from "@/lib/utils";
 const BASE = import.meta.env.BASE_URL;
 const NOME = "Centro de Acolhimento à Família Atípica";
 
+const V = "?v=4"; // troque ao atualizar os arquivos da logo, para o celular não usar a versão antiga em cache
+const src = (n: string) => `${BASE}${n}${V}`;
+
 /** Marca oficial: compacto = só o símbolo; normal = assinatura completa (versão clara/escura conforme o tema). */
 export function Logo({ compact = false, grande = false, className }: { compact?: boolean; grande?: boolean; className?: string }) {
-  if (compact) return <img src={`${BASE}marca.webp`} alt={NOME} width={44} height={44} className={cn("h-11 w-11 shrink-0 object-contain", className)} />;
+  if (compact) {
+    return (
+      <img src={src("marca.webp")} srcSet={`${src("marca-192.webp")} 192w, ${src("marca.webp")} 512w`} sizes="48px"
+        alt={NOME} width={48} height={48} decoding="async" className={cn("h-12 w-12 shrink-0 object-contain", className)} />
+    );
+  }
   const tam = grande ? "h-auto w-full max-w-[22rem]" : "h-14 w-auto";
+  const sizes = grande ? "(min-width: 640px) 352px, 256px" : "125px";
+  const set = (t: string) => `${src(`logo-${t}-600.webp`)} 600w, ${src(`logo-${t}.webp`)} 1200w`;
   return (
     <span className={cn("inline-flex shrink-0", className)}>
-      <img src={`${BASE}logo-claro.webp`} alt={NOME} width={720} height={324} className={cn(tam, "object-contain dark:hidden")} />
-      <img src={`${BASE}logo-escuro.webp`} alt="" aria-hidden="true" width={720} height={324} className={cn(tam, "hidden object-contain dark:block")} />
+      <img src={src("logo-claro.webp")} srcSet={set("claro")} sizes={sizes} alt={NOME} width={1200} height={542} decoding="async" className={cn(tam, "object-contain dark:hidden")} />
+      <img src={src("logo-escuro.webp")} srcSet={set("escuro")} sizes={sizes} alt="" aria-hidden="true" width={1200} height={542} decoding="async" className={cn(tam, "hidden object-contain dark:block")} />
     </span>
   );
 }
