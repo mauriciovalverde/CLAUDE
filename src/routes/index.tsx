@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { BookOpen, ClipboardList, HandHeart, Map, MapPin, NotebookPen, Phone, Search, ShieldCheck, Users } from "lucide-react";
 import { TopBar } from "@/components/app/AppShell";
-import { CardLink, btn } from "@/components/app/kit";
+import { CardLink, Logo, btn } from "@/components/app/kit";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +22,7 @@ function Landing() {
         <TopBar publico />
         <main id="conteudo" className="mx-auto grid max-w-6xl gap-10 px-4 pb-16 pt-8 lg:grid-cols-[1.1fr_.9fr] lg:pt-16">
           <section className="flex flex-col gap-6">
+            <Logo grande className="-mb-2 w-64 sm:w-80 lg:hidden" />
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Informação · Acolhimento · Apoio</p>
             <h1 className="font-display text-[2.6rem] font-extrabold leading-[1.05] sm:text-6xl">
               Você não está <span className="text-primary">sozinha!</span>

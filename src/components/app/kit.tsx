@@ -3,18 +3,17 @@ import { ArrowRight, BadgeCheck, Info, X, type LucideIcon } from "lucide-react";
 import { useEffect, type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-export function Logo({ compact = false }: { compact?: boolean }) {
+const BASE = import.meta.env.BASE_URL;
+const NOME = "Centro de Acolhimento à Família Atípica";
+
+/** Marca oficial: compacto = só o símbolo; normal = assinatura completa (versão clara/escura conforme o tema). */
+export function Logo({ compact = false, grande = false, className }: { compact?: boolean; grande?: boolean; className?: string }) {
+  if (compact) return <img src={`${BASE}marca.webp`} alt={NOME} width={44} height={44} className={cn("h-11 w-11 shrink-0 object-contain", className)} />;
+  const tam = grande ? "h-auto w-full max-w-[22rem]" : "h-14 w-auto";
   return (
-    <span className="inline-flex items-center gap-2 font-display font-extrabold text-navy">
-      <svg viewBox="0 0 24 24" className="h-8 w-8 shrink-0 text-primary" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M12 20.5s-7.5-4.6-7.5-10.4A4.3 4.3 0 0 1 12 7.4a4.3 4.3 0 0 1 7.5 2.7c0 5.8-7.5 10.4-7.5 10.4z" />
-        <path d="M9 12.5c1.6 1.6 4.4 1.6 6 0" className="text-coral" stroke="var(--color-coral)" />
-      </svg>
-      {!compact && (
-        <span className="text-lg leading-none">
-          Centro de <span className="text-primary">Acolhimento</span>
-        </span>
-      )}
+    <span className={cn("inline-flex shrink-0", className)}>
+      <img src={`${BASE}logo-claro.webp`} alt={NOME} width={720} height={324} className={cn(tam, "object-contain dark:hidden")} />
+      <img src={`${BASE}logo-escuro.webp`} alt="" aria-hidden="true" width={720} height={324} className={cn(tam, "hidden object-contain dark:block")} />
     </span>
   );
 }
