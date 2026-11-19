@@ -1,11 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Bell, BriefcaseMedical, Scale, Download, FileText, LogOut, Pencil, ShieldCheck, Trash2, UserRound } from "lucide-react";
+import { Bell, BriefcaseMedical, Megaphone, Scale, Download, FileText, LogOut, Pencil, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app/AppShell";
 import { Btn, Campo, Card, CardLink, Chip, PageHeader, inputCls } from "@/components/app/kit";
 import { nomeExibicao, useAuth, generoDe } from "@/lib/auth";
-import { db, useFilhos } from "@/lib/dados";
+import { db, useFilhos, useQuery } from "@/lib/dados";
 import { baixarArquivo, digits, fmtTel, idade, idadeTxt } from "@/lib/br";
 
 export const Route = createFileRoute("/perfil")({ component: () => <AppShell><Perfil /></AppShell> });
@@ -115,6 +115,7 @@ function Perfil() {
       </Card>
 
       <div className="flex flex-col gap-2">
+        <ManifestacoesLink />
         <CardLink to="/atendimentos" icon={BriefcaseMedical} tom="blue" title="Sou psicólogo(a)" subtitle="Atenda famílias por teleconsulta pelo app" />
         <CardLink to="/sou-profissional" icon={BriefcaseMedical} tom="green" title="Sou profissional" subtitle="Cadastre seu perfil no diretório de especialistas" />
         <CardLink to="/privacidade" icon={ShieldCheck} tom="navy" title="Privacidade e LGPD" subtitle="Como seus dados são usados e protegidos" />
@@ -164,5 +165,17 @@ function MeusDireitos() {
         </div>
       ))}
     </Card>
+  );
+}
+
+function ManifestacoesLink() {
+  const { data } = useQuery<any[]>(async () => (await db.rpc("ouv_minhas")).data ?? [], []);
+  const novas = (data ?? []).filter((m) => m.nao_lida).length;
+  const total = data?.length ?? 0;
+  return (
+    <div className="relative">
+      <CardLink to="/minhas-manifestacoes" icon={Megaphone} tom="coral" title="Minhas manifestações" subtitle={total ? `${total} protocolo(s) na Ouvidoria` : "Denúncias, reclamações e pedidos à Ouvidoria"} />
+      {novas > 0 && <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-coral px-2 py-0.5 text-[11px] font-bold text-white">{novas} nova(s)</span>}
+    </div>
   );
 }

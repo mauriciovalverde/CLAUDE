@@ -25,6 +25,8 @@ import { Route as DocumentosRouteImport } from './routes/documentos'
 import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as HistoriasRouteImport } from './routes/historias'
 import { Route as InicioRouteImport } from './routes/inicio'
+import { Route as MinhasManifestacoesRouteImport } from './routes/minhas-manifestacoes'
+import { Route as OuvidoriaRouteImport } from './routes/ouvidoria'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as RecuperarRouteImport } from './routes/recuperar'
@@ -119,6 +121,16 @@ const InicioRoute = InicioRouteImport.update({
   path: '/inicio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MinhasManifestacoesRoute = MinhasManifestacoesRouteImport.update({
+  id: '/minhas-manifestacoes',
+  path: '/minhas-manifestacoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OuvidoriaRoute = OuvidoriaRouteImport.update({
+  id: '/ouvidoria',
+  path: '/ouvidoria',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PerfilRoute = PerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
@@ -202,6 +214,8 @@ export interface FileRoutesByFullPath {
   '/entrar': typeof EntrarRoute
   '/historias': typeof HistoriasRoute
   '/inicio': typeof InicioRoute
+  '/minhas-manifestacoes': typeof MinhasManifestacoesRoute
+  '/ouvidoria': typeof OuvidoriaRoute
   '/perfil': typeof PerfilRoute
   '/privacidade': typeof PrivacidadeRoute
   '/recuperar': typeof RecuperarRoute
@@ -233,6 +247,8 @@ export interface FileRoutesByTo {
   '/entrar': typeof EntrarRoute
   '/historias': typeof HistoriasRoute
   '/inicio': typeof InicioRoute
+  '/minhas-manifestacoes': typeof MinhasManifestacoesRoute
+  '/ouvidoria': typeof OuvidoriaRoute
   '/perfil': typeof PerfilRoute
   '/privacidade': typeof PrivacidadeRoute
   '/recuperar': typeof RecuperarRoute
@@ -265,6 +281,8 @@ export interface FileRoutesById {
   '/entrar': typeof EntrarRoute
   '/historias': typeof HistoriasRoute
   '/inicio': typeof InicioRoute
+  '/minhas-manifestacoes': typeof MinhasManifestacoesRoute
+  '/ouvidoria': typeof OuvidoriaRoute
   '/perfil': typeof PerfilRoute
   '/privacidade': typeof PrivacidadeRoute
   '/recuperar': typeof RecuperarRoute
@@ -298,6 +316,8 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/historias'
     | '/inicio'
+    | '/minhas-manifestacoes'
+    | '/ouvidoria'
     | '/perfil'
     | '/privacidade'
     | '/recuperar'
@@ -329,6 +349,8 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/historias'
     | '/inicio'
+    | '/minhas-manifestacoes'
+    | '/ouvidoria'
     | '/perfil'
     | '/privacidade'
     | '/recuperar'
@@ -360,6 +382,8 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/historias'
     | '/inicio'
+    | '/minhas-manifestacoes'
+    | '/ouvidoria'
     | '/perfil'
     | '/privacidade'
     | '/recuperar'
@@ -392,6 +416,8 @@ export interface RootRouteChildren {
   EntrarRoute: typeof EntrarRoute
   HistoriasRoute: typeof HistoriasRoute
   InicioRoute: typeof InicioRoute
+  MinhasManifestacoesRoute: typeof MinhasManifestacoesRoute
+  OuvidoriaRoute: typeof OuvidoriaRoute
   PerfilRoute: typeof PerfilRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   RecuperarRoute: typeof RecuperarRoute
@@ -521,6 +547,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InicioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/minhas-manifestacoes': {
+      id: '/minhas-manifestacoes'
+      path: '/minhas-manifestacoes'
+      fullPath: '/minhas-manifestacoes'
+      preLoaderRoute: typeof MinhasManifestacoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ouvidoria': {
+      id: '/ouvidoria'
+      path: '/ouvidoria'
+      fullPath: '/ouvidoria'
+      preLoaderRoute: typeof OuvidoriaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/perfil': {
       id: '/perfil'
       path: '/perfil'
@@ -632,6 +672,8 @@ const rootRouteChildren: RootRouteChildren = {
   EntrarRoute: EntrarRoute,
   HistoriasRoute: HistoriasRoute,
   InicioRoute: InicioRoute,
+  MinhasManifestacoesRoute: MinhasManifestacoesRoute,
+  OuvidoriaRoute: OuvidoriaRoute,
   PerfilRoute: PerfilRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   RecuperarRoute: RecuperarRoute,

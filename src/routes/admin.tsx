@@ -13,6 +13,7 @@ import { Conteudos } from "@/components/admin/Conteudos";
 import { DiretorioAdmin } from "@/components/admin/DiretorioAdmin";
 import { HistoriasAdmin, EncontrosAdmin } from "@/components/admin/Moderacao";
 import { Usuarios, Configuracoes, Logs, Lgpd } from "@/components/admin/Sistema";
+import { OuvidoriaAdmin } from "@/components/admin/Ouvidoria";
 import { DesafioDuasEtapas, DuasEtapas, precisaSegundaEtapa } from "@/components/admin/DuasEtapas";
 import { Teleconsultas } from "@/components/admin/Teleconsultas";
 
@@ -21,6 +22,7 @@ const ABAS = [
   { k: "cadastros", l: "Cadastros", I: ClipboardCheck, admin: false },
   { k: "comunicados", l: "Disparos", I: Megaphone, admin: false },
   { k: "teleconsultas", l: "Teleconsultas", I: Video, admin: false },
+  { k: "ouvidoria", l: "Ouvidoria", I: Megaphone, admin: false },
   { k: "diretorio", l: "Diretório", I: MapPin, admin: false },
   { k: "historias", l: "Histórias", I: Star, admin: false },
   { k: "encontros", l: "Encontros", I: CalendarHeart, admin: true },
@@ -71,6 +73,7 @@ function Admin() {
       {atual === "conteudos" && <Conteudos />}
       {atual === "usuarios" && <Usuarios />}
       {atual === "lgpd" && <Lgpd />}
+      {atual === "ouvidoria" && <OuvidoriaAdmin />}
       {atual === "config" && <><DuasEtapas /><Configuracoes /></>}
       {atual === "logs" && <Logs />}
     </div>

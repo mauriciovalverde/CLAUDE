@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
   AlertTriangle, Baby, Bell, BookOpen, CalendarDays, ClipboardList, Clock, FileText, HandHeart, Heart, MapPin,
   LayoutDashboard, MessageCircle, NotebookPen, PlayCircle, Puzzle, Scale, Search, Star, Utensils, Video,
+  Megaphone,
 } from "lucide-react";
 import { AppShell } from "@/components/app/AppShell";
 import { Card, Chip, Modal, btn } from "@/components/app/kit";
@@ -32,6 +33,7 @@ const ATALHOS: [string, string, any, string][] = [
   ["/conteudo/atividades", "Atividades em casa", Puzzle, "bg-success-soft text-success"],
   ["/conteudo/acolhimento", "Cuide de você", Heart, "bg-coral-soft text-coral"],
   ["/documentos", "Documentos", FileText, "bg-warning-soft text-warning"],
+  ["/ouvidoria", "Ouvidoria", Megaphone, "bg-coral-soft text-coral"],
   ["/historias", "Histórias que inspiram", Star, "bg-secondary text-navy"],
 ];
 
