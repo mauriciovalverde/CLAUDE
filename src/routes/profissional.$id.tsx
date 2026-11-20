@@ -28,7 +28,7 @@ function Perfil() {
           <div>
             <h1 className="font-display text-2xl font-extrabold text-primary">{p.nome} {p.validado && <Verificado />}</h1>
             <p className="text-navy">{[p.especialidade || nomeCategoria(p.categoria), p.registro].filter(Boolean).join(" | ")}</p>
-            {p.validado && <p className="text-xs font-semibold text-primary">Validado pela equipe do Centro</p>}
+            {p.validado && <p className="text-xs font-semibold text-primary">Validado pela equipe do AMPARO</p>}
           </div>
         </div>
         <div className="flex flex-wrap gap-1.5">

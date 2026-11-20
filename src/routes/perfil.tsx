@@ -11,7 +11,7 @@ import { baixarArquivo, digits, fmtTel, idade, idadeTxt } from "@/lib/br";
 export const Route = createFileRoute("/perfil")({ component: () => <AppShell><Perfil /></AppShell> });
 
 const PREFS: [string, string][] = [
-  ["lembretes", "Lembretes da minha rotina"], ["comunicados", "Comunicados do Centro"], ["encontros", "Encontros e rodas de conversa"],
+  ["lembretes", "Lembretes da minha rotina"], ["comunicados", "Comunicados do AMPARO"], ["encontros", "Encontros e rodas de conversa"],
   ["eventos", "Eventos e campanhas"], ["videos", "Novos vídeos"], ["orientacoes", "Novas orientações"], ["direitos", "Direitos e benefícios"], ["servicos", "Novos serviços no diretório"],
 ];
 const STATUS: Record<string, [string, string]> = { pendente: ["Aguardando confirmação", "amber"], aprovado: ["Cadastro confirmado", "green"], recusado: ["Cadastro não confirmado", "red"] };

@@ -9,7 +9,7 @@ import { digits, fmtTel } from "@/lib/br";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/sos")({
-  head: () => ({ meta: [{ title: "Preciso de ajuda agora · Centro de Acolhimento" }] }),
+  head: () => ({ meta: [{ title: "Preciso de ajuda agora · AMPARO" }] }),
   component: SOS,
 });
 

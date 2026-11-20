@@ -69,7 +69,8 @@ function Inicio() {
 
   return (
     <div className="flex flex-col gap-7">
-      <section className="relative overflow-hidden rounded-3xl bg-primary p-6 text-primary-foreground">
+      <section className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#082F70,#0868D0)] p-6 pb-7 text-white">
+        <span aria-hidden="true" className="faixa-marca absolute inset-x-0 bottom-0 h-1.5" />
         <p className="relative text-xs font-bold uppercase tracking-[0.18em] opacity-90">Informação · Acolhimento · Apoio</p>
         <h1 className="relative mt-2 font-display text-3xl font-extrabold text-white sm:text-4xl">Olá, {nomeExibicao(perfil, user)}!</h1>
         <p className="relative mt-1 opacity-90">Você não está {g(gen, "sozinha", "sozinho", "só")}! Estamos aqui para caminhar com você.</p>
@@ -101,7 +102,7 @@ function Inicio() {
         </button>
       ))}
       {aberto && (
-        <Modal titulo="Aviso do Centro" onFechar={() => setAberto(null)}>
+        <Modal titulo="Aviso do AMPARO" onFechar={() => setAberto(null)}>
           <h2 className="font-display text-2xl font-extrabold">{aberto.titulo}</h2>
           <p className="mt-2 whitespace-pre-line leading-relaxed">{aberto.mensagem}</p>
           <p className="mt-3 text-xs text-muted-foreground">{fDataHora(aberto.created_at)}</p>

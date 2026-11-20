@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800"><defs><linearGradient id="left" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#00C5F2"/><stop offset=".48" stop-color="#0876E8"/><stop offset=".72" stop-color="#FFC300"/><stop offset="1" stop-color="#F47A16"/></linearGradient><linearGradient id="right" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFC400"/><stop offset=".35" stop-color="#F96C16"/><stop offset=".6" stop-color="#E92929"/><stop offset=".76" stop-color="#8AD900"/><stop offset="1" stop-color="#009D58"/></linearGradient></defs><g stroke-linejoin="round" stroke-linecap="round">
+<!-- roof and window -->
+<path d="M350 245 L600 65 L850 245" fill="none" stroke="#083476" stroke-width="43"/><path d="M832 135 V236" stroke="#083476" stroke-width="53"/><g fill="#083476"><rect x="574" y="158" width="22" height="22" rx="2"/><rect x="605" y="158" width="22" height="22" rx="2"/><rect x="574" y="189" width="22" height="22" rx="2"/><rect x="605" y="189" width="22" height="22" rx="2"/></g>
+<!-- heart ribbons -->
+<path d="M435 253 C280 145 165 280 200 410 C225 533 425 600 600 760 C520 603 290 480 285 365 C283 315 343 288 415 320" fill="url(#left)"/>
+<path d="M765 253 C920 145 1035 280 1000 410 C975 533 775 600 600 760 C680 603 910 480 915 365 C917 315 857 288 785 320" fill="url(#right)"/>
+<!-- parent silhouettes -->
+<path d="M350 585 C340 510 347 455 402 416 C443 391 465 366 471 319 C482 256 550 247 577 293 C601 341 566 372 548 389 C532 411 521 437 514 465 C493 492 465 510 450 580Z" fill="#083476" stroke="white" stroke-width="8"/>
+<path d="M850 585 C860 510 853 455 798 416 C757 391 735 366 729 319 C718 256 650 247 623 293 C599 341 634 372 652 389 C668 411 679 437 686 465 C707 492 735 510 750 580Z" fill="#083476" stroke="white" stroke-width="8"/>
+<!-- child head -->
+<path d="M554 463 C531 445 538 416 557 406 C545 379 572 363 588 373 C601 355 627 366 631 382 C657 378 670 403 654 419 C671 444 646 473 628 477 L573 477Z" fill="#083476" stroke="white" stroke-width="8"/>
+<!-- child arms and torso -->
+<path d="M563 479 C540 487 504 472 475 435 C463 420 450 420 444 432 C430 450 473 516 544 541 L550 634 L600 720 L650 634 L656 541 C727 516 770 450 756 432 C750 420 737 420 725 435 C696 472 660 487 637 479Z" fill="#FFCD00" stroke="white" stroke-width="11"/>
+<path d="M551 496 H601 V552 H555Z" fill="#E92E35"/><path d="M602 496 H650 V552 H602Z" fill="#00A567"/><path d="M551 553 H601 V619 H551Z" fill="#0095E8"/><path d="M602 553 H650 V619 H602Z" fill="#F7C900"/><path d="M572 620 H601 V690 L572 648Z" fill="#00A35B"/><path d="M602 620 H628 L602 690Z" fill="#1488E5"/>
+</g></svg>

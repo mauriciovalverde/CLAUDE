@@ -25,7 +25,7 @@ function Ouvidoria() {
   if (form) return <Formulario onVoltar={() => setForm(false)} onFeito={setFeito} />;
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader title="Ouvidoria" highlight="do Centro" subtitle="Registre denúncias, reclamações, solicitações, sugestões e elogios. Você recebe um protocolo e acompanha a resposta pelo seu perfil." />
+      <PageHeader title="Ouvidoria" highlight="do AMPARO" subtitle="Registre denúncias, reclamações, solicitações, sugestões e elogios. Você recebe um protocolo e acompanha a resposta pelo seu perfil." />
       <div className="grid gap-3 sm:grid-cols-2">
         <button onClick={() => setForm(true)} className="card-soft flex items-center gap-4 border-primary p-5 text-left transition hover:shadow-card">
           <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-primary text-white"><Megaphone className="h-7 w-7" /></span>

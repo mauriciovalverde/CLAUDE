@@ -232,7 +232,7 @@ function Completar() {
             </Campo>
             <Campo id="profissao" label="Profissão"><input {...fm("profissao")} /></Campo>
             <Campo id="quem_preenche" label="Quem está preenchendo" obrigatorio>
-              <select {...fm("quem_preenche")}>{["A própria mãe / responsável", "Outro familiar", "Profissional ou voluntário do Centro"].map((o) => <option key={o}>{o}</option>)}</select>
+              <select {...fm("quem_preenche")}>{["A própria mãe / responsável", "Outro familiar", "Profissional ou voluntário do AMPARO"].map((o) => <option key={o}>{o}</option>)}</select>
             </Campo>
             <Campo id="emergencia_nome" label="Contato de emergência (nome)"><input {...fm("emergencia_nome")} /></Campo>
             <Campo id="emergencia_telefone" label="Contato de emergência (telefone)"><input {...fm("emergencia_telefone")} type="tel" onChange={(e) => setM({ ...m, emergencia_telefone: fmtTel(e.target.value) })} /></Campo>

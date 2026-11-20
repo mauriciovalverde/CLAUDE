@@ -70,7 +70,7 @@ function Consultas() {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader title="Consultas" highlight="com psicólogos" subtitle="Atendimento psicológico online ou presencial, com profissionais validados pela equipe do Centro."
+      <PageHeader title="Consultas" highlight="com psicólogos" subtitle="Atendimento psicológico online ou presencial, com profissionais validados pela equipe do AMPARO."
         right={aprovada && data.psis.length > 0 ? <Btn onClick={() => setAgendando(true)}><CalendarPlus className="h-4 w-4" /> Agendar consulta</Btn> : undefined} />
       {!aprovada && <Aviso tom="amber">O agendamento é liberado depois que a equipe confirmar o seu cadastro.</Aviso>}
       {aprovada && !data.psis.length && <Aviso>Ainda não há psicólogos com agenda aberta. Assim que houver, você recebe um aviso.</Aviso>}
@@ -271,7 +271,7 @@ function Agendar({ psis, filhos, whats, onVoltar, onAgendado }: { psis: PsiPerfi
               <dt className="text-muted-foreground">Nascimento</dt><dd className="font-semibold">{paciente.nascimento ? new Date(paciente.nascimento + "T12:00:00").toLocaleDateString("pt-BR") : "não informado"}</dd>
               <dt className="text-muted-foreground">Telefone</dt><dd className="font-semibold">{paciente.telefone ? fmtTel(paciente.telefone) : "não informado"}</dd>
             </dl>
-            <p className="mt-2 text-xs text-muted-foreground">Vêm do seu cadastro. Para corrigir, use Perfil → Editar cadastro. O psicólogo não vê seu telefone nem e-mail: o contato é feito pela equipe do Centro.</p>
+            <p className="mt-2 text-xs text-muted-foreground">Vêm do seu cadastro. Para corrigir, use Perfil → Editar cadastro. O psicólogo não vê seu telefone nem e-mail: o contato é feito pela equipe do AMPARO.</p>
           </div>
           <Campo id="ag-mot" label="Quer adiantar o assunto?" dica="Uma frase basta. Os detalhes você conversa com o profissional.">
             <textarea id="ag-mot" className={textareaCls} maxLength={500} value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ex.: me sinto muito cansada e ansiosa com a rotina" />
@@ -284,7 +284,7 @@ function Agendar({ psis, filhos, whats, onVoltar, onAgendado }: { psis: PsiPerfi
             <Btn onClick={confirmar} disabled={enviando} className="min-h-14 w-full whitespace-nowrap text-lg tracking-wide sm:flex-1">{enviando ? "Enviando…" : "QUERO AGENDAR"}</Btn>
             <Btn v="ghost" onClick={() => setSlot(null)}><X className="h-4 w-4" /> Trocar horário</Btn>
           </div>
-          <p className="text-xs text-muted-foreground">Ao tocar em QUERO AGENDAR, abrimos o WhatsApp do Centro com a mensagem pronta.</p>
+          <p className="text-xs text-muted-foreground">Ao tocar em QUERO AGENDAR, abrimos o WhatsApp do AMPARO com a mensagem pronta.</p>
         </Card>
       )}
     </div>
@@ -303,7 +303,7 @@ function Solicitado({ r, whats, onFechar }: { r: Resultado; whats: string; onFec
         <Chip tom="amber">PENDENTE</Chip>
         <h1 className="font-display text-2xl font-extrabold">Pedido registrado!</h1>
         <p><b>{fDataLonga(r.inicio)}</b>, às <b>{fHora(r.inicio)}</b> · {r.psicologo}</p>
-        <p className="max-w-md text-sm text-muted-foreground">Envie a mensagem no WhatsApp do Centro. O profissional confirma ou recusa pelo painel e você recebe o aviso aqui no app.</p>
+        <p className="max-w-md text-sm text-muted-foreground">Envie a mensagem no WhatsApp do AMPARO. O profissional confirma ou recusa pelo painel e você recebe o aviso aqui no app.</p>
       </Card>
       <Aviso tom="amber"><b>Importante:</b> abrir o WhatsApp não confirma a consulta. Ela só vale quando o status mudar para <b>Confirmada</b>.</Aviso>
       <Card className="flex flex-col gap-3">

@@ -47,7 +47,7 @@ function Admin() {
   useEffect(() => { if (isStaff) db.rpc("processar_agendados").then(() => {}); }, [isStaff]);
   useEffect(() => { if (ready && !isStaff) { db.rpc("registrar_tentativa_negada", { _recurso: "painel_admin" }).then(() => {}); nav({ to: "/inicio" }); } }, [ready, isStaff, nav]);
   if (!ready) return <Carregando />;
-  if (!isStaff) return <Vazio icon={LayoutDashboard} titulo="Acesso restrito" texto="Esta área é só para a equipe do Centro." />;
+  if (!isStaff) return <Vazio icon={LayoutDashboard} titulo="Acesso restrito" texto="Esta área é só para a equipe do AMPARO." />;
   if (mfa === null) return <Carregando />;
   if (mfa) return <DesafioDuasEtapas onOk={() => setMfa(false)} onSair={sair} />;
   const abas = ABAS.filter((a) => isAdmin || !a.admin);

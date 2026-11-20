@@ -556,7 +556,7 @@ export const SECOES_PADRAO: SecaoPadrao[] = [
    },
    {
     "titulo": "[Tributos e benefícios] Benefícios estaduais e municipais",
-    "conteudo": "Muitos estados e cidades têm benefícios próprios: passe livre local, isenção de IPVA, carteiras de identificação, prioridade em programas habitacionais e outros.\n\nProcure o CRAS, a Secretaria de Assistência Social e a Secretaria da Pessoa com Deficiência da sua cidade.\n\nA administração do Centro pode cadastrar aqui os benefícios da sua região.",
+    "conteudo": "Muitos estados e cidades têm benefícios próprios: passe livre local, isenção de IPVA, carteiras de identificação, prioridade em programas habitacionais e outros.\n\nProcure o CRAS, a Secretaria de Assistência Social e a Secretaria da Pessoa com Deficiência da sua cidade.\n\nA administração do AMPARO pode cadastrar aqui os benefícios da sua região.",
     "video_url": null,
     "fontes": [],
     "ordem": 11

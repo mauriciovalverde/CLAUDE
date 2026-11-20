@@ -88,7 +88,7 @@ function Relatorio() {
       {loading ? <Carregando /> : (
         <article className="print-page flex flex-col gap-5 rounded-3xl border border-border bg-white p-6 text-[15px] text-slate-900">
           <header className="border-b pb-3">
-            <p className="text-xs font-bold uppercase tracking-widest text-primary">Centro de Acolhimento à Família Atípica</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-primary">AMPARO – Centro de Apoio à Família Atípica</p>
             <h1 className="font-display text-2xl font-extrabold">Relatório do diário · {f?.nome}</h1>
             <p className="text-sm">{idadeOk ? `${idadeOk} · ` : ""}Período: {fData(new Date(Date.now() - dias * 864e5))} a {fData(new Date())}</p>
             {diag && <p className="text-sm"><b>Diagnóstico informado pela família:</b> {diag}</p>}
@@ -108,7 +108,7 @@ function Relatorio() {
             <BarrasHorizontais titulo="Registros por tipo" dados={tipos} />
             <BarrasHorizontais titulo="Gatilhos mais frequentes" dados={gat} cor="#6E56CF" vazio="Nenhum gatilho anotado." />
             <BarrasHorizontais titulo="O que mais ajudou" dados={aj} cor="#30A46C" vazio="Nenhuma estratégia anotada." />
-            {horarios.length ? <BarrasHorizontais titulo="Horário das crises" dados={horarios} cor="#F76B15" /> : <BarrasHorizontais titulo="Humor registrado" dados={humores} cor="#1F5BFF" vazio="Nenhum humor anotado." />}
+            {horarios.length ? <BarrasHorizontais titulo="Horário das crises" dados={horarios} cor="#F76B15" /> : <BarrasHorizontais titulo="Humor registrado" dados={humores} cor="#0868D0" vazio="Nenhum humor anotado." />}
           </section>
           <footer className="text-[11px] text-slate-500">Página 1: resumo e gráficos. A partir da página 2: registros detalhados do diário.</footer>
 

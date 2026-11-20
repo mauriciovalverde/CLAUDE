@@ -43,7 +43,7 @@ export function Cadastros() {
                 <div className="flex flex-wrap items-center gap-2"><b className="text-navy">{f.mae_nome}</b><Chip tom={ST[f.status][1]}>{ST[f.status][0]}</Chip><span className="text-xs text-muted-foreground">{f.numero}</span></div>
                 <p className="text-sm text-muted-foreground">{[f.cidade && `${f.cidade}/${f.uf}`, `${f.filhos?.[0]?.count ?? 0} filho(s)`, fData(f.created_at)].filter(Boolean).join(" · ")}</p>
               </div>
-              {f.mae_telefone && <a href={waLink(tel55(f.mae_telefone), `Olá, ${f.mae_nome.split(" ")[0]}! Aqui é a equipe do Centro de Acolhimento à Família Atípica.`)} target="_blank" rel="noopener noreferrer" className={cn(btn.base, btn.wa, "min-h-10")} aria-label="WhatsApp"><MessageCircle className="h-4 w-4" /></a>}
+              {f.mae_telefone && <a href={waLink(tel55(f.mae_telefone), `Olá, ${f.mae_nome.split(" ")[0]}! Aqui é a equipe do AMPARO – Centro de Apoio à Família Atípica.`)} target="_blank" rel="noopener noreferrer" className={cn(btn.base, btn.wa, "min-h-10")} aria-label="WhatsApp"><MessageCircle className="h-4 w-4" /></a>}
               <Btn v="soft" className="min-h-10" onClick={() => setAberta(f.id)}><Eye className="h-4 w-4" /> Ver ficha</Btn>
             </Card>
           ))}

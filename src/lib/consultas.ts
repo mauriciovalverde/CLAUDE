@@ -59,7 +59,7 @@ export const ESPECIALIDADES_SUGERIDAS = [
   "Infantil", "Adolescentes", "Adultos", "Neuropsicologia", "Análise do Comportamento (ABA)", "TCC", "Psicanálise", "Recém-diagnóstico",
 ];
 
-/** Mensagem padrão enviada ao WhatsApp do Centro. Abrir o WhatsApp não confirma a consulta. */
+/** Mensagem padrão enviada ao WhatsApp do AMPARO. Abrir o WhatsApp não confirma a consulta. */
 export function mensagemWhatsApp(d: { nome: string; nascimento: string | null; telefone: string | null; psicologo: string; inicio: string; modalidade: string }) {
   const nasc = d.nascimento ? new Date(d.nascimento + "T12:00:00").toLocaleDateString("pt-BR") : "não informada";
   const data = new Date(d.inicio).toLocaleDateString("pt-BR", { timeZone: "America/Bahia" });

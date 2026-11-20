@@ -22,7 +22,7 @@ function Landing() {
         <TopBar publico />
         <main id="conteudo" className="mx-auto grid max-w-6xl gap-10 px-4 pb-16 pt-8 lg:grid-cols-[1.1fr_.9fr] lg:pt-16">
           <section className="flex flex-col gap-6">
-            <Logo grande className="-mb-2 w-64 sm:w-80 lg:hidden" />
+            <Logo grande className="-mb-2 w-52 sm:w-64" />
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Informação · Acolhimento · Apoio</p>
             <h1 className="font-display text-[2.6rem] font-extrabold leading-[1.05] sm:text-6xl">
               Você não está <span className="text-primary">sozinha!</span>

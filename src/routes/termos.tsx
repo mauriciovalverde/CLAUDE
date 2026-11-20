@@ -3,12 +3,12 @@ import { TopBar } from "@/components/app/AppShell";
 import { TERMOS_VERSAO } from "@/lib/br";
 
 export const Route = createFileRoute("/termos")({
-  head: () => ({ meta: [{ title: "Termos de uso · Centro de Acolhimento à Família Atípica" }] }),
+  head: () => ({ meta: [{ title: "Termos de uso · AMPARO – Centro de Apoio à Família Atípica" }] }),
   component: Termos,
 });
 
 const ITENS: [string, string][] = [
-  ["O que é o aplicativo", "Um espaço de informação, organização e acolhimento para mães e famílias de crianças atípicas, mantido pelo Centro de Acolhimento à Família Atípica."],
+  ["O que é o aplicativo", "Um espaço de informação, organização e acolhimento para mães e famílias de crianças atípicas, mantido pelo AMPARO – Centro de Apoio à Família Atípica."],
   ["Não substitui profissionais", "As orientações têm caráter informativo. Elas não substituem consulta médica, psicológica, jurídica ou atendimento de emergência. Em risco imediato, ligue 192, 193 ou 190."],
   ["Cadastro", "Você se compromete a informar dados verdadeiros. Cada cadastro é confirmado pela equipe antes de liberar recursos como a rede de apoio. A equipe pode recusar cadastros incompletos ou indevidos."],
   ["Conta e senha", "Sua senha é pessoal. Avise a equipe se suspeitar de uso indevido da sua conta."],

@@ -53,7 +53,7 @@ export function DuasEtapas() {
   async function iniciar() {
     const { data: f } = await supabase.auth.mfa.listFactors();
     for (const x of f?.all ?? []) if (x.status !== "verified") await supabase.auth.mfa.unenroll({ factorId: x.id });
-    const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "Centro de Acolhimento" });
+    const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "AMPARO" });
     if (error || !data) return toast.error("A verificação em duas etapas não está habilitada no servidor de autenticação: " + (error?.message ?? ""));
     setCadastro({ id: data.id, qr: data.totp.qr_code, secret: data.totp.secret });
   }

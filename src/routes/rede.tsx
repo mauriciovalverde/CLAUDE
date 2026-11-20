@@ -20,7 +20,7 @@ function Rede() {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader title="Rede" highlight="de apoio" subtitle="Um espaço de troca entre mães e famílias atípicas, com mediação da equipe do Centro." back={{ to: "/apoio", label: "Apoio" }} />
+      <PageHeader title="Rede" highlight="de apoio" subtitle="Um espaço de troca entre mães e famílias atípicas, com mediação da equipe do AMPARO." back={{ to: "/apoio", label: "Apoio" }} />
       <section className="flex flex-col gap-4 rounded-3xl bg-success-soft p-6">
         <div className="flex items-start gap-3">
           <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-success text-white"><MessageCircle className="h-7 w-7" /></span>

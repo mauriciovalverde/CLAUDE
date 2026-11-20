@@ -5,7 +5,7 @@ export const TIPOS_OUV: [string, string, string][] = [
   ["denuncia", "Denúncia", "Relatar uma irregularidade ou violação de direitos"],
   ["reclamacao", "Reclamação", "Algo não funcionou como deveria"],
   ["solicitacao", "Solicitação", "Pedir um serviço ou providência"],
-  ["sugestao", "Sugestão", "Ideia para melhorar o Centro ou o app"],
+  ["sugestao", "Sugestão", "Ideia para melhorar o AMPARO ou o app"],
   ["elogio", "Elogio", "Reconhecer um bom atendimento"],
 ];
 export const tipoNome = (t: string) => TIPOS_OUV.find(([k]) => k === t)?.[1] ?? t;

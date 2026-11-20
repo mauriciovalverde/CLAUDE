@@ -24,7 +24,7 @@ function Atendimentos() {
   if (loading) return <Carregando />;
   if (!perfil) return (
     <div className="flex flex-col gap-5">
-      <PageHeader title="Atender pelo" highlight="Centro" subtitle="Psicólogos podem oferecer atendimento online ou presencial às famílias do Centro. Preencha seu perfil; a equipe confere o CRP e libera sua agenda." />
+      <PageHeader title="Atender pelo" highlight="AMPARO" subtitle="Psicólogos podem oferecer atendimento online ou presencial às famílias do AMPARO. Preencha seu perfil; a equipe confere o CRP e libera sua agenda." />
       <FormPerfil perfil={null} onSalvo={recarregar} />
     </div>
   );
@@ -45,7 +45,7 @@ function Atendimentos() {
       {aba === "pacientes" && <Pacientes abrir={setProntuario} />}
       {aba === "horarios" && <Horarios perfil={perfil} onSalvo={recarregar} />}
       {aba === "perfil" && <FormPerfil perfil={perfil} onSalvo={recarregar} />}
-      <p className="flex items-start gap-2 text-xs text-muted-foreground"><FolderLock className="h-4 w-4 shrink-0" /> Por sigilo e LGPD, você vê o paciente pelo código interno e pelo primeiro nome. Telefone, e-mail, endereço e CPF ficam só com a administração do Centro, que faz o contato com as famílias.</p>
+      <p className="flex items-start gap-2 text-xs text-muted-foreground"><FolderLock className="h-4 w-4 shrink-0" /> Por sigilo e LGPD, você vê o paciente pelo código interno e pelo primeiro nome. Telefone, e-mail, endereço e CPF ficam só com a administração do AMPARO, que faz o contato com as famílias.</p>
     </div>
   );
 }
@@ -278,7 +278,7 @@ function Prontuario({ paciente, onVoltar }: { paciente: { id: string; codigo: st
     <div className="flex flex-col gap-5">
       <button onClick={onVoltar} className="tap inline-flex w-fit items-center gap-1 font-semibold text-primary"><ChevronLeft className="h-5 w-5" /> Voltar</button>
       <PageHeader title="Ficha" highlight="clínica" subtitle={`${paciente.codigo} · ${paciente.nome}`} />
-      <Aviso tom="navy">Prontuário sigiloso: só você tem acesso. A administração do Centro só lê com a sua autorização, por prazo definido e com registro. Os registros não podem ser apagados (guarda mínima de 5 anos — Res. CFP 01/2009).</Aviso>
+      <Aviso tom="navy">Prontuário sigiloso: só você tem acesso. A administração do AMPARO só lê com a sua autorização, por prazo definido e com registro. Os registros não podem ser apagados (guarda mínima de 5 anos — Res. CFP 01/2009).</Aviso>
       <Card className="flex flex-col gap-3">
         <h2 className="font-display text-lg font-bold">Ficha do paciente</h2>
         {!ficha ? <Carregando /> : CAMPOS_FICHA.map(([k, l, d]) => (

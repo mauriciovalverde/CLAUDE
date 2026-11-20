@@ -8,7 +8,7 @@ export const TIPOS_DIARIO: { k: string; l: string; emoji: string; cor: string }[
   { k: "comportamento", l: "Comportamento", emoji: "🧩", cor: "#F76B15" },
   { k: "sono", l: "Sono", emoji: "🌙", cor: "#6E56CF" },
   { k: "alimentacao", l: "Alimentação", emoji: "🍎", cor: "#30A46C" },
-  { k: "humor", l: "Humor", emoji: "🙂", cor: "#1F5BFF" },
+  { k: "humor", l: "Humor", emoji: "🙂", cor: "#0868D0" },
   { k: "sensorial", l: "Sensorial", emoji: "🎧", cor: "#0090FF" },
   { k: "medicacao", l: "Medicação", emoji: "💊", cor: "#D6409F" },
   { k: "terapia", l: "Terapia", emoji: "🗓️", cor: "#12A594" },

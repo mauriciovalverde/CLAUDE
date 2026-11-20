@@ -3,12 +3,12 @@ import { TopBar } from "@/components/app/AppShell";
 import { TERMOS_VERSAO } from "@/lib/br";
 
 export const Route = createFileRoute("/privacidade")({
-  head: () => ({ meta: [{ title: "Política de privacidade · Centro de Acolhimento à Família Atípica" }] }),
+  head: () => ({ meta: [{ title: "Política de privacidade · AMPARO – Centro de Apoio à Família Atípica" }] }),
   component: Privacidade,
 });
 
 const SECOES: [string, string[]][] = [
-  ["Quem cuida dos seus dados", ["O Centro de Acolhimento à Família Atípica é o controlador dos dados tratados neste aplicativo, nos termos da Lei Geral de Proteção de Dados (Lei 13.709/2018 – LGPD)."]],
+  ["Quem cuida dos seus dados", ["O AMPARO – Centro de Apoio à Família Atípica é o controlador dos dados tratados neste aplicativo, nos termos da Lei Geral de Proteção de Dados (Lei 13.709/2018 – LGPD)."]],
   ["Quais dados coletamos", [
     "Cadastro: nome, data de nascimento, CPF, telefone, e-mail, endereço e dados do segundo responsável.",
     "Filhos: nome, data de nascimento e, somente com o seu consentimento específico, informações de saúde (diagnóstico, terapias, medicações, escola, BPC).",
@@ -27,7 +27,7 @@ const SECOES: [string, string[]][] = [
   ["Com quem compartilhamos", [
     "Não vendemos nem cedemos seus dados.",
     "Cuidadores e escolas só acessam o diário quando você convida ou cria um link, e você pode encerrar o acesso a qualquer momento.",
-    "Psicólogos não veem seu telefone, e-mail, endereço nem CPF: identificam o paciente por um código interno e o primeiro nome. O contato com a família é feito pela equipe do Centro.",
+    "Psicólogos não veem seu telefone, e-mail, endereço nem CPF: identificam o paciente por um código interno e o primeiro nome. O contato com a família é feito pela equipe do AMPARO.",
     "O prontuário psicológico fica só com o psicólogo responsável, sob sigilo profissional. A administração só lê com autorização dele, por prazo definido e com registro.",
     "Usamos provedores de hospedagem e banco de dados com criptografia em trânsito e controle de acesso por linha.",
   ]],
@@ -35,7 +35,7 @@ const SECOES: [string, string[]][] = [
     "Confirmar, acessar, corrigir e baixar seus dados (Perfil → Baixar meus dados).",
     "Revogar consentimentos e excluir sua conta e todos os dados da família (Perfil → Excluir minha conta).",
     "Fazer qualquer pedido sobre seus dados em Perfil → Meus direitos (LGPD). Respondemos em até 15 dias.",
-    "Para dúvidas ou pedidos, fale com a equipe pelo WhatsApp do Centro.",
+    "Para dúvidas ou pedidos, fale com a equipe pelo WhatsApp do AMPARO.",
   ]],
   ["Por quanto tempo guardamos", ["Enquanto sua conta estiver ativa. Após a exclusão, os dados são apagados, exceto registros que a lei obrigue a manter — como o prontuário psicológico, guardado por no mínimo 5 anos (Resolução CFP 01/2009), apenas com o código interno, sem seus dados de contato."]],
 ];

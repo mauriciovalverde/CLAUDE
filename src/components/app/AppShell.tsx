@@ -116,7 +116,7 @@ function AvisoPopup({ uid }: { uid?: string }) {
   if (!n) return null;
   const fechar = async () => { const id = n.id; setN(null); await db.from("notificacoes").update({ lida: true }).eq("id", id); };
   return (
-    <Modal titulo={<span className="flex items-center gap-2"><Bell className="h-5 w-5 text-primary" /> Aviso do Centro</span>} onFechar={fechar}>
+    <Modal titulo={<span className="flex items-center gap-2"><Bell className="h-5 w-5 text-primary" /> Aviso do AMPARO</span>} onFechar={fechar}>
       <h2 className="font-display text-2xl font-extrabold">{n.titulo}</h2>
       <p className="mt-2 whitespace-pre-line leading-relaxed">{n.mensagem}</p>
       <p className="mt-3 text-xs text-muted-foreground">{new Date(n.created_at).toLocaleString("pt-BR", { dateStyle: "long", timeStyle: "short" })}</p>
@@ -133,10 +133,12 @@ export function TopBar({ publico = false }: { publico?: boolean }) {
   const fs = useFontScale();
   const naoLidas = useNaoLidas(user?.id);
   return (
-    <header className="no-print sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+    <header className="no-print sticky top-0 z-30 bg-background/90 backdrop-blur" style={{ paddingTop: "env(safe-area-inset-top)" }}>
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4">
-        <Link to={user ? "/inicio" : "/"} aria-label="Página inicial" className="lg:hidden"><Logo compact /></Link>
-        {publico && <span className="hidden lg:block"><Link to="/"><Logo /></Link></span>}
+        <Link to={user ? "/inicio" : "/"} aria-label="AMPARO – página inicial" className={cn("flex items-center gap-2", !publico && "lg:hidden")}>
+          <Logo compact />
+          <b className={cn("font-display text-xl font-extrabold tracking-tight text-navy", user ? "hidden min-[460px]:inline" : "max-[359px]:hidden")}>AMPARO</b>
+        </Link>
         <span className="flex-1" />
         {isStaff && <Link to="/admin" className="tap inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 text-sm font-bold text-primary-foreground" aria-label="Painel administrativo"><LayoutDashboard className="h-5 w-5" /><span className="hidden sm:inline">Admin</span></Link>}
         <button onClick={fs.ciclo} className="tap grid min-w-12 place-items-center rounded-xl border border-border bg-card px-2 text-sm font-bold text-navy" aria-label="Aumentar tamanho do texto">
@@ -153,6 +155,7 @@ export function TopBar({ publico = false }: { publico?: boolean }) {
         </Link>
         {!user && <Link to="/entrar" className="tap inline-flex items-center rounded-full bg-primary px-5 font-semibold text-primary-foreground">Entrar</Link>}
       </div>
+    <div aria-hidden="true" className="faixa-marca h-[3px]" />
     </header>
   );
 }
@@ -177,14 +180,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [ready, user, familia, isStaff, papeis, path, nav]);
 
   if (!ready || !user) {
-    return <div className="grid min-h-screen place-items-center px-8"><Logo grande className="w-72 animate-pulse" /></div>;
+    return <div className="grid min-h-screen place-items-center px-8"><Logo grande className="w-56 animate-pulse" /></div>;
   }
   const ativo = (to: string) => path === to || (to !== "/inicio" && path.startsWith(to));
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[264px_1fr]">
       <aside className="no-print sticky top-0 hidden h-screen flex-col gap-1 overflow-y-auto border-r border-border bg-sidebar p-4 lg:flex">
-        <Link to="/inicio" className="mb-4 px-1 py-1"><Logo grande /></Link>
+        <Link to="/inicio" className="mb-4 flex justify-center px-1 py-1"><Logo grande className="w-44" /></Link>
         {TABS.map((t) => (
           <Link key={t.to} to={t.to as any} className={cn("tap flex items-center gap-3 rounded-xl px-3 font-semibold", ativo(t.to) ? "bg-primary-soft text-primary" : "text-navy hover:bg-muted")}>
             <t.icon className="h-5 w-5" /> {t.label}
