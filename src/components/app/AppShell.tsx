@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  Store, UsersRound, ClipboardCheck, GraduationCap, HeartHandshake,
+  BadgePercent, Store, UsersRound, ClipboardCheck, GraduationCap, HeartHandshake,
   AlertTriangle, Bell, BookOpen, CalendarDays, ClipboardList, FileText, HandHeart, Home, LayoutDashboard,
   LogOut, MessageCircle, NotebookPen, Search, ShieldCheck, Star, Stethoscope, User, Video,
 } from "lucide-react";
@@ -18,6 +18,7 @@ const TABS = [
   { to: "/buscar", label: "Buscar", icon: Search },
   { to: "/diario", label: "Diário", icon: NotebookPen },
   { to: "/apoio", label: "Apoio", icon: HandHeart },
+  { to: "/cupons", label: "Cupons", icon: BadgePercent },
   { to: "/perfil", label: "Perfil", icon: User },
 ];
 const EXTRAS = [
@@ -233,7 +234,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Link to="/privacidade" className="underline">Privacidade</Link> · <Link to="/termos" className="underline">Termos</Link>
         </footer>
       </div>
-      <nav className={cn("no-print fixed inset-x-0 bottom-0 z-30 grid border-t border-border bg-card lg:hidden", isStaff ? "grid-cols-6" : "grid-cols-5")} style={{ paddingBottom: "env(safe-area-inset-bottom)" }} aria-label="Navegação principal">
+      <nav className={cn("no-print fixed inset-x-0 bottom-0 z-30 grid border-t border-border bg-card lg:hidden", isStaff ? "grid-cols-7" : "grid-cols-6")} style={{ paddingBottom: "env(safe-area-inset-bottom)" }} aria-label="Navegação principal">
         {TABS.map((t) => (
           <Link key={t.to} to={t.to as any} className={cn("flex min-h-16 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold", ativo(t.to) ? "text-primary" : "text-muted-foreground")} aria-current={ativo(t.to) ? "page" : undefined}>
             <t.icon className={cn("h-6 w-6", ativo(t.to) && "stroke-[2.4]")} /> {t.label}

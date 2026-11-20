@@ -23,6 +23,7 @@ import { Route as ClassificadosRouteImport } from './routes/classificados'
 import { Route as CompletarCadastroRouteImport } from './routes/completar-cadastro'
 import { Route as ComunidadeRouteImport } from './routes/comunidade'
 import { Route as ConsultasRouteImport } from './routes/consultas'
+import { Route as CuponsRouteImport } from './routes/cupons'
 import { Route as DiarioRouteImport } from './routes/diario'
 import { Route as DocumentosRouteImport } from './routes/documentos'
 import { Route as EntrarRouteImport } from './routes/entrar'
@@ -115,6 +116,11 @@ const ComunidadeRoute = ComunidadeRouteImport.update({
 const ConsultasRoute = ConsultasRouteImport.update({
   id: '/consultas',
   path: '/consultas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CuponsRoute = CuponsRouteImport.update({
+  id: '/cupons',
+  path: '/cupons',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DiarioRoute = DiarioRouteImport.update({
@@ -248,6 +254,7 @@ export interface FileRoutesByFullPath {
   '/completar-cadastro': typeof CompletarCadastroRoute
   '/comunidade': typeof ComunidadeRoute
   '/consultas': typeof ConsultasRoute
+  '/cupons': typeof CuponsRoute
   '/diario': typeof DiarioRoute
   '/documentos': typeof DocumentosRoute
   '/entrar': typeof EntrarRoute
@@ -287,6 +294,7 @@ export interface FileRoutesByTo {
   '/completar-cadastro': typeof CompletarCadastroRoute
   '/comunidade': typeof ComunidadeRoute
   '/consultas': typeof ConsultasRoute
+  '/cupons': typeof CuponsRoute
   '/diario': typeof DiarioRoute
   '/documentos': typeof DocumentosRoute
   '/entrar': typeof EntrarRoute
@@ -327,6 +335,7 @@ export interface FileRoutesById {
   '/completar-cadastro': typeof CompletarCadastroRoute
   '/comunidade': typeof ComunidadeRoute
   '/consultas': typeof ConsultasRoute
+  '/cupons': typeof CuponsRoute
   '/diario': typeof DiarioRoute
   '/documentos': typeof DocumentosRoute
   '/entrar': typeof EntrarRoute
@@ -368,6 +377,7 @@ export interface FileRouteTypes {
     | '/completar-cadastro'
     | '/comunidade'
     | '/consultas'
+    | '/cupons'
     | '/diario'
     | '/documentos'
     | '/entrar'
@@ -407,6 +417,7 @@ export interface FileRouteTypes {
     | '/completar-cadastro'
     | '/comunidade'
     | '/consultas'
+    | '/cupons'
     | '/diario'
     | '/documentos'
     | '/entrar'
@@ -446,6 +457,7 @@ export interface FileRouteTypes {
     | '/completar-cadastro'
     | '/comunidade'
     | '/consultas'
+    | '/cupons'
     | '/diario'
     | '/documentos'
     | '/entrar'
@@ -486,6 +498,7 @@ export interface RootRouteChildren {
   CompletarCadastroRoute: typeof CompletarCadastroRoute
   ComunidadeRoute: typeof ComunidadeRoute
   ConsultasRoute: typeof ConsultasRoute
+  CuponsRoute: typeof CuponsRoute
   DiarioRoute: typeof DiarioRoute
   DocumentosRoute: typeof DocumentosRoute
   EntrarRoute: typeof EntrarRoute
@@ -609,6 +622,13 @@ declare module '@tanstack/react-router' {
       path: '/consultas'
       fullPath: '/consultas'
       preLoaderRoute: typeof ConsultasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cupons': {
+      id: '/cupons'
+      path: '/cupons'
+      fullPath: '/cupons'
+      preLoaderRoute: typeof CuponsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/diario': {
@@ -790,6 +810,7 @@ const rootRouteChildren: RootRouteChildren = {
   CompletarCadastroRoute: CompletarCadastroRoute,
   ComunidadeRoute: ComunidadeRoute,
   ConsultasRoute: ConsultasRoute,
+  CuponsRoute: CuponsRoute,
   DiarioRoute: DiarioRoute,
   DocumentosRoute: DocumentosRoute,
   EntrarRoute: EntrarRoute,
