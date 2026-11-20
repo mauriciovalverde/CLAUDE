@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { BookOpen, CalendarHeart, Scale, Video, ClipboardCheck, FileClock, LayoutDashboard, MapPin, Megaphone, Settings, Star, Users } from "lucide-react";
+import { Store, BookOpen, CalendarHeart, Scale, Video, ClipboardCheck, FileClock, LayoutDashboard, MapPin, Megaphone, Settings, Star, Users } from "lucide-react";
 import { AppShell } from "@/components/app/AppShell";
 import { Carregando, PageHeader, Vazio } from "@/components/app/kit";
 import { useAuth } from "@/lib/auth";
@@ -14,6 +14,7 @@ import { DiretorioAdmin } from "@/components/admin/DiretorioAdmin";
 import { HistoriasAdmin, EncontrosAdmin } from "@/components/admin/Moderacao";
 import { Usuarios, Configuracoes, Logs, Lgpd } from "@/components/admin/Sistema";
 import { OuvidoriaAdmin } from "@/components/admin/Ouvidoria";
+import { ClassificadosAdmin } from "@/components/admin/Classificados";
 import { DesafioDuasEtapas, DuasEtapas, precisaSegundaEtapa } from "@/components/admin/DuasEtapas";
 import { Teleconsultas } from "@/components/admin/Teleconsultas";
 
@@ -23,6 +24,7 @@ const ABAS = [
   { k: "comunicados", l: "Disparos", I: Megaphone, admin: false },
   { k: "teleconsultas", l: "Teleconsultas", I: Video, admin: false },
   { k: "ouvidoria", l: "Ouvidoria", I: Megaphone, admin: false },
+  { k: "classificados", l: "Classificados", I: Store, admin: false },
   { k: "diretorio", l: "Diretório", I: MapPin, admin: false },
   { k: "historias", l: "Histórias", I: Star, admin: false },
   { k: "encontros", l: "Encontros", I: CalendarHeart, admin: true },
@@ -74,6 +76,7 @@ function Admin() {
       {atual === "usuarios" && <Usuarios />}
       {atual === "lgpd" && <Lgpd />}
       {atual === "ouvidoria" && <OuvidoriaAdmin />}
+      {atual === "classificados" && <ClassificadosAdmin />}
       {atual === "config" && <><DuasEtapas /><Configuracoes /></>}
       {atual === "logs" && <Logs />}
     </div>

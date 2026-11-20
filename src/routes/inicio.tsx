@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import {
+  Store,
   AlertTriangle, Baby, Bell, BookOpen, CalendarDays, ClipboardList, Clock, FileText, HandHeart, Heart, MapPin,
   LayoutDashboard, MessageCircle, NotebookPen, PlayCircle, Puzzle, Scale, Search, Star, Utensils, Video,
   Megaphone,
@@ -21,6 +22,7 @@ const MENSAGENS = [
   "O amor que você dá todos os dias faz diferença, mesmo quando ninguém vê.",
 ];
 const ATALHOS: [string, string, any, string][] = [
+  ["/classificados", "Classificados Solidários", Store, "bg-coral text-white"],
   ["/consultas", "Teleconsulta com psicólogo", Video, "bg-primary text-white"],
   ["/conteudo/orientacoes", "Orientações", BookOpen, "bg-primary-soft text-primary"],
   ["/conteudo/bpc", "Acesso ao BPC", ClipboardList, "bg-warning-soft text-warning"],

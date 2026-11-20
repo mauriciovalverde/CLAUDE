@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Video, AlertTriangle, CalendarHeart, Heart, HeartHandshake, MessageCircle, Phone, Scale, Star } from "lucide-react";
+import { Store, Video, AlertTriangle, CalendarHeart, Heart, HeartHandshake, MessageCircle, Phone, Scale, Star } from "lucide-react";
 import { AppShell } from "@/components/app/AppShell";
 import { CardLink, PageHeader } from "@/components/app/kit";
 
@@ -10,6 +10,7 @@ function Apoio() {
     <div className="flex flex-col gap-3">
       <PageHeader title="Apoio" highlight="e acolhimento" subtitle="Você não precisa passar por isso sem apoio. Escolha por onde começar." />
       <CardLink to="/consultas" icon={Video} tom="blue" title="Teleconsulta com psicólogo" subtitle="Agende atendimento online, por vídeo, pelo app" />
+      <CardLink to="/classificados" icon={Store} tom="coral" title="Classificados Solidários" subtitle="Empregos inclusivos, serviços adaptados, cupons e negócios da comunidade" />
       <CardLink to="/rede" icon={MessageCircle} tom="green" title="Rede de apoio no WhatsApp" subtitle="Converse com outras mães e famílias atípicas" />
       <CardLink to="/rede" icon={CalendarHeart} tom="coral" title="Encontros e rodas de conversa" subtitle="Próximos encontros presenciais e online" />
       <CardLink to="/conteudo/$slug" params={{ slug: "acolhimento" }} icon={Heart} tom="coral" title="Mãe, você também importa" subtitle="Autocuidado, cansaço, culpa e saúde emocional" />
