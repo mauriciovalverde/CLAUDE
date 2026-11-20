@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  Store, UsersRound,
+  Store, UsersRound, ClipboardCheck, GraduationCap, HeartHandshake,
   AlertTriangle, Bell, BookOpen, CalendarDays, ClipboardList, FileText, HandHeart, Home, LayoutDashboard,
   LogOut, MessageCircle, NotebookPen, Search, ShieldCheck, Star, Stethoscope, User, Video,
 } from "lucide-react";
@@ -23,6 +23,9 @@ const TABS = [
 const EXTRAS = [
   { to: "/classificados", label: "Classificados", icon: Store },
   { to: "/comunidade", label: "Rede de Famílias", icon: UsersRound },
+  { to: "/solicitacoes", label: "Minhas Solicitações", icon: ClipboardCheck },
+  { to: "/escola-inclusiva", label: "Escola Inclusiva", icon: GraduationCap },
+  { to: "/anjo", label: "Número Anjo", icon: HeartHandshake },
   { to: "/consultas", label: "Teleconsulta", icon: Video },
   { to: "/conteudo/orientacoes", label: "Orientações", icon: BookOpen },
   { to: "/conteudo/bpc", label: "Acesso ao BPC", icon: ClipboardList },

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Store, UsersRound, BookOpen, CalendarHeart, Scale, Video, ClipboardCheck, FileClock, LayoutDashboard, MapPin, Megaphone, Settings, Star, Users } from "lucide-react";
+import { Store, UsersRound, TrendingUp, BookOpen, CalendarHeart, Scale, Video, ClipboardCheck, FileClock, LayoutDashboard, MapPin, Megaphone, Settings, Star, Users } from "lucide-react";
 import { AppShell } from "@/components/app/AppShell";
 import { Carregando, PageHeader, Vazio } from "@/components/app/kit";
 import { useAuth } from "@/lib/auth";
@@ -16,11 +16,13 @@ import { Usuarios, Configuracoes, Logs, Lgpd } from "@/components/admin/Sistema"
 import { OuvidoriaAdmin } from "@/components/admin/Ouvidoria";
 import { ClassificadosAdmin } from "@/components/admin/Classificados";
 import { RedeAdmin } from "@/components/admin/Rede";
+import { Impacto } from "@/components/admin/Impacto";
 import { DesafioDuasEtapas, DuasEtapas, precisaSegundaEtapa } from "@/components/admin/DuasEtapas";
 import { Teleconsultas } from "@/components/admin/Teleconsultas";
 
 const ABAS = [
   { k: "painel", l: "Painel", I: LayoutDashboard, admin: false },
+  { k: "impacto", l: "Impacto social", I: TrendingUp, admin: false },
   { k: "cadastros", l: "Cadastros", I: ClipboardCheck, admin: false },
   { k: "comunicados", l: "Disparos", I: Megaphone, admin: false },
   { k: "teleconsultas", l: "Teleconsultas", I: Video, admin: false },
@@ -68,6 +70,7 @@ function Admin() {
         ))}
       </nav>
       {atual === "painel" && <Painel />}
+      {atual === "impacto" && <Impacto />}
       {atual === "cadastros" && <Cadastros />}
       {atual === "comunicados" && <Comunicados />}
       {atual === "teleconsultas" && <Teleconsultas />}

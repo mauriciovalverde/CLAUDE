@@ -10,6 +10,12 @@ export const TIPOS_OUV: [string, string, string][] = [
 ];
 export const tipoNome = (t: string) => TIPOS_OUV.find(([k]) => k === t)?.[1] ?? t;
 
+export const CATEGORIAS_OUV: [string, string][] = [
+  ["saude", "Saúde"], ["educacao", "Educação"], ["assistencia", "Assistência social"], ["transporte", "Transporte"], ["acessibilidade", "Acessibilidade"],
+  ["discriminacao", "Discriminação"], ["atendimento", "Atendimento inadequado"], ["negativa", "Negativa de serviço"], ["outras", "Outras violações de direitos"],
+];
+export const categoriaNome = (c?: string | null) => CATEGORIAS_OUV.find(([k]) => k === c)?.[1] ?? null;
+
 export const STATUS_OUV: Record<string, [string, string]> = {
   recebida: ["Recebida", "blue"],
   em_analise: ["Em análise", "amber"],
@@ -27,6 +33,8 @@ export const EVENTO_OUV: Record<string, string> = {
   complemento_enviado: "Você enviou complementação",
   resposta: "Resposta da Ouvidoria",
   conclusao: "Atendimento concluído",
+  encaminhamento_oficial: "Encaminhada oficialmente ao órgão público",
+  resposta_orgao: "Resposta do órgão público",
 };
 
 export type Anexo = {
@@ -41,12 +49,14 @@ export type Anexo = {
   path?: string;         // caminho no armazenamento depois de enviado
 };
 
-const ACEITOS = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "application/pdf"];
-export const MAX_MB = 15;
+const ACEITOS = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "application/pdf",
+  "video/mp4", "video/quicktime", "video/webm", "video/3gpp", "audio/mpeg", "audio/mp4", "audio/aac", "audio/ogg", "audio/webm", "audio/wav", "audio/x-m4a"];
+export const MAX_MB = 50;
 
 export function validarArquivo(f: File): string | null {
   const tipo = f.type || (f.name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "");
-  if (!ACEITOS.includes(tipo)) return `${f.name}: envie fotos (JPG, PNG, HEIC) ou PDF.`;
+  if (!ACEITOS.includes(tipo)) return `${f.name}: envie foto, vídeo, áudio ou PDF.`;
+  if (!tipo.startsWith("video/") && !tipo.startsWith("audio/") && f.size > 15 * 1024 * 1024) return `${f.name}: fotos e PDF até 15 MB.`;
   if (f.size > MAX_MB * 1024 * 1024) return `${f.name}: maior que ${MAX_MB} MB.`;
   return null;
 }

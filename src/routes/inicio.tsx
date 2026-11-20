@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import {
-  Store, UsersRound,
+  Store, UsersRound, GraduationCap, HeartHandshake,
   AlertTriangle, Baby, Bell, BookOpen, CalendarDays, ClipboardList, Clock, FileText, HandHeart, Heart, MapPin,
   LayoutDashboard, MessageCircle, NotebookPen, PlayCircle, Puzzle, Scale, Search, Star, Utensils, Video,
   Megaphone,
@@ -24,6 +24,9 @@ const MENSAGENS = [
 const ATALHOS: [string, string, any, string][] = [
   ["/classificados", "Classificados Solidários", Store, "bg-coral text-white"],
   ["/comunidade", "Rede de Famílias", UsersRound, "bg-success text-white"],
+  ["/solicitacoes", "Minhas Solicitações", ClipboardList, "bg-primary-soft text-primary"],
+  ["/escola-inclusiva", "Escola Inclusiva", GraduationCap, "bg-primary-soft text-primary"],
+  ["/anjo", "Número Anjo", HeartHandshake, "bg-emergency-soft text-emergency"],
   ["/consultas", "Teleconsulta com psicólogo", Video, "bg-primary text-white"],
   ["/conteudo/orientacoes", "Orientações", BookOpen, "bg-primary-soft text-primary"],
   ["/conteudo/bpc", "Acesso ao BPC", ClipboardList, "bg-warning-soft text-warning"],

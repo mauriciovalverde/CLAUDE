@@ -36,3 +36,22 @@ consegue tirar da suspensão; visitante sem login barrado; moderação registrad
 Tela (Playwright, celular e computador): vitrine com busca, categorias, cidade, distância por GPS, preço e filtros;
 detalhe com conversa pelo app, WhatsApp e denúncia; cupom revelado; publicação em 4 etapas com fotos, validação,
 autorização do WhatsApp e prévia; meus anúncios com motivo da recusa; conversa; painel de moderação.
+
+## Rede de Famílias — 20/11/2026 (36 de 36 OK no banco + teste de tela)
+Ninguém cria perfil em nome de outro; coordenada só com ~1 km; quem não participa não busca nem é encontrado; perfis alheios
+não podem ser lidos pela tabela; busca por raio devolve só distância arredondada (nunca coordenadas); bairro oculto não vaza;
+filtros por idade dos filhos/interesse/apoio; mensagem só entre conectados; terceiro não vê nem aceita conexão alheia;
+aviso de pedido de conexão; bloqueio esconde as duas pessoas, impede mensagens e novo pedido; família não cria núcleo;
+grupo sugerido fica oculto até a equipe aprovar; equipe cria núcleo e define moderadora; quem não é do grupo não lê nem
+publica; tabela de publicações fechada; relato anônimo aparece como "Participante anônimo" até para moderadores
+(só a equipe vê o autor); família não oculta publicação alheia; 3 denúncias ocultam; família não vê denúncias nem
+denuncia mensagem que não recebeu; equipe restaura; perfil pausado some; família não define moderador; visitante barrado.
+
+## Minhas Solicitações, Ouvidoria oficial, Número Anjo e Impacto — 20/11/2026 (24 de 24 OK)
+Solicitação sempre da própria conta; histórico automático (criação, situação, protocolo); lembrete de prazo uma vez;
+outra família e a equipe NÃO leem solicitações; categoria da manifestação definida só pelo dono e uma vez; família não
+registra encaminhamento oficial; encaminhamento oficial sem protocolo do órgão nem comprovante é recusado; resposta do órgão
+na linha do tempo; Número Anjo: não aciona sem contato confirmado, a família não se autoconfirma, confirmação só pelo link
+do convite (visitante não lê contatos), recusa apaga o contato, toque duplo não duplica alerta, envio fica "aguardando
+integração" e vira "aberto pelo usuário" (nunca "entregue"), outra família não vê nem cancela o alerta; painel de impacto
+só para a equipe.

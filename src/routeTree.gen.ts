@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AnjoRouteImport } from './routes/anjo'
 import { Route as ApoioRouteImport } from './routes/apoio'
 import { Route as AtendimentosRouteImport } from './routes/atendimentos'
 import { Route as AvisosRouteImport } from './routes/avisos'
@@ -25,6 +26,7 @@ import { Route as ConsultasRouteImport } from './routes/consultas'
 import { Route as DiarioRouteImport } from './routes/diario'
 import { Route as DocumentosRouteImport } from './routes/documentos'
 import { Route as EntrarRouteImport } from './routes/entrar'
+import { Route as EscolaInclusivaRouteImport } from './routes/escola-inclusiva'
 import { Route as HistoriasRouteImport } from './routes/historias'
 import { Route as InicioRouteImport } from './routes/inicio'
 import { Route as MinhasManifestacoesRouteImport } from './routes/minhas-manifestacoes'
@@ -36,9 +38,11 @@ import { Route as RedeRouteImport } from './routes/rede'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as RelatorioRouteImport } from './routes/relatorio'
 import { Route as RotinaRouteImport } from './routes/rotina'
+import { Route as SolicitacoesRouteImport } from './routes/solicitacoes'
 import { Route as SosRouteImport } from './routes/sos'
 import { Route as SouProfissionalRouteImport } from './routes/sou-profissional'
 import { Route as TermosRouteImport } from './routes/termos'
+import { Route as ConfirmarAnjoTokenRouteImport } from './routes/confirmar-anjo.$token'
 import { Route as ConteudoSlugRouteImport } from './routes/conteudo.$slug'
 import { Route as EscolaTokenRouteImport } from './routes/escola.$token'
 import { Route as ProfissionalIdRouteImport } from './routes/profissional.$id'
@@ -51,6 +55,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnjoRoute = AnjoRouteImport.update({
+  id: '/anjo',
+  path: '/anjo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApoioRoute = ApoioRouteImport.update({
@@ -123,6 +132,11 @@ const EntrarRoute = EntrarRouteImport.update({
   path: '/entrar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EscolaInclusivaRoute = EscolaInclusivaRouteImport.update({
+  id: '/escola-inclusiva',
+  path: '/escola-inclusiva',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HistoriasRoute = HistoriasRouteImport.update({
   id: '/historias',
   path: '/historias',
@@ -178,6 +192,11 @@ const RotinaRoute = RotinaRouteImport.update({
   path: '/rotina',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SolicitacoesRoute = SolicitacoesRouteImport.update({
+  id: '/solicitacoes',
+  path: '/solicitacoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SosRoute = SosRouteImport.update({
   id: '/sos',
   path: '/sos',
@@ -191,6 +210,11 @@ const SouProfissionalRoute = SouProfissionalRouteImport.update({
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
   path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfirmarAnjoTokenRoute = ConfirmarAnjoTokenRouteImport.update({
+  id: '/confirmar-anjo/$token',
+  path: '/confirmar-anjo/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConteudoSlugRoute = ConteudoSlugRouteImport.update({
@@ -212,6 +236,7 @@ const ProfissionalIdRoute = ProfissionalIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/anjo': typeof AnjoRoute
   '/apoio': typeof ApoioRoute
   '/atendimentos': typeof AtendimentosRoute
   '/avisos': typeof AvisosRoute
@@ -226,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/diario': typeof DiarioRoute
   '/documentos': typeof DocumentosRoute
   '/entrar': typeof EntrarRoute
+  '/escola-inclusiva': typeof EscolaInclusivaRoute
   '/historias': typeof HistoriasRoute
   '/inicio': typeof InicioRoute
   '/minhas-manifestacoes': typeof MinhasManifestacoesRoute
@@ -237,9 +263,11 @@ export interface FileRoutesByFullPath {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/relatorio': typeof RelatorioRoute
   '/rotina': typeof RotinaRoute
+  '/solicitacoes': typeof SolicitacoesRoute
   '/sos': typeof SosRoute
   '/sou-profissional': typeof SouProfissionalRoute
   '/termos': typeof TermosRoute
+  '/confirmar-anjo/$token': typeof ConfirmarAnjoTokenRoute
   '/conteudo/$slug': typeof ConteudoSlugRoute
   '/escola/$token': typeof EscolaTokenRoute
   '/profissional/$id': typeof ProfissionalIdRoute
@@ -247,6 +275,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/anjo': typeof AnjoRoute
   '/apoio': typeof ApoioRoute
   '/atendimentos': typeof AtendimentosRoute
   '/avisos': typeof AvisosRoute
@@ -261,6 +290,7 @@ export interface FileRoutesByTo {
   '/diario': typeof DiarioRoute
   '/documentos': typeof DocumentosRoute
   '/entrar': typeof EntrarRoute
+  '/escola-inclusiva': typeof EscolaInclusivaRoute
   '/historias': typeof HistoriasRoute
   '/inicio': typeof InicioRoute
   '/minhas-manifestacoes': typeof MinhasManifestacoesRoute
@@ -272,9 +302,11 @@ export interface FileRoutesByTo {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/relatorio': typeof RelatorioRoute
   '/rotina': typeof RotinaRoute
+  '/solicitacoes': typeof SolicitacoesRoute
   '/sos': typeof SosRoute
   '/sou-profissional': typeof SouProfissionalRoute
   '/termos': typeof TermosRoute
+  '/confirmar-anjo/$token': typeof ConfirmarAnjoTokenRoute
   '/conteudo/$slug': typeof ConteudoSlugRoute
   '/escola/$token': typeof EscolaTokenRoute
   '/profissional/$id': typeof ProfissionalIdRoute
@@ -283,6 +315,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/anjo': typeof AnjoRoute
   '/apoio': typeof ApoioRoute
   '/atendimentos': typeof AtendimentosRoute
   '/avisos': typeof AvisosRoute
@@ -297,6 +330,7 @@ export interface FileRoutesById {
   '/diario': typeof DiarioRoute
   '/documentos': typeof DocumentosRoute
   '/entrar': typeof EntrarRoute
+  '/escola-inclusiva': typeof EscolaInclusivaRoute
   '/historias': typeof HistoriasRoute
   '/inicio': typeof InicioRoute
   '/minhas-manifestacoes': typeof MinhasManifestacoesRoute
@@ -308,9 +342,11 @@ export interface FileRoutesById {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/relatorio': typeof RelatorioRoute
   '/rotina': typeof RotinaRoute
+  '/solicitacoes': typeof SolicitacoesRoute
   '/sos': typeof SosRoute
   '/sou-profissional': typeof SouProfissionalRoute
   '/termos': typeof TermosRoute
+  '/confirmar-anjo/$token': typeof ConfirmarAnjoTokenRoute
   '/conteudo/$slug': typeof ConteudoSlugRoute
   '/escola/$token': typeof EscolaTokenRoute
   '/profissional/$id': typeof ProfissionalIdRoute
@@ -320,6 +356,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/anjo'
     | '/apoio'
     | '/atendimentos'
     | '/avisos'
@@ -334,6 +371,7 @@ export interface FileRouteTypes {
     | '/diario'
     | '/documentos'
     | '/entrar'
+    | '/escola-inclusiva'
     | '/historias'
     | '/inicio'
     | '/minhas-manifestacoes'
@@ -345,9 +383,11 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/relatorio'
     | '/rotina'
+    | '/solicitacoes'
     | '/sos'
     | '/sou-profissional'
     | '/termos'
+    | '/confirmar-anjo/$token'
     | '/conteudo/$slug'
     | '/escola/$token'
     | '/profissional/$id'
@@ -355,6 +395,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/anjo'
     | '/apoio'
     | '/atendimentos'
     | '/avisos'
@@ -369,6 +410,7 @@ export interface FileRouteTypes {
     | '/diario'
     | '/documentos'
     | '/entrar'
+    | '/escola-inclusiva'
     | '/historias'
     | '/inicio'
     | '/minhas-manifestacoes'
@@ -380,9 +422,11 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/relatorio'
     | '/rotina'
+    | '/solicitacoes'
     | '/sos'
     | '/sou-profissional'
     | '/termos'
+    | '/confirmar-anjo/$token'
     | '/conteudo/$slug'
     | '/escola/$token'
     | '/profissional/$id'
@@ -390,6 +434,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/anjo'
     | '/apoio'
     | '/atendimentos'
     | '/avisos'
@@ -404,6 +449,7 @@ export interface FileRouteTypes {
     | '/diario'
     | '/documentos'
     | '/entrar'
+    | '/escola-inclusiva'
     | '/historias'
     | '/inicio'
     | '/minhas-manifestacoes'
@@ -415,9 +461,11 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/relatorio'
     | '/rotina'
+    | '/solicitacoes'
     | '/sos'
     | '/sou-profissional'
     | '/termos'
+    | '/confirmar-anjo/$token'
     | '/conteudo/$slug'
     | '/escola/$token'
     | '/profissional/$id'
@@ -426,6 +474,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  AnjoRoute: typeof AnjoRoute
   ApoioRoute: typeof ApoioRoute
   AtendimentosRoute: typeof AtendimentosRoute
   AvisosRoute: typeof AvisosRoute
@@ -440,6 +489,7 @@ export interface RootRouteChildren {
   DiarioRoute: typeof DiarioRoute
   DocumentosRoute: typeof DocumentosRoute
   EntrarRoute: typeof EntrarRoute
+  EscolaInclusivaRoute: typeof EscolaInclusivaRoute
   HistoriasRoute: typeof HistoriasRoute
   InicioRoute: typeof InicioRoute
   MinhasManifestacoesRoute: typeof MinhasManifestacoesRoute
@@ -451,9 +501,11 @@ export interface RootRouteChildren {
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   RelatorioRoute: typeof RelatorioRoute
   RotinaRoute: typeof RotinaRoute
+  SolicitacoesRoute: typeof SolicitacoesRoute
   SosRoute: typeof SosRoute
   SouProfissionalRoute: typeof SouProfissionalRoute
   TermosRoute: typeof TermosRoute
+  ConfirmarAnjoTokenRoute: typeof ConfirmarAnjoTokenRoute
   ConteudoSlugRoute: typeof ConteudoSlugRoute
   EscolaTokenRoute: typeof EscolaTokenRoute
   ProfissionalIdRoute: typeof ProfissionalIdRoute
@@ -473,6 +525,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/anjo': {
+      id: '/anjo'
+      path: '/anjo'
+      fullPath: '/anjo'
+      preLoaderRoute: typeof AnjoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/apoio': {
@@ -573,6 +632,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EntrarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/escola-inclusiva': {
+      id: '/escola-inclusiva'
+      path: '/escola-inclusiva'
+      fullPath: '/escola-inclusiva'
+      preLoaderRoute: typeof EscolaInclusivaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/historias': {
       id: '/historias'
       path: '/historias'
@@ -650,6 +716,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RotinaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/solicitacoes': {
+      id: '/solicitacoes'
+      path: '/solicitacoes'
+      fullPath: '/solicitacoes'
+      preLoaderRoute: typeof SolicitacoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sos': {
       id: '/sos'
       path: '/sos'
@@ -669,6 +742,13 @@ declare module '@tanstack/react-router' {
       path: '/termos'
       fullPath: '/termos'
       preLoaderRoute: typeof TermosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmar-anjo/$token': {
+      id: '/confirmar-anjo/$token'
+      path: '/confirmar-anjo/$token'
+      fullPath: '/confirmar-anjo/$token'
+      preLoaderRoute: typeof ConfirmarAnjoTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/conteudo/$slug': {
@@ -698,6 +778,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  AnjoRoute: AnjoRoute,
   ApoioRoute: ApoioRoute,
   AtendimentosRoute: AtendimentosRoute,
   AvisosRoute: AvisosRoute,
@@ -712,6 +793,7 @@ const rootRouteChildren: RootRouteChildren = {
   DiarioRoute: DiarioRoute,
   DocumentosRoute: DocumentosRoute,
   EntrarRoute: EntrarRoute,
+  EscolaInclusivaRoute: EscolaInclusivaRoute,
   HistoriasRoute: HistoriasRoute,
   InicioRoute: InicioRoute,
   MinhasManifestacoesRoute: MinhasManifestacoesRoute,
@@ -723,9 +805,11 @@ const rootRouteChildren: RootRouteChildren = {
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   RelatorioRoute: RelatorioRoute,
   RotinaRoute: RotinaRoute,
+  SolicitacoesRoute: SolicitacoesRoute,
   SosRoute: SosRoute,
   SouProfissionalRoute: SouProfissionalRoute,
   TermosRoute: TermosRoute,
+  ConfirmarAnjoTokenRoute: ConfirmarAnjoTokenRoute,
   ConteudoSlugRoute: ConteudoSlugRoute,
   EscolaTokenRoute: EscolaTokenRoute,
   ProfissionalIdRoute: ProfissionalIdRoute,

@@ -4,6 +4,7 @@ import { Ambulance, Baby, Flame, HeartHandshake, Phone, Shield, Wind } from "luc
 import { TopBar } from "@/components/app/AppShell";
 import { Card, btn } from "@/components/app/kit";
 import { useAuth } from "@/lib/auth";
+import { AcionarAnjo } from "@/components/app/AnjoAcionar";
 import { db } from "@/lib/dados";
 import { digits, fmtTel } from "@/lib/br";
 import { cn } from "@/lib/utils";
@@ -62,10 +63,12 @@ function SOS() {
       <TopBar publico />
       <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6">
         <section className="rounded-3xl bg-emergency p-6 text-emergency-foreground">
-          <h1 className="font-display text-3xl font-extrabold">Preciso de ajuda agora</h1>
+          <h1 className="font-display text-3xl font-extrabold text-white">Preciso de ajuda agora</h1>
           <p className="mt-1 opacity-95">Se existe risco de vida, ligue imediatamente. A ligação é gratuita.</p>
           <a href="tel:192" className="tap mt-4 inline-flex items-center gap-2 rounded-full bg-white px-6 text-lg font-extrabold text-emergency"><Phone /> Ligar 192 · SAMU</a>
         </section>
+
+        {familia && <AcionarAnjo compacto />}
 
         {contato && (
           <a href={`tel:${digits(contato.tel)}`} className="card-soft flex items-center gap-4 p-5">

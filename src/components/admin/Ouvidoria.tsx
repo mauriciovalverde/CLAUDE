@@ -2,7 +2,10 @@ import { useState } from "react";
 import { ChevronLeft, Lock, Megaphone, Paperclip, MapPin, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Aviso, Btn, Campo, Card, Carregando, Chip, Vazio, inputCls, textareaCls } from "@/components/app/kit";
-import { type AnexoBD, type Evento, type Manif, LinhaDoTempo, ListaAnexos, LocalInfo } from "@/components/app/OuvDetalhe";
+import { type AnexoBD, type Evento, type Manif, LinhaDoTempo, ListaAnexos, LocalInfo, OficialInfo } from "@/components/app/OuvDetalhe";
+import { OuvAnexos, anexosParaEnvio } from "@/components/app/OuvAnexos";
+import { useAuth } from "@/lib/auth";
+import type { Anexo } from "@/lib/ouvidoria";
 import { db, useQuery } from "@/lib/dados";
 import { fDataHora } from "@/lib/br";
 import { STATUS_OUV as STATUS_BASE, TIPOS_OUV, tipoNome } from "@/lib/ouvidoria";
@@ -152,6 +155,7 @@ function Atender({ id, setores, onVoltar }: { id: string; setores: { id: string;
           {acao && <Btn onClick={executar} disabled={enviando} className="self-start">{enviando ? "Salvando…" : "Confirmar"}</Btn>}
         </Card>
       )}
+      <OficialAdmin m={m} onFeito={recarregar} />
       {concluida && <Aviso tom="green">Atendimento concluído. Ainda é possível registrar nota interna pelo histórico abaixo.</Aviso>}
 
       <Card className="flex flex-col gap-3"><h3 className="font-display text-lg font-bold">Linha do tempo pública</h3>
@@ -173,5 +177,49 @@ function NotaRapida({ id, onFeito }: { id: string; onFeito: () => void }) {
   return (
     <div className="flex gap-2"><input className={inputCls} value={t} onChange={(e) => setT(e.target.value)} placeholder="Nova nota interna" aria-label="Nova nota interna" />
       <Btn v="outline" onClick={async () => { const { error } = await db.rpc("ouv_acao", { _id: id, _acao: "nota", _nota: t }); if (error) return toast.error(error.message); setT(""); onFeito(); }}>Salvar</Btn></div>
+  );
+}
+
+/** Encaminhamento oficial ao órgão (exige protocolo do órgão ou comprovante) e registro da resposta recebida. */
+function OficialAdmin({ m, onFeito }: { m: Manif; onFeito: () => void }) {
+  const { user } = useAuth();
+  const [modo, setModo] = useState<"" | "enviar" | "resposta">("");
+  const [f, setF] = useState({ orgao: "", canal: "", protocolo: "", data: new Date().toISOString().slice(0, 10), prazo: "", msg: "" });
+  const [anexos, setAnexos] = useState<Anexo[]>([]);
+  const [chave] = useState(() => crypto.randomUUID());
+  const [enviando, setEnviando] = useState(false);
+  async function salvar() {
+    if (anexos.some((a) => a.estado !== "ok")) return toast.error("Aguarde os anexos ou remova os que falharam.");
+    setEnviando(true);
+    const r = modo === "enviar"
+      ? await db.rpc("ouv_encaminhar_orgao", { _id: m.id, _orgao: f.orgao, _canal: f.canal, _protocolo: f.protocolo || null, _data: f.data, _prazo: f.prazo || null, _mensagem: f.msg || null, _anexos: anexosParaEnvio(anexos) })
+      : await db.rpc("ouv_resposta_orgao", { _id: m.id, _mensagem: f.msg, _anexos: anexosParaEnvio(anexos) });
+    setEnviando(false);
+    if (r.error) return toast.error(r.error.message);
+    toast.success(modo === "enviar" ? "Encaminhamento oficial registrado e cidadão avisado." : "Resposta do órgão publicada para o cidadão.");
+    setModo(""); setAnexos([]); setF({ ...f, msg: "", protocolo: "" }); onFeito();
+  }
+  return (
+    <Card className="flex flex-col gap-3">
+      <h3 className="font-display text-lg font-bold">Encaminhamento ao poder público</h3>
+      <OficialInfo m={m} />
+      <div className="flex flex-wrap gap-2">
+        <Btn v={modo === "enviar" ? "primary" : "soft"} className="min-h-10" onClick={() => setModo(modo === "enviar" ? "" : "enviar")}>Registrar envio oficial</Btn>
+        {m.encaminhado_oficial_em && <Btn v={modo === "resposta" ? "primary" : "soft"} className="min-h-10" onClick={() => setModo(modo === "resposta" ? "" : "resposta")}>Anexar resposta do órgão</Btn>}
+      </div>
+      {modo === "enviar" && <div className="grid gap-3 sm:grid-cols-2">
+        <Campo id="of-o" label="Órgão destinatário" obrigatorio><input id="of-o" className={inputCls} value={f.orgao} onChange={(e) => setF({ ...f, orgao: e.target.value })} placeholder="Secretaria Municipal de Educação" /></Campo>
+        <Campo id="of-c" label="Canal oficial usado" obrigatorio><input id="of-c" className={inputCls} value={f.canal} onChange={(e) => setF({ ...f, canal: e.target.value })} placeholder="Fala.BR, ofício protocolado, e-mail institucional…" /></Campo>
+        <Campo id="of-p" label="Protocolo do órgão" dica="Ou anexe o comprovante de envio abaixo."><input id="of-p" className={inputCls} value={f.protocolo} onChange={(e) => setF({ ...f, protocolo: e.target.value })} /></Campo>
+        <Campo id="of-d" label="Data do envio" obrigatorio><input id="of-d" type="date" className={inputCls} value={f.data} onChange={(e) => setF({ ...f, data: e.target.value })} /></Campo>
+        <Campo id="of-z" label="Prazo de resposta informado"><input id="of-z" type="date" className={inputCls} value={f.prazo} onChange={(e) => setF({ ...f, prazo: e.target.value })} /></Campo>
+      </div>}
+      {modo && <>
+        <Campo id="of-m" label={modo === "enviar" ? "Mensagem ao cidadão" : "Resumo da resposta do órgão (público)"} obrigatorio={modo === "resposta"}><textarea id="of-m" className={textareaCls} value={f.msg} onChange={(e) => setF({ ...f, msg: e.target.value })} /></Campo>
+        {user && <OuvAnexos uid={user.id} chave={chave} anexos={anexos} setAnexos={setAnexos} />}
+        <p className="text-xs text-muted-foreground">Só registre como oficial o que foi efetivamente enviado por canal oficial. Sem protocolo do órgão, o comprovante de envio é obrigatório.</p>
+        <Btn className="self-start" onClick={salvar} disabled={enviando}>{enviando ? "Salvando…" : "Confirmar"}</Btn>
+      </>}
+    </Card>
   );
 }

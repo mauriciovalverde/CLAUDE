@@ -58,7 +58,7 @@ export function OuvAnexos({ uid, chave, anexos, setAnexos }: { uid: string; chav
       {/* capture="environment" abre a câmera traseira; sem câmera, o celular oferece a galeria */}
       <input ref={cam} type="file" accept="image/*" capture="environment" className="hidden" aria-label="Tirar foto"
         onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) setRevisar({ file: f, url: URL.createObjectURL(f) }); }} />
-      <input ref={arq} type="file" multiple accept="image/*,application/pdf,.pdf" className="hidden" aria-label="Anexar arquivos"
+      <input ref={arq} type="file" multiple accept="image/*,application/pdf,.pdf,video/*,audio/*" className="hidden" aria-label="Anexar arquivos"
         onChange={(e) => { const fs = Array.from(e.target.files ?? []); e.target.value = ""; adicionar(fs); }} />
       <p className="text-xs text-muted-foreground">Fotos (JPG, PNG, HEIC) e documentos PDF, até {MAX_TXT}. Se a câmera não abrir, use “Anexar arquivos” para escolher da galeria.</p>
 

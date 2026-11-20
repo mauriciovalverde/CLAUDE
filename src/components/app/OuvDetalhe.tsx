@@ -10,7 +10,27 @@ export type Manif = {
   id: string; protocolo: string; tipo: string; assunto: string; descricao: string; endereco: string | null; referencia: string | null;
   lat: number | null; lng: number | null; precisao_m: number | null; loc_origem: string | null; loc_capturada_em: string | null;
   status: string; setor_id: string | null; resposta: string | null; respondida_em: string | null; created_at: string; atualizado_em: string; user_id: string;
+  categoria?: string | null; orgao_destino?: string | null; canal_oficial?: string | null; protocolo_oficial?: string | null; encaminhado_oficial_em?: string | null; prazo_resposta?: string | null;
 };
+
+/** Encaminhamento oficial ao órgão público: separa o protocolo interno do AMPARO do protocolo oficial do órgão. */
+export function OficialInfo({ m }: { m: Manif }) {
+  if (!m.encaminhado_oficial_em) return (
+    <p className="text-sm text-muted-foreground">Ainda não houve encaminhamento oficial a órgão público. O número {m.protocolo} é o protocolo interno do AMPARO, não um protocolo do poder público.</p>
+  );
+  const hoje = new Date().toISOString().slice(0, 10);
+  const vencido = m.prazo_resposta && m.prazo_resposta < hoje && !["respondida", "concluida"].includes(m.status);
+  return (
+    <dl className="grid gap-1 text-sm sm:grid-cols-2">
+      <div><dt className="inline font-semibold">Órgão: </dt><dd className="inline">{m.orgao_destino}</dd></div>
+      <div><dt className="inline font-semibold">Canal oficial: </dt><dd className="inline">{m.canal_oficial}</dd></div>
+      <div><dt className="inline font-semibold">Protocolo do órgão: </dt><dd className="inline font-mono">{m.protocolo_oficial ?? "comprovante de envio anexado"}</dd></div>
+      <div><dt className="inline font-semibold">Enviado em: </dt><dd className="inline">{fDataHora(m.encaminhado_oficial_em + "T12:00").split(",")[0]}</dd></div>
+      {m.prazo_resposta && <div className="sm:col-span-2"><dt className="inline font-semibold">Prazo de resposta informado: </dt><dd className="inline">{fDataHora(m.prazo_resposta + "T12:00").split(",")[0]} {vencido && <Chip tom="red">prazo vencido</Chip>}</dd></div>}
+      <p className="text-xs text-muted-foreground sm:col-span-2">Protocolo interno do AMPARO: {m.protocolo}. O AMPARO acompanha, mas não garante prazo nem resposta do órgão.</p>
+    </dl>
+  );
+}
 export type Evento = { id: string; tipo: string; setor_id: string | null; mensagem: string | null; autor_id: string | null; autor_papel: string; created_at: string };
 export type AnexoBD = { id: string; evento_id: string | null; path: string; nome: string; mime: string; tamanho: number; created_at: string };
 
@@ -27,7 +47,11 @@ export function ListaAnexos({ anexos }: { anexos: AnexoBD[] }) {
   return (
     <>
       <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-        {anexos.map((a) => a.mime.startsWith("image/") ? (
+        {anexos.map((a) => a.mime.startsWith("video/") ? (
+          <li key={a.id} className="col-span-3 sm:col-span-4">{urls[a.id] ? <video src={urls[a.id]} controls preload="metadata" className="max-h-72 w-full rounded-xl bg-black" /> : null}<span className="text-xs text-muted-foreground">{a.nome}</span></li>
+        ) : a.mime.startsWith("audio/") ? (
+          <li key={a.id} className="col-span-3 sm:col-span-4 flex flex-col gap-1">{urls[a.id] ? <audio src={urls[a.id]} controls preload="metadata" className="w-full" /> : null}<span className="text-xs text-muted-foreground">{a.nome}</span></li>
+        ) : a.mime.startsWith("image/") ? (
           <li key={a.id}><button type="button" onClick={() => setAberta(urls[a.id] ?? null)} className="block aspect-square w-full overflow-hidden rounded-xl border border-border bg-muted" aria-label={`Ver foto ${a.nome}`}>
             {urls[a.id] ? <img src={urls[a.id]} alt={a.nome} className="h-full w-full object-cover" loading="lazy" /> : null}
           </button></li>
@@ -73,14 +97,14 @@ export function LinhaDoTempo({ eventos, setores, anexos, autores }: { eventos: E
   return (
     <ol className="relative ml-3 flex flex-col gap-4 border-l-2 border-border pl-5">
       {eventos.map((e) => {
-        const destaque = e.tipo === "resposta";
+        const destaque = e.tipo === "resposta" || e.tipo === "resposta_orgao";
         const pede = e.tipo === "complemento_solicitado";
         const anx = anexos.filter((a) => a.evento_id === e.id && e.tipo !== "registro");
         return (
           <li key={e.id} className="relative">
             <span className={cn("absolute -left-[29px] top-1 h-4 w-4 rounded-full border-2 border-card", destaque ? "bg-success" : pede ? "bg-coral" : e.autor_papel === "cidadao" ? "bg-primary" : "bg-navy")} />
             <p className="text-xs text-muted-foreground">{fDataHora(e.created_at)}{autores && e.autor_id && autores[e.autor_id] ? ` · ${autores[e.autor_id]}` : ""}</p>
-            <p className="font-semibold text-navy">{EVENTO_OUV[e.tipo] ?? e.tipo}{e.tipo === "encaminhamento" && e.setor_id ? ` para ${setores[e.setor_id] ?? "setor"}` : ""}</p>
+            <p className={cn("font-semibold", e.tipo === "encaminhamento_oficial" || e.tipo === "resposta_orgao" ? "text-primary" : "text-navy")}>{EVENTO_OUV[e.tipo] ?? e.tipo}{e.tipo === "encaminhamento" && e.setor_id ? ` para ${setores[e.setor_id] ?? "setor"}` : ""}</p>
             {e.mensagem && <p className={cn("mt-1 whitespace-pre-line rounded-xl p-3 text-sm", destaque ? "bg-success/10" : pede ? "bg-coral-soft" : "bg-muted")}>{e.mensagem}</p>}
             {anx.length > 0 && <div className="mt-2"><ListaAnexos anexos={anx} /></div>}
           </li>

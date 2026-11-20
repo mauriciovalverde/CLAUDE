@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Store, UsersRound, Video, AlertTriangle, CalendarHeart, Heart, HeartHandshake, MessageCircle, Phone, Scale, Star } from "lucide-react";
+import { Store, UsersRound, ClipboardList, GraduationCap, Video, AlertTriangle, CalendarHeart, Heart, HeartHandshake, MessageCircle, Phone, Scale, Star } from "lucide-react";
 import { AppShell } from "@/components/app/AppShell";
 import { CardLink, PageHeader } from "@/components/app/kit";
 
@@ -16,6 +16,9 @@ function Apoio() {
       <CardLink to="/rede" icon={CalendarHeart} tom="coral" title="Encontros e rodas de conversa" subtitle="Próximos encontros presenciais e online" />
       <CardLink to="/conteudo/$slug" params={{ slug: "acolhimento" }} icon={Heart} tom="coral" title="Mãe, você também importa" subtitle="Autocuidado, cansaço, culpa e saúde emocional" />
       <CardLink to="/historias" icon={Star} tom="amber" title="Histórias que inspiram" subtitle="Relatos de outras famílias — e conte a sua" />
+      <CardLink to="/solicitacoes" icon={ClipboardList} tom="blue" title="Minhas Solicitações" subtitle="Exames, consultas, pedidos à escola e ao poder público com prazo e protocolo" />
+      <CardLink to="/escola-inclusiva" icon={GraduationCap} tom="blue" title="Escola Inclusiva" subtitle="Modelos de pedido de apoio escolar, AEE, adaptações e denúncia de recusa" />
+      <CardLink to="/anjo" icon={HeartHandshake} tom="red" title="Número Anjo" subtitle="Pessoas de confiança avisadas num momento de crise" />
       <CardLink to="/conteudo/$slug" params={{ slug: "direitos" }} icon={Scale} tom="blue" title="Seus direitos" subtitle="BPC, escola inclusiva, CIPTEA, passe livre e mais" />
       <CardLink to="/conteudo/$slug" params={{ slug: "crise" }} icon={AlertTriangle} tom="red" title="Momentos de crise" subtitle="O que fazer antes, durante e depois" />
       <a href="tel:188" className="card-soft flex items-center gap-4 p-4">

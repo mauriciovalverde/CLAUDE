@@ -9,7 +9,7 @@ import { OuvAnexos, anexosParaEnvio } from "@/components/app/OuvAnexos";
 import { useAuth } from "@/lib/auth";
 import { db } from "@/lib/dados";
 import { fDataHora } from "@/lib/br";
-import { type Anexo, STATUS_OUV, TIPOS_OUV, limparRascunho, lerRascunho, salvarRascunho } from "@/lib/ouvidoria";
+import { CATEGORIAS_OUV, type Anexo, STATUS_OUV, TIPOS_OUV, limparRascunho, lerRascunho, salvarRascunho } from "@/lib/ouvidoria";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/ouvidoria")({
@@ -42,7 +42,7 @@ function Ouvidoria() {
   );
 }
 
-type Rascunho = { chave: string; tipo: string; assunto: string; descricao: string; endereco: string; referencia: string };
+type Rascunho = { chave: string; tipo: string; categoria?: string; assunto: string; descricao: string; endereco: string; referencia: string };
 type Local = { lat: number; lng: number; precisao: number | null; origem: "gps" | "mapa"; em: string };
 
 function Formulario({ onVoltar, onFeito }: { onVoltar: () => void; onFeito: (r: any) => void }) {
@@ -86,6 +86,7 @@ function Formulario({ onVoltar, onFeito }: { onVoltar: () => void; onFeito: (r: 
     });
     setEnviando(false);
     if (error) return toast.error(/fetch|network|Failed/i.test(error.message) ? "Sem conexão. Seu relato está salvo: toque em Enviar de novo." : error.message);
+    if (f.categoria && data?.id) await db.rpc("ouv_categoria", { _id: data.id, _categoria: f.categoria });
     limparRascunho();
     onFeito(data);
   }
@@ -106,6 +107,11 @@ function Formulario({ onVoltar, onFeito }: { onVoltar: () => void; onFeito: (r: 
               </button>
             ))}
           </div>
+        </Campo>
+        <Campo id="ouv-categoria" label="Área" dica="Ajuda a equipe a direcionar ao órgão certo.">
+          <select id="ouv-categoria" className={inputCls} value={f.categoria ?? ""} onChange={(e) => setF({ ...f, categoria: e.target.value })}>
+            <option value="">Escolha a área</option>{CATEGORIAS_OUV.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+          </select>
         </Campo>
         <Campo id="ouv-assunto" label="Assunto" obrigatorio erro={erros.assunto}>
           <input id="ouv-assunto" className={inputCls} maxLength={140} value={f.assunto} onChange={(e) => setF({ ...f, assunto: e.target.value })} placeholder="Ex.: Calçada sem acessibilidade na frente da escola" />

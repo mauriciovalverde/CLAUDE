@@ -1,15 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Copy, MessageSquareReply, Megaphone } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Landmark, MessageSquareReply, Megaphone, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app/AppShell";
 import { Aviso, Btn, Campo, Card, Carregando, Chip, PageHeader, Vazio, btn, textareaCls } from "@/components/app/kit";
 import { OuvAnexos, anexosParaEnvio } from "@/components/app/OuvAnexos";
-import { type AnexoBD, type Evento, type Manif, LinhaDoTempo, ListaAnexos, LocalInfo } from "@/components/app/OuvDetalhe";
+import { type AnexoBD, type Evento, type Manif, LinhaDoTempo, ListaAnexos, LocalInfo, OficialInfo } from "@/components/app/OuvDetalhe";
 import { useAuth } from "@/lib/auth";
 import { db, useQuery } from "@/lib/dados";
 import { fDataHora } from "@/lib/br";
-import { type Anexo, STATUS_OUV, tipoNome } from "@/lib/ouvidoria";
+import { type Anexo, STATUS_OUV, categoriaNome, tipoNome } from "@/lib/ouvidoria";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/minhas-manifestacoes")({
@@ -83,7 +83,10 @@ function Detalhe({ id, onVoltar }: { id: string; onVoltar: () => void }) {
   const anexosRegistro = data.anx.filter((a) => data.ev.find((e) => e.id === a.evento_id)?.tipo === "registro" || !a.evento_id);
   return (
     <div className="flex flex-col gap-4">
-      <button onClick={onVoltar} className="tap inline-flex w-fit items-center gap-1 font-semibold text-primary"><ChevronLeft className="h-5 w-5" /> Minhas manifestações</button>
+      <div className="no-print flex items-center justify-between gap-2">
+        <button onClick={onVoltar} className="tap inline-flex w-fit items-center gap-1 font-semibold text-primary"><ChevronLeft className="h-5 w-5" /> Minhas manifestações</button>
+        <Btn v="outline" className="min-h-10" onClick={() => window.print()}><Printer className="h-4 w-4" /> Relatório em PDF</Btn>
+      </div>
       <Card className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <b className="font-mono text-xl text-primary">{m.protocolo}</b>
@@ -91,7 +94,7 @@ function Detalhe({ id, onVoltar }: { id: string; onVoltar: () => void }) {
           <Chip tom={tom}>{st}</Chip>
         </div>
         <h1 className="font-display text-2xl font-extrabold">{m.assunto}</h1>
-        <p className="text-sm text-muted-foreground">{tipoNome(m.tipo)} · registrada em {fDataHora(m.created_at)}{m.setor_id ? ` · Setor responsável: ${data.setores[m.setor_id]}` : ""}</p>
+        <p className="text-sm text-muted-foreground">{tipoNome(m.tipo)}{categoriaNome(m.categoria) ? ` · ${categoriaNome(m.categoria)}` : ""} · registrada em {fDataHora(m.created_at)}{m.setor_id ? ` · Setor responsável: ${data.setores[m.setor_id]}` : ""}</p>
       </Card>
 
       {m.resposta && (
@@ -102,12 +105,16 @@ function Detalhe({ id, onVoltar }: { id: string; onVoltar: () => void }) {
         </Card>
       )}
 
-      {m.status === "aguardando_complemento" && user && <Complementar id={m.id} uid={user.id} pedido={[...data.ev].reverse().find((e) => e.tipo === "complemento_solicitado")?.mensagem ?? null} onFeito={recarregar} />}
+      {m.status === "aguardando_complemento" && user && <div className="no-print"><Complementar id={m.id} uid={user.id} pedido={[...data.ev].reverse().find((e) => e.tipo === "complemento_solicitado")?.mensagem ?? null} onFeito={recarregar} /></div>}
 
       <Card className="flex flex-col gap-3">
         <h2 className="font-display text-lg font-bold">Seu relato</h2>
         <p className="whitespace-pre-line">{m.descricao}</p>
         <ListaAnexos anexos={anexosRegistro} />
+      </Card>
+      <Card className="flex flex-col gap-2">
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold"><Landmark className="h-5 w-5 text-primary" /> Encaminhamento ao poder público</h2>
+        <OficialInfo m={m} />
       </Card>
       <Card className="flex flex-col gap-2">
         <h2 className="font-display text-lg font-bold">Local informado</h2>
