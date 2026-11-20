@@ -26,11 +26,14 @@ function Landing() {
           {/* HERO */}
           <section className="grid items-center gap-8 pt-6 md:grid-cols-[1.1fr_.9fr] md:gap-12 md:pt-14">
             <div className="flex flex-col gap-5">
-              <Logo grande className="w-32 md:hidden" />
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary sm:text-xs">Informação · Acolhimento · Apoio</p>
-              <h1 className="font-display text-[2.25rem] font-extrabold leading-[1.05] text-navy sm:text-5xl lg:text-6xl">
-                Você não está <span className="text-primary">sozinha!</span>
-              </h1>
+              {/* Celular: logo à esquerda e título ao lado. Computador: só o título (a logo fica no cartão à direita). */}
+              <div className="flex items-center gap-4 md:block">
+                <Logo grande className="w-[42%] max-w-[11rem] shrink-0 md:hidden" />
+                <h1 className="min-w-0 font-display text-[1.85rem] font-extrabold leading-[1.08] text-navy min-[400px]:text-[2.1rem] sm:text-5xl lg:text-6xl">
+                  Você não está <span className="text-primary">sozinha!</span>
+                </h1>
+              </div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary sm:text-xs md:-order-1">Informação · Acolhimento · Apoio</p>
               <p className="max-w-xl text-base text-muted-foreground sm:text-lg">
                 Informação, acolhimento e apoio para caminhar ao lado de quem mais precisa de você. Encontre especialistas perto de você,
                 organize o dia a dia do seu filho e conheça seus direitos.
