@@ -1,0 +1,63 @@
+name: Gerar APK Android
+
+on:
+  push:
+    branches: [main]
+    paths: ["android-app/**", ".github/workflows/apk.yml", "public/icon-512.png"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm install --no-audit --no-fund
+      - run: npx cap add android
+      # Permissões usadas pelo site (GPS da Ouvidoria e câmera para fotos)
+      - name: Permissões
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.CAMERA" />#' $M
+          grep -c permission $M
+      # Ícone do app = ícone oficial do AMPARO
+      - name: Ícones
+        run: |
+          R=android/app/src/main/res
+          rm -rf $R/mipmap-anydpi-v26
+          for p in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
+            d=${p%%:*}; s=${p##*:}
+            for n in ic_launcher ic_launcher_round ic_launcher_foreground; do
+              [ -d $R/mipmap-$d ] && convert ../public/icon-512.png -resize ${s}x${s} $R/mipmap-$d/$n.png
+            done
+          done
+      - run: npx cap sync android
+      - name: Compilar APK
+        working-directory: android-app/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon -q
+          cp app/build/outputs/apk/debug/app-debug.apk ../amparo.apk
+          ls -la ../amparo.apk
+      - name: Publicar o APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view app-android >/dev/null 2>&1 || gh release create app-android --title "App AMPARO para Android" --notes "APK oficial do AMPARO para Android. Baixe em familiaamparo.com.br."
+          gh release upload app-android amparo.apk --clobber

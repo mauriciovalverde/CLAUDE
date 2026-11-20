@@ -1,0 +1,13 @@
+{
+  "name": "amparo-android",
+  "private": true,
+  "version": "1.0.0",
+  "description": "App Android do AMPARO: abre familiaamparo.com.br em tela cheia (Capacitor).",
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3"
+  }
+}
