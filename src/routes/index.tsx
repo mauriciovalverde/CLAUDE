@@ -4,6 +4,7 @@ import { BookOpen, ClipboardList, HandHeart, Map, MapPin, NotebookPen, Phone, Se
 import { TopBar } from "@/components/app/AppShell";
 import { AmparoSecao } from "@/components/app/Amparo";
 import { BaixarApp } from "@/components/app/BaixarApp";
+import { TituloJustificado } from "@/components/app/TituloJustificado";
 import { CardLink, Logo, btn } from "@/components/app/kit";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -28,10 +29,11 @@ function Landing() {
             <div className="flex flex-col gap-5">
               {/* Celular: logo à esquerda e título ao lado. Computador: só o título (a logo fica no cartão à direita). */}
               <div className="flex items-center gap-4 md:block">
-                <Logo grande className="w-[42%] max-w-[11rem] shrink-0 md:hidden" />
-                <h1 className="min-w-0 font-display text-[1.85rem] font-extrabold leading-[1.08] text-navy min-[400px]:text-[2.1rem] sm:text-5xl lg:text-6xl">
-                  Você não está <span className="text-primary">sozinha!</span>
-                </h1>
+                <Logo grande className="w-[44%] max-w-[12rem] shrink-0 md:hidden" />
+                <div className="min-w-0 flex-1 md:mb-2 md:mt-2 md:max-w-[26rem]">
+                  <TituloJustificado rotulo="Você não está sozinha!" className="text-navy"
+                    linhas={[{ texto: "VOCÊ" }, { texto: "NÃO ESTÁ" }, { texto: "SOZINHA!", className: "text-primary" }]} />
+                </div>
               </div>
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary sm:text-xs md:-order-1">Informação · Acolhimento · Apoio</p>
               <p className="max-w-xl text-base text-muted-foreground sm:text-lg">
