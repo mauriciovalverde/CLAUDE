@@ -20,6 +20,7 @@ import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as CadastroConcluidoRouteImport } from './routes/cadastro-concluido'
 import { Route as ClassificadosRouteImport } from './routes/classificados'
 import { Route as CompletarCadastroRouteImport } from './routes/completar-cadastro'
+import { Route as ComunidadeRouteImport } from './routes/comunidade'
 import { Route as ConsultasRouteImport } from './routes/consultas'
 import { Route as DiarioRouteImport } from './routes/diario'
 import { Route as DocumentosRouteImport } from './routes/documentos'
@@ -95,6 +96,11 @@ const ClassificadosRoute = ClassificadosRouteImport.update({
 const CompletarCadastroRoute = CompletarCadastroRouteImport.update({
   id: '/completar-cadastro',
   path: '/completar-cadastro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComunidadeRoute = ComunidadeRouteImport.update({
+  id: '/comunidade',
+  path: '/comunidade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConsultasRoute = ConsultasRouteImport.update({
@@ -215,6 +221,7 @@ export interface FileRoutesByFullPath {
   '/cadastro-concluido': typeof CadastroConcluidoRoute
   '/classificados': typeof ClassificadosRoute
   '/completar-cadastro': typeof CompletarCadastroRoute
+  '/comunidade': typeof ComunidadeRoute
   '/consultas': typeof ConsultasRoute
   '/diario': typeof DiarioRoute
   '/documentos': typeof DocumentosRoute
@@ -249,6 +256,7 @@ export interface FileRoutesByTo {
   '/cadastro-concluido': typeof CadastroConcluidoRoute
   '/classificados': typeof ClassificadosRoute
   '/completar-cadastro': typeof CompletarCadastroRoute
+  '/comunidade': typeof ComunidadeRoute
   '/consultas': typeof ConsultasRoute
   '/diario': typeof DiarioRoute
   '/documentos': typeof DocumentosRoute
@@ -284,6 +292,7 @@ export interface FileRoutesById {
   '/cadastro-concluido': typeof CadastroConcluidoRoute
   '/classificados': typeof ClassificadosRoute
   '/completar-cadastro': typeof CompletarCadastroRoute
+  '/comunidade': typeof ComunidadeRoute
   '/consultas': typeof ConsultasRoute
   '/diario': typeof DiarioRoute
   '/documentos': typeof DocumentosRoute
@@ -320,6 +329,7 @@ export interface FileRouteTypes {
     | '/cadastro-concluido'
     | '/classificados'
     | '/completar-cadastro'
+    | '/comunidade'
     | '/consultas'
     | '/diario'
     | '/documentos'
@@ -354,6 +364,7 @@ export interface FileRouteTypes {
     | '/cadastro-concluido'
     | '/classificados'
     | '/completar-cadastro'
+    | '/comunidade'
     | '/consultas'
     | '/diario'
     | '/documentos'
@@ -388,6 +399,7 @@ export interface FileRouteTypes {
     | '/cadastro-concluido'
     | '/classificados'
     | '/completar-cadastro'
+    | '/comunidade'
     | '/consultas'
     | '/diario'
     | '/documentos'
@@ -423,6 +435,7 @@ export interface RootRouteChildren {
   CadastroConcluidoRoute: typeof CadastroConcluidoRoute
   ClassificadosRoute: typeof ClassificadosRoute
   CompletarCadastroRoute: typeof CompletarCadastroRoute
+  ComunidadeRoute: typeof ComunidadeRoute
   ConsultasRoute: typeof ConsultasRoute
   DiarioRoute: typeof DiarioRoute
   DocumentosRoute: typeof DocumentosRoute
@@ -523,6 +536,13 @@ declare module '@tanstack/react-router' {
       path: '/completar-cadastro'
       fullPath: '/completar-cadastro'
       preLoaderRoute: typeof CompletarCadastroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/comunidade': {
+      id: '/comunidade'
+      path: '/comunidade'
+      fullPath: '/comunidade'
+      preLoaderRoute: typeof ComunidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/consultas': {
@@ -687,6 +707,7 @@ const rootRouteChildren: RootRouteChildren = {
   CadastroConcluidoRoute: CadastroConcluidoRoute,
   ClassificadosRoute: ClassificadosRoute,
   CompletarCadastroRoute: CompletarCadastroRoute,
+  ComunidadeRoute: ComunidadeRoute,
   ConsultasRoute: ConsultasRoute,
   DiarioRoute: DiarioRoute,
   DocumentosRoute: DocumentosRoute,

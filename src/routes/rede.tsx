@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { CalendarDays, MapPin, MessageCircle, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/app/AppShell";
@@ -21,6 +21,7 @@ function Rede() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title="Rede" highlight="de apoio" subtitle="Um espaço de troca entre mães e famílias atípicas, com mediação da equipe do AMPARO." back={{ to: "/apoio", label: "Apoio" }} />
+      <Link to="/comunidade" className="card-soft flex items-center gap-3 border-success p-4"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-success text-white"><MapPin className="h-6 w-6" /></span><span className="flex-1"><b className="block text-navy">Rede de Famílias no app</b><span className="text-sm text-muted-foreground">Encontre famílias perto de você, grupos e núcleos locais</span></span></Link>
       <section className="flex flex-col gap-4 rounded-3xl bg-success-soft p-6">
         <div className="flex items-start gap-3">
           <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-success text-white"><MessageCircle className="h-7 w-7" /></span>
