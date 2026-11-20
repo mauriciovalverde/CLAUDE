@@ -26,18 +26,19 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          BASE_PATH: /${{ github.event.repository.name }}/
+          # Domínio próprio familiaamparo.com.br: o site fica na raiz
+          BASE_PATH: /
       # SPA: o GitHub Pages devolve 404.html para rotas como /claude/diario
       - run: cp dist/index.html dist/404.html
-      # Gestor Financeiro Inteligente (app separado, publicado em /<repo>/gestor/)
+      # Gestor Financeiro Inteligente (app separado, publicado em /gestor/)
       - run: npm ci && npm run build
         working-directory: gestor-financeiro
       - run: cp -r gestor-financeiro/dist dist/gestor
-      # Planejador Financeiro (app separado, publicado em /<repo>/planejador/)
+      # Planejador Financeiro (app separado, publicado em /planejador/)
       - run: npm ci && npm run build
         working-directory: planejador
       - run: cp -r planejador/dist dist/planejador
-      # Restaurante Inteligente (app separado, publicado em /<repo>/restaurante/)
+      # Restaurante Inteligente (app separado, publicado em /restaurante/)
       - run: npm ci && npm run build
         working-directory: restaurante
       - run: cp -r restaurante/dist dist/restaurante
