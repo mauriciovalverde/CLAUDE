@@ -140,14 +140,14 @@ export function TopBar({ publico = false }: { publico?: boolean }) {
   const naoLidas = useNaoLidas(user?.id);
   return (
     <header className="no-print sticky top-0 z-30 bg-background/90 backdrop-blur" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-1.5 px-3 sm:gap-2 sm:px-4">
         <Link to={user ? "/inicio" : "/"} aria-label="AMPARO – página inicial" className={cn("flex items-center gap-2", !publico && "lg:hidden")}>
           <Logo compact />
-          <b className={cn("font-display text-xl font-extrabold tracking-tight text-navy", user ? "hidden min-[460px]:inline" : "max-[359px]:hidden")}>AMPARO</b>
+          <b className={cn("font-display text-xl font-extrabold tracking-tight text-navy", user ? "hidden min-[460px]:inline" : "hidden sm:inline")}>AMPARO</b>
         </Link>
         <span className="flex-1" />
         {isStaff && <Link to="/admin" className="tap inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 text-sm font-bold text-primary-foreground" aria-label="Painel administrativo"><LayoutDashboard className="h-5 w-5" /><span className="hidden sm:inline">Admin</span></Link>}
-        <button onClick={fs.ciclo} className="tap grid min-w-12 place-items-center rounded-xl border border-border bg-card px-2 text-sm font-bold text-navy" aria-label="Aumentar tamanho do texto">
+        <button onClick={fs.ciclo} className="tap grid min-w-11 shrink-0 place-items-center rounded-xl border border-border bg-card px-2 text-sm font-bold text-navy" aria-label="Aumentar tamanho do texto">
           {fs.n === 0 ? "A+" : fs.n === 1 ? "A++" : "A"}
         </button>
         {user && (
@@ -156,10 +156,10 @@ export function TopBar({ publico = false }: { publico?: boolean }) {
             {naoLidas > 0 && <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-coral px-1 text-[11px] font-bold text-white">{naoLidas}</span>}
           </Link>
         )}
-        <Link to="/sos" className="tap inline-flex items-center gap-1.5 rounded-full bg-emergency px-4 font-bold text-emergency-foreground" aria-label="Preciso de ajuda agora">
+        <Link to="/sos" className="tap inline-flex shrink-0 items-center gap-1 rounded-full bg-emergency px-3 font-bold text-emergency-foreground sm:gap-1.5 sm:px-4" aria-label="Preciso de ajuda agora">
           <AlertTriangle className="h-5 w-5" /> SOS
         </Link>
-        {!user && <Link to="/entrar" className="tap inline-flex items-center rounded-full bg-primary px-5 font-semibold text-primary-foreground">Entrar</Link>}
+        {!user && <Link to="/entrar" className="tap inline-flex shrink-0 items-center rounded-full bg-primary px-4 font-semibold text-primary-foreground sm:px-5">Entrar</Link>}
       </div>
     <div aria-hidden="true" className="faixa-marca h-[3px]" />
     </header>

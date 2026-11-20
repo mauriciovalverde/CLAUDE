@@ -17,62 +17,87 @@ function Landing() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      <div aria-hidden="true" className="pointer-events-none absolute -left-52 top-[34rem] h-[30rem] w-[30rem] rounded-full bg-navy/90 dark:bg-primary/30" />
-      <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 right-[-6rem] h-72 w-72 rounded-full bg-primary-soft" />
+      <div aria-hidden="true" className="pointer-events-none absolute -right-40 -top-24 h-[28rem] w-[28rem] rounded-full bg-primary-soft opacity-70 blur-2xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute -left-32 top-[38rem] h-80 w-80 rounded-full bg-warning-soft opacity-60 blur-2xl" />
       <div className="relative">
         <TopBar publico />
-        <main id="conteudo" className="mx-auto grid max-w-6xl gap-10 px-4 pb-16 pt-8 lg:grid-cols-[1.1fr_.9fr] lg:pt-16">
-          <section className="flex flex-col gap-6">
-            <Logo grande className="-mb-2 w-52 sm:w-64" />
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Informação · Acolhimento · Apoio</p>
-            <h1 className="font-display text-[2.6rem] font-extrabold leading-[1.05] sm:text-6xl">
-              Você não está <span className="text-primary">sozinha!</span>
-            </h1>
-            <p className="max-w-xl text-lg text-muted-foreground">
-              Informação, acolhimento e apoio para caminhar ao lado de quem mais precisa de você. Encontre especialistas perto de você,
-              organize o dia a dia do seu filho e conheça seus direitos.
-            </p>
-            <form
-              onSubmit={(e) => { e.preventDefault(); nav({ to: "/buscar", search: { q } as any }); }}
-              className="flex max-w-xl items-center gap-2 rounded-full border border-border bg-card p-1.5 pl-5 shadow-card"
-              role="search"
-            >
-              <label htmlFor="busca-home" className="sr-only">Buscar especialistas</label>
-              <input id="busca-home" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar especialistas ou cidade"
-                className="min-h-12 min-w-0 flex-1 bg-transparent text-base outline-none" />
-              <MapPin className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-              <button className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-primary text-white shadow-float" aria-label="Buscar">
-                <Search className="h-5 w-5" />
-              </button>
-            </form>
-            <div className="flex max-w-xl flex-col gap-3">
-              <CardLink to="/buscar" icon={Search} title="Encontrar atendimento" subtitle="Busque por especialidade e cidade" />
-              <CardLink to="/buscar" icon={Map} tom="green" title="Explorar pelo mapa" subtitle="Veja opções perto de você" />
-              <CardLink to="/buscar" icon={ClipboardList} tom="coral" title="Navegar no diretório" subtitle="Profissionais e serviços por estado e cidade" />
+        <main id="conteudo" className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
+          {/* HERO */}
+          <section className="grid items-center gap-8 pt-6 md:grid-cols-[1.1fr_.9fr] md:gap-12 md:pt-14">
+            <div className="flex flex-col gap-5">
+              <Logo grande className="w-32 md:hidden" />
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary sm:text-xs">Informação · Acolhimento · Apoio</p>
+              <h1 className="font-display text-[2.25rem] font-extrabold leading-[1.05] text-navy sm:text-5xl lg:text-6xl">
+                Você não está <span className="text-primary">sozinha!</span>
+              </h1>
+              <p className="max-w-xl text-base text-muted-foreground sm:text-lg">
+                Informação, acolhimento e apoio para caminhar ao lado de quem mais precisa de você. Encontre especialistas perto de você,
+                organize o dia a dia do seu filho e conheça seus direitos.
+              </p>
+              <form
+                onSubmit={(e) => { e.preventDefault(); nav({ to: "/buscar", search: { q } as any }); }}
+                className="flex w-full max-w-xl items-center gap-2 rounded-full border border-border bg-card p-1.5 pl-5 shadow-card"
+                role="search"
+              >
+                <label htmlFor="busca-home" className="sr-only">Buscar especialistas</label>
+                <input id="busca-home" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar especialista ou cidade"
+                  className="min-h-12 min-w-0 flex-1 bg-transparent text-base outline-none" />
+                <MapPin className="hidden h-5 w-5 shrink-0 text-primary sm:block" aria-hidden="true" />
+                <button className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-primary text-white shadow-float" aria-label="Buscar">
+                  <Search className="h-5 w-5" />
+                </button>
+              </form>
+              <div className="grid max-w-xl gap-3 sm:grid-cols-2">
+                <Link to="/cadastro" className={cn(btn.base, btn.primary, "min-h-14 w-full px-6 text-lg")}>Fazer meu cadastro</Link>
+                <Link to="/entrar" className={cn(btn.base, btn.outline, "min-h-14 w-full px-6 text-lg")}>Já tenho cadastro</Link>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <Link to="/cadastro" className={cn(btn.base, btn.primary, "min-h-14 px-7 text-lg")}>Fazer meu cadastro</Link>
-              <Link to="/entrar" className={cn(btn.base, btn.outline, "min-h-14 px-7 text-lg")}>Já tenho cadastro</Link>
+
+            {/* Cartão da marca (computador e tablet) */}
+            <div className="hidden md:block">
+              <div className="relative mx-auto max-w-md overflow-hidden rounded-[2rem] border border-border bg-card p-10 shadow-card">
+                <div aria-hidden="true" className="faixa-marca absolute inset-x-0 top-0 h-1.5" />
+                <Logo grande className="mx-auto w-full justify-center [&_img]:max-w-[20rem]" />
+                <a href="#o-amparo" className="mt-6 block text-center font-display text-sm font-bold uppercase tracking-[0.2em] text-navy/70 hover:text-primary">
+                  Seis letras, uma missão ↓
+                </a>
+              </div>
             </div>
           </section>
 
-          <section aria-label="O que você encontra" className="grid content-start gap-3 sm:grid-cols-2">
-            {[
-              [NotebookPen, "Diário da criança", "Crises, sono, alimentação, conquistas e registro sensorial. Relatórios para o médico e a escola.", "blue"],
-              [ClipboardList, "Acesso ao BPC", "Passo a passo, documentos e checklist para o Meu INSS.", "amber"],
-              [ShieldCheck, "Direitos", "Leis explicadas em linguagem simples, com link oficial.", "blue"],
-              [Users, "Rede de mães", "Grupo de WhatsApp moderado para trocar experiências.", "green"],
-              [HandHeart, "Mãe, você também importa", "Acolhimento, autocuidado e onde buscar apoio psicológico.", "coral"],
-              [BookOpen, "Biblioteca", "Vídeos, cartilhas, leis e materiais confiáveis.", "navy"],
-            ].map(([I, t, d, tom]: any) => (
-              <div key={t} className="card-soft flex flex-col gap-2 p-5">
-                <span className={cn("grid h-11 w-11 place-items-center rounded-2xl", tom === "amber" ? "bg-warning-soft text-warning" : tom === "green" ? "bg-success-soft text-success" : tom === "coral" ? "bg-coral-soft text-coral" : tom === "navy" ? "bg-secondary text-navy" : "bg-primary-soft text-primary")}>
-                  <I className="h-5 w-5" />
-                </span>
-                <h2 className="font-display text-lg font-bold">{t}</h2>
-                <p className="text-sm text-muted-foreground">{d}</p>
-              </div>
-            ))}
+          {/* COMECE POR AQUI */}
+          <section aria-labelledby="comece" className="mt-12 md:mt-16">
+            <h2 id="comece" className="mb-4 font-display text-xl font-extrabold text-navy sm:text-2xl">Comece por aqui</h2>
+            <div className="grid gap-3 md:grid-cols-3">
+              <CardLink to="/buscar" icon={Search} title="Encontrar atendimento" subtitle="Por especialidade e cidade" />
+              <CardLink to="/buscar" icon={Map} tom="green" title="Explorar pelo mapa" subtitle="Opções perto de você" />
+              <CardLink to="/buscar" icon={ClipboardList} tom="coral" title="Navegar no diretório" subtitle="Por estado e cidade" />
+            </div>
+          </section>
+
+          {/* O QUE VOCÊ ENCONTRA */}
+          <section aria-labelledby="encontra" className="mt-12 md:mt-16">
+            <h2 id="encontra" className="mb-4 font-display text-xl font-extrabold text-navy sm:text-2xl">O que você encontra no AMPARO</h2>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                [NotebookPen, "Diário da criança", "Crises, sono, alimentação, conquistas e registro sensorial. Relatórios para o médico e a escola.", "blue"],
+                [ClipboardList, "Acesso ao BPC", "Passo a passo, documentos e checklist para o Meu INSS.", "amber"],
+                [ShieldCheck, "Direitos", "Leis explicadas em linguagem simples, com link oficial.", "blue"],
+                [Users, "Rede de mães", "Grupo de WhatsApp moderado para trocar experiências.", "green"],
+                [HandHeart, "Mãe, você também importa", "Acolhimento, autocuidado e onde buscar apoio psicológico.", "coral"],
+                [BookOpen, "Biblioteca", "Vídeos, cartilhas, leis e materiais confiáveis.", "navy"],
+              ].map(([I, t, d, tom]: any) => (
+                <div key={t} className="card-soft flex gap-4 p-5 sm:flex-col sm:gap-2">
+                  <span className={cn("grid h-11 w-11 shrink-0 place-items-center rounded-2xl", tom === "amber" ? "bg-warning-soft text-warning" : tom === "green" ? "bg-success-soft text-success" : tom === "coral" ? "bg-coral-soft text-coral" : tom === "navy" ? "bg-secondary text-navy" : "bg-primary-soft text-primary")}>
+                    <I className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h3 className="font-display text-lg font-bold text-navy">{t}</h3>
+                    <p className="text-sm text-muted-foreground">{d}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </section>
         </main>
 
