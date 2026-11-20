@@ -17,8 +17,49 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800&display=swap" />
+    <style>
+      /* Tela de abertura do app (APK ou ícone na Tela de Início) */
+      #abertura{display:none}
+      .app-aberto #abertura{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:24px;text-align:center;background:#F6F8FC;overflow:hidden;transition:opacity .45s ease}
+      #abertura.sai{opacity:0;pointer-events:none}
+      #abertura .bl{position:absolute;border-radius:50%;filter:blur(60px)}
+      #abertura .b1{width:60vw;height:60vw;max-width:340px;max-height:340px;left:-14vw;top:24%;background:rgba(0,197,242,.28)}
+      #abertura .b2{width:60vw;height:60vw;max-width:340px;max-height:340px;right:-14vw;top:18%;background:rgba(255,205,0,.32)}
+      #abertura .b3{width:80vw;height:40vw;max-width:460px;max-height:230px;left:50%;bottom:16%;transform:translateX(-50%);background:rgba(0,163,91,.16)}
+      #abertura img{position:relative;width:min(68vw,300px);height:auto;animation:ab-in .7s ease both}
+      #abertura .k{position:relative;margin-top:26px;font:700 11px/1.2 Inter,system-ui,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#0868D0;animation:ab-in .7s .15s ease both}
+      #abertura h1{position:relative;margin:12px 0 0;font:800 clamp(30px,9vw,52px)/1.08 Montserrat,system-ui,sans-serif;color:#082F70;animation:ab-in .7s .3s ease both}
+      #abertura h1 span{color:#0868D0}
+      @keyframes ab-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+      @media (prefers-reduced-motion:reduce){#abertura *{animation:none!important}}
+    </style>
   </head>
   <body>
+    <script>
+      (function () {
+        var app = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true || /; wv\)/.test(navigator.userAgent);
+        if (app && !sessionStorage.getItem("abertura")) { document.documentElement.classList.add("app-aberto"); window.__abertura = Date.now(); }
+      })();
+    </script>
+    <div id="abertura" aria-hidden="true">
+      <span class="bl b1"></span><span class="bl b2"></span><span class="bl b3"></span>
+      <img src="%BASE_URL%logo-claro-600.webp" alt="" width="600" height="484" />
+      <div class="k">Informação · Acolhimento · Apoio</div>
+      <h1>Você não está<br /><span>sozinha!</span></h1>
+    </div>
+    <script>
+      (function () {
+        if (!window.__abertura) return;
+        try { sessionStorage.setItem("abertura", "1"); } catch (e) {}
+        function fechar() {
+          var el = document.getElementById("abertura"); if (!el) return;
+          var falta = Math.max(0, 1800 - (Date.now() - window.__abertura));
+          setTimeout(function () { el.classList.add("sai"); setTimeout(function () { el.remove(); document.documentElement.classList.remove("app-aberto"); }, 500); }, falta);
+        }
+        if (document.readyState === "complete") fechar(); else window.addEventListener("load", fechar);
+        setTimeout(fechar, 5000);
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
