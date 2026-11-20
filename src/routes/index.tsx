@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { BookOpen, ClipboardList, HandHeart, Map, MapPin, NotebookPen, Phone, Search, ShieldCheck, Users } from "lucide-react";
 import { TopBar } from "@/components/app/AppShell";
+import { AmparoSecao } from "@/components/app/Amparo";
 import { CardLink, Logo, btn } from "@/components/app/kit";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -74,6 +75,8 @@ function Landing() {
             ))}
           </section>
         </main>
+
+        <AmparoSecao />
 
         <footer className="relative border-t border-border bg-card/95">
           <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8">
