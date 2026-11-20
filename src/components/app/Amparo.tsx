@@ -20,9 +20,9 @@ export const AMPARO: { palavra: string; texto: string; icone: LucideIcon }[] = [
 export const AMPARO_FRASE =
   "Mais do que um nome, AMPARO é um compromisso com cada família. Acolher, Mobilizar, Proteger, Acompanhar, Registrar e Orientar.";
 
-const OURO = "#F18816";
-const OURO_CLARO = "#FFD02E";
-const MARINHO = "#101F50";
+const OURO = "#F47A16"; // laranja (manual AMPARO)
+const OURO_CLARO = "#FFCD00"; // amarelo (manual AMPARO)
+const MARINHO = "#082F70"; // azul-marinho (manual AMPARO)
 
 /** Aparece suavemente ao rolar (respeita "reduzir movimento"). */
 function useAoRolar<T extends HTMLElement>() {
@@ -54,14 +54,14 @@ function Item({ palavra, texto, icone: Icone, i, fundo }: (typeof AMPARO)[number
       style={{ transitionDelay: `${(i % 3) * 90}ms` }}
       className={cn(
         "group relative flex gap-4 rounded-3xl p-5 transition-all duration-700 ease-out sm:p-6",
-        escuro ? "border border-white/10 bg-white/[0.04] hover:bg-white/[0.07]" : "border border-[#101F50]/10 bg-white shadow-card",
+        escuro ? "border border-white/10 bg-white/[0.04] hover:bg-white/[0.07]" : "border border-[#082F70]/10 bg-white shadow-card",
         visivel ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0",
       )}
     >
       <span
         aria-hidden="true"
         className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl"
-        style={{ background: escuro ? "rgba(241,136,22,.14)" : "#FFF3E0", color: OURO }}
+        style={{ background: escuro ? "rgba(244,122,22,.16)" : "#FFF3E0", color: OURO }}
       >
         <Icone className="h-6 w-6" strokeWidth={1.75} />
       </span>
@@ -70,7 +70,7 @@ function Item({ palavra, texto, icone: Icone, i, fundo }: (typeof AMPARO)[number
           <span style={{ color: escuro ? OURO_CLARO : OURO }}>{palavra[0]}</span>
           <span style={{ color: escuro ? "#FFFFFF" : MARINHO }}>{palavra.slice(1)}</span>
         </h3>
-        <p className={cn("mt-1.5 text-[15px] leading-relaxed", escuro ? "text-white/75" : "text-[#101F50]/75")}>{texto}</p>
+        <p className={cn("mt-1.5 text-[15px] leading-relaxed", escuro ? "text-white/75" : "text-[#082F70]/75")}>{texto}</p>
       </div>
     </li>
   );
@@ -91,7 +91,7 @@ export function AmparoSecao({ fundo = "escuro", className }: { fundo?: "escuro" 
       {escuro && (
         <>
           <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full opacity-25 blur-3xl" style={{ background: OURO }} />
-          <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full opacity-25 blur-3xl" style={{ background: "#783487" }} />
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full opacity-25 blur-3xl" style={{ background: "#0876E8" }} />
         </>
       )}
       <div className="relative mx-auto max-w-6xl px-4 py-16 sm:py-20">
@@ -100,9 +100,10 @@ export function AmparoSecao({ fundo = "escuro", className }: { fundo?: "escuro" 
           className={cn("mx-auto max-w-3xl text-center transition-all duration-700 ease-out", topo.visivel ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0")}
         >
           <p className="text-xs font-bold uppercase tracking-[0.28em]" style={{ color: escuro ? OURO_CLARO : OURO }}>O AMPARO</p>
-          <h2 id="amparo-titulo" className={cn("mt-3 font-display text-[2rem] font-extrabold leading-tight sm:text-5xl", escuro ? "text-white" : "text-[#101F50]")}>
+          <h2 id="amparo-titulo" className={cn("mt-3 font-display text-[2rem] font-extrabold leading-tight sm:text-5xl", escuro ? "text-white" : "text-[#082F70]")}>
             AMPARO: seis letras, <span style={{ color: escuro ? OURO_CLARO : OURO }}>uma missão.</span>
           </h2>
+          <div aria-hidden="true" className="mx-auto mt-4 h-1.5 w-28 rounded-full" style={{ background: `linear-gradient(90deg, ${OURO_CLARO}, ${OURO})` }} />
           {/* Sigla em destaque, letra por letra */}
           <div aria-hidden="true" className="mt-6 flex justify-center gap-1.5 sm:gap-3">
             {AMPARO.map((a, i) => (
@@ -111,7 +112,7 @@ export function AmparoSecao({ fundo = "escuro", className }: { fundo?: "escuro" 
                 style={{ transitionDelay: `${150 + i * 80}ms`, color: OURO, background: escuro ? "rgba(255,255,255,.06)" : "#FFFFFF" }}
                 className={cn(
                   "grid h-12 w-11 place-items-center rounded-xl font-display text-2xl font-extrabold transition-all duration-500 sm:h-16 sm:w-14 sm:text-4xl",
-                  escuro ? "border border-white/10" : "border border-[#101F50]/10 shadow-card",
+                  escuro ? "border border-white/10" : "border border-[#082F70]/10 shadow-card",
                   topo.visivel ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
                 )}
               >
@@ -129,7 +130,7 @@ export function AmparoSecao({ fundo = "escuro", className }: { fundo?: "escuro" 
           ref={fim.ref}
           className={cn(
             "mx-auto mt-12 max-w-3xl text-center font-display text-lg font-semibold leading-relaxed transition-all duration-700 sm:text-xl",
-            escuro ? "text-white/90" : "text-[#101F50]",
+            escuro ? "text-white/90" : "text-[#082F70]",
             fim.visivel ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0",
           )}
         >
