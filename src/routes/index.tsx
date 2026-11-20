@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { BookOpen, ClipboardList, HandHeart, Map, MapPin, NotebookPen, Phone, Search, ShieldCheck, Users } from "lucide-react";
 import { TopBar } from "@/components/app/AppShell";
 import { AmparoSecao } from "@/components/app/Amparo";
+import { BaixarApp } from "@/components/app/BaixarApp";
 import { CardLink, Logo, btn } from "@/components/app/kit";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,7 @@ function Landing() {
                 <Link to="/cadastro" className={cn(btn.base, btn.primary, "min-h-14 w-full px-6 text-lg")}>Fazer meu cadastro</Link>
                 <Link to="/entrar" className={cn(btn.base, btn.outline, "min-h-14 w-full px-6 text-lg")}>Já tenho cadastro</Link>
               </div>
+              <BaixarApp className="max-w-xl" />
             </div>
 
             {/* Cartão da marca (computador e tablet) */}

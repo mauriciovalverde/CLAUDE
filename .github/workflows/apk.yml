@@ -39,14 +39,21 @@ jobs:
       # Ícone do app = ícone oficial do AMPARO
       - name: Ícones
         run: |
-          R=android/app/src/main/res
-          rm -rf $R/mipmap-anydpi-v26
-          for p in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
-            d=${p%%:*}; s=${p##*:}
-            for n in ic_launcher ic_launcher_round ic_launcher_foreground; do
-              [ -d $R/mipmap-$d ] && convert ../public/icon-512.png -resize ${s}x${s} $R/mipmap-$d/$n.png
-            done
-          done
+          python3 -m pip install -q pillow
+          rm -rf android/app/src/main/res/mipmap-anydpi-v26
+          python3 - <<'PY'
+          import os
+          from PIL import Image
+          R = "android/app/src/main/res"
+          ico = Image.open("../public/icon-512.png").convert("RGBA")
+          for d, s in [("mdpi", 48), ("hdpi", 72), ("xhdpi", 96), ("xxhdpi", 144), ("xxxhdpi", 192)]:
+              pasta = f"{R}/mipmap-{d}"
+              if not os.path.isdir(pasta):
+                  continue
+              for n in ("ic_launcher", "ic_launcher_round", "ic_launcher_foreground"):
+                  ico.resize((s, s), Image.LANCZOS).save(f"{pasta}/{n}.png")
+          print("ícones ok")
+          PY
       - run: npx cap sync android
       - name: Compilar APK
         working-directory: android-app/android

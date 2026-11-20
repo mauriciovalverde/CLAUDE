@@ -7,6 +7,7 @@ import {
   Megaphone,
 } from "lucide-react";
 import { AppShell } from "@/components/app/AppShell";
+import { BaixarApp } from "@/components/app/BaixarApp";
 import { Card, Chip, Modal, btn } from "@/components/app/kit";
 import { g, generoDe, nomeExibicao, useAuth } from "@/lib/auth";
 import { db, useConfig, useQuery } from "@/lib/dados";
@@ -81,6 +82,7 @@ function Inicio() {
         <h1 className="relative mt-2 font-display text-3xl font-extrabold text-white sm:text-4xl">Olá, {nomeExibicao(perfil, user)}!</h1>
         <p className="relative mt-1 opacity-90">Você não está {g(gen, "sozinha", "sozinho", "só")}! Estamos aqui para caminhar com você.</p>
       </section>
+      <BaixarApp variante="faixa" className="-mt-3" />
 
       {isStaff && (
         <Link to="/admin" className="card-soft flex items-center gap-4 border-primary p-4">
