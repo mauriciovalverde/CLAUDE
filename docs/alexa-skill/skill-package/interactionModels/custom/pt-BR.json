@@ -1,0 +1,21 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "diário amparo",
+      "intents": [
+        { "name": "RegistrarIntent",
+          "slots": [{ "name": "frase", "type": "AMAZON.SearchQuery" }],
+          "samples": ["registre que {frase}", "registra que {frase}", "registrar que {frase}", "anote que {frase}", "anota que {frase}", "anotar que {frase}", "registre {frase}", "registrar {frase}", "anotar {frase}"] },
+        { "name": "ParearIntent",
+          "slots": [{ "name": "codigo", "type": "AMAZON.NUMBER" }],
+          "samples": ["o código é {codigo}", "código {codigo}", "meu código é {codigo}", "o código {codigo}"] },
+        { "name": "AMAZON.HelpIntent", "samples": [] },
+        { "name": "AMAZON.CancelIntent", "samples": [] },
+        { "name": "AMAZON.StopIntent", "samples": [] },
+        { "name": "AMAZON.FallbackIntent", "samples": [] },
+        { "name": "AMAZON.NavigateHomeIntent", "samples": [] }
+      ],
+      "types": []
+    }
+  }
+}

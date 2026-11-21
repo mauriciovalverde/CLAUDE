@@ -10,6 +10,7 @@ import { db, useFilhos, useQuery } from "@/lib/dados";
 import { ESTRATEGIAS, GATILHOS, HUMORES, SENTIDOS, TIPOS_DIARIO, tipoInfo, urlFoto, useFamiliaDiario, type Registro } from "@/lib/diario";
 import { emailValido, fData, fDataLonga, fHora, paraInputLocal, urlApp } from "@/lib/br";
 import { cn } from "@/lib/utils";
+import { FalarDiario } from "@/components/app/FalarDiario";
 
 export const Route = createFileRoute("/diario")({ component: () => <AppShell><Diario /></AppShell> });
 
@@ -63,6 +64,8 @@ function Diario() {
 
       {!fam.propria && <Aviso tom="blue">Você está registrando como cuidador(a) convidado(a). A família vê tudo o que você anotar.</Aviso>}
 
+      <FalarDiario familiaId={fam.familiaId} onSalvo={recarregar} />
+      <Link to="/assistente-voz" className="-mt-2 text-sm font-semibold text-primary">Registrar pela Alexa ou pela Siri →</Link>
       <section aria-label="Registrar agora">
         <h2 className="mb-2 font-display text-lg font-bold">Registrar agora</h2>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
@@ -234,6 +237,7 @@ function LinhaDoTempo({ regs, podeApagar, onMudou }: { regs: Registro[]; podeApa
                     {r.intensidade ? <Chip tom={r.intensidade >= 4 ? "red" : "amber"}>Intensidade {r.intensidade}/5</Chip> : null}
                     {r.humor && <Chip>{r.humor}</Chip>}
                     {r.origem === "escola" && <Chip tom="blue">Escola</Chip>}
+                    {r.origem === "voz" && <Chip tom="green">🎙️ Por voz</Chip>}
                   </div>
                   {r.antecedente && <p className="text-sm"><b>Antes:</b> {r.antecedente}</p>}
                   {r.comportamento && <p className="text-sm"><b>Comportamento:</b> {r.comportamento}</p>}

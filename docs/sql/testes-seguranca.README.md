@@ -55,3 +55,10 @@ na linha do tempo; Número Anjo: não aciona sem contato confirmado, a família 
 do convite (visitante não lê contatos), recusa apaga o contato, toque duplo não duplica alerta, envio fica "aguardando
 integração" e vira "aberto pelo usuário" (nunca "entregue"), outra família não vê nem cancela o alerta; painel de impacto
 só para a equipe.
+
+## Assistente de voz (Alexa, Siri, microfone do app) — 21/11/2026 (18 de 18 OK)
+Família sem cadastro aprovado não liga assistente; token e código guardados só como hash; frase "Márcio tomou risperidona agora"
+vira medicação com o remédio cadastrado; "Ana teve uma crise forte há 20 minutos" vira crise intensidade 4 no horário certo;
+sem nome com dois filhos, nada é gravado e a Alexa pergunta de qual criança; token falso e chave de skill errada recusados;
+Alexa não pareada não grava; código errado e código reutilizado recusados; visitante não lê o diário; outra família não grava
+no diário alheio nem vê os vínculos; assistente desligado para de funcionar. Endpoint público testado de fora (recusa token falso).

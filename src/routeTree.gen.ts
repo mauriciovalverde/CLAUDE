@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AnjoRouteImport } from './routes/anjo'
 import { Route as ApoioRouteImport } from './routes/apoio'
+import { Route as AssistenteVozRouteImport } from './routes/assistente-voz'
 import { Route as AtendimentosRouteImport } from './routes/atendimentos'
 import { Route as AvisosRouteImport } from './routes/avisos'
 import { Route as BibliotecaRouteImport } from './routes/biblioteca'
@@ -66,6 +67,11 @@ const AnjoRoute = AnjoRouteImport.update({
 const ApoioRoute = ApoioRouteImport.update({
   id: '/apoio',
   path: '/apoio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssistenteVozRoute = AssistenteVozRouteImport.update({
+  id: '/assistente-voz',
+  path: '/assistente-voz',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AtendimentosRoute = AtendimentosRouteImport.update({
@@ -244,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/anjo': typeof AnjoRoute
   '/apoio': typeof ApoioRoute
+  '/assistente-voz': typeof AssistenteVozRoute
   '/atendimentos': typeof AtendimentosRoute
   '/avisos': typeof AvisosRoute
   '/biblioteca': typeof BibliotecaRoute
@@ -284,6 +291,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/anjo': typeof AnjoRoute
   '/apoio': typeof ApoioRoute
+  '/assistente-voz': typeof AssistenteVozRoute
   '/atendimentos': typeof AtendimentosRoute
   '/avisos': typeof AvisosRoute
   '/biblioteca': typeof BibliotecaRoute
@@ -325,6 +333,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/anjo': typeof AnjoRoute
   '/apoio': typeof ApoioRoute
+  '/assistente-voz': typeof AssistenteVozRoute
   '/atendimentos': typeof AtendimentosRoute
   '/avisos': typeof AvisosRoute
   '/biblioteca': typeof BibliotecaRoute
@@ -367,6 +376,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/anjo'
     | '/apoio'
+    | '/assistente-voz'
     | '/atendimentos'
     | '/avisos'
     | '/biblioteca'
@@ -407,6 +417,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/anjo'
     | '/apoio'
+    | '/assistente-voz'
     | '/atendimentos'
     | '/avisos'
     | '/biblioteca'
@@ -447,6 +458,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/anjo'
     | '/apoio'
+    | '/assistente-voz'
     | '/atendimentos'
     | '/avisos'
     | '/biblioteca'
@@ -488,6 +500,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AnjoRoute: typeof AnjoRoute
   ApoioRoute: typeof ApoioRoute
+  AssistenteVozRoute: typeof AssistenteVozRoute
   AtendimentosRoute: typeof AtendimentosRoute
   AvisosRoute: typeof AvisosRoute
   BibliotecaRoute: typeof BibliotecaRoute
@@ -552,6 +565,13 @@ declare module '@tanstack/react-router' {
       path: '/apoio'
       fullPath: '/apoio'
       preLoaderRoute: typeof ApoioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assistente-voz': {
+      id: '/assistente-voz'
+      path: '/assistente-voz'
+      fullPath: '/assistente-voz'
+      preLoaderRoute: typeof AssistenteVozRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/atendimentos': {
@@ -800,6 +820,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AnjoRoute: AnjoRoute,
   ApoioRoute: ApoioRoute,
+  AssistenteVozRoute: AssistenteVozRoute,
   AtendimentosRoute: AtendimentosRoute,
   AvisosRoute: AvisosRoute,
   BibliotecaRoute: BibliotecaRoute,
