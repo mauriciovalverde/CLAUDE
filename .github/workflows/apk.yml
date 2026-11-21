@@ -30,11 +30,11 @@ jobs:
           java-version: 21
       - run: npm install --no-audit --no-fund
       - run: npx cap add android
-      # Permissões usadas pelo site (GPS da Ouvidoria e câmera para fotos)
+      # Permissões usadas pelo site (GPS, câmera e microfone do registro por voz)
       - name: Permissões
         run: |
           M=android/app/src/main/AndroidManifest.xml
-          sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.CAMERA" />#' $M
+          sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />#' $M
           grep -c permission $M
       # Ícone do app = ícone oficial do AMPARO
       - name: Ícones
