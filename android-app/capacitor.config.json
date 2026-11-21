@@ -2,10 +2,11 @@
   "appId": "br.com.familiaamparo.app",
   "appName": "AMPARO",
   "webDir": "www",
-  "server": {
-    "url": "https://familiaamparo.com.br/",
-    "androidScheme": "https",
-    "allowNavigation": ["familiaamparo.com.br", "*.supabase.co"]
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#FFFFFF"
   },
-  "android": { "allowMixedContent": false, "backgroundColor": "#FFFFFF" }
+  "server": {
+    "androidScheme": "https"
+  }
 }

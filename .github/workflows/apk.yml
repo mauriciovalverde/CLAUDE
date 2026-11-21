@@ -3,7 +3,7 @@ name: Gerar APK Android
 on:
   push:
     branches: [main]
-    paths: ["android-app/**", ".github/workflows/apk.yml", "public/icon-512.png"]
+    paths: ["android-app/**", ".github/workflows/apk.yml", "src/**", "public/**", "index.html", "package.json"]
   workflow_dispatch:
 
 permissions:
@@ -28,6 +28,16 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+      # App web embutido no APK (não depende do domínio estar no ar)
+      - name: Compilar o app web
+        working-directory: .
+        env:
+          BASE_PATH: /
+          VITE_SITE_URL: https://familiaamparo.com.br
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+          rm -rf android-app/www && cp -r dist android-app/www
       - run: npm install --no-audit --no-fund
       - run: npx cap add android
       # Permissões usadas pelo site (GPS, câmera e microfone do registro por voz)

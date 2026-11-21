@@ -92,7 +92,9 @@ export const CATEGORIAS_DIRETORIO: [string, string][] = [
 export const nomeCategoria = (k: string) => CATEGORIAS_DIRETORIO.find((c) => c[0] === k)?.[1] ?? k;
 
 /** Endereço completo dentro do app (funciona no Lovable e em subpasta, ex.: GitHub Pages). */
-export const urlApp = (p: string) => window.location.origin + String(import.meta.env.BASE_URL || "/").replace(/\/$/, "") + p;
+/** Endereço público do app. No APK (arquivos locais) usa o domínio oficial, para links de e-mail e convites funcionarem fora do celular. */
+const SITE = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "");
+export const urlApp = (p: string) => (SITE ?? window.location.origin + String(import.meta.env.BASE_URL || "/").replace(/\/$/, "")) + p;
 
 /** Idade por extenso: "7 anos", "1 ano", "8 meses". */
 export const idadeTxt = (s?: string | null) => {
